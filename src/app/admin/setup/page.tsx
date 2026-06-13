@@ -19,6 +19,11 @@ export default function SetupPage() {
   const [welcomeBody, setWelcomeBody] = useState('');
   const [welcomeActive, setWelcomeActive] = useState(false);
   const [savingWelcome, setSavingWelcome] = useState(false);
+  const [completionId, setCompletionId] = useState<string | null>(null);
+  const [completionTitle, setCompletionTitle] = useState('');
+  const [completionBody, setCompletionBody] = useState('');
+  const [completionActive, setCompletionActive] = useState(false);
+  const [savingCompletion, setSavingCompletion] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -43,6 +48,17 @@ export default function SetupPage() {
       setWelcomeBody(data[0].body);
       setWelcomeActive(data[0].is_active);
     }
+    const { data: completion } = await supabase
+      .from('message_templates')
+      .select('*')
+      .eq('template_type', 'completion')
+      .limit(1);
+    if (completion?.[0]) {
+      setCompletionId(completion[0].id);
+      setCompletionTitle(completion[0].title);
+      setCompletionBody(completion[0].body);
+      setCompletionActive(completion[0].is_active);
+    }
   }
 
   async function handleSaveWelcome() {
@@ -58,6 +74,21 @@ export default function SetupPage() {
       if (data) setWelcomeId(data.id);
     }
     setSavingWelcome(false);
+  }
+
+  async function handleSaveCompletion() {
+    setSavingCompletion(true);
+    if (completionId) {
+      await supabase.from('message_templates').update({
+        title: completionTitle, body: completionBody, is_active: completionActive, updated_at: new Date().toISOString(),
+      }).eq('id', completionId);
+    } else {
+      const { data } = await supabase.from('message_templates').insert({
+        title: completionTitle, body: completionBody, is_active: completionActive, template_type: 'completion',
+      }).select('id').single();
+      if (data) setCompletionId(data.id);
+    }
+    setSavingCompletion(false);
   }
 
   if (loading) {
@@ -93,6 +124,19 @@ export default function SetupPage() {
             <input type="checkbox" checked={welcomeActive} onChange={(e) => setWelcomeActive(e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-wfd-crimson" /> Active
           </label>
           <Button type="button" onClick={handleSaveWelcome} loading={savingWelcome}>Save Welcome Message</Button>
+        </div>
+      </Card>
+
+      <Card className="p-4">
+        <h3 className="font-bold text-wfd-charcoal mb-3">Completion Message</h3>
+        <p className="text-sm text-gray-500 mb-3">Shown to students on the final screen after completing the Policy and Protocol Review.</p>
+        <div className="grid gap-3 md:grid-cols-2">
+          <Input label="Title" value={completionTitle} onChange={(e) => setCompletionTitle(e.target.value)} />
+          <textarea value={completionBody} onChange={(e) => setCompletionBody(e.target.value)} className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-wfd-crimson" rows={5} />
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+            <input type="checkbox" checked={completionActive} onChange={(e) => setCompletionActive(e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-wfd-crimson" /> Active
+          </label>
+          <Button type="button" onClick={handleSaveCompletion} loading={savingCompletion}>Save Completion Message</Button>
         </div>
       </Card>
     </div>

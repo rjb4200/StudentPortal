@@ -70,7 +70,7 @@ export function ResourceLibrary({ onComplete }: ResourceLibraryProps) {
       <h2 className="text-xl font-bold text-wfd-charcoal mb-2">Resource Library</h2>
       <p className="text-gray-500 mb-6">
         Download and review these essential documents before your rotation. You&apos;ll be tested on
-        this material in the knowledge gate.
+        this material in the Policy and Protocol Review.
       </p>
 
       {categoriesWithDocs.length === 0 ? (
@@ -122,14 +122,14 @@ export function ResourceLibrary({ onComplete }: ResourceLibraryProps) {
 
       <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
         <p className="text-sm text-gray-600">
-          <strong className="text-wfd-charcoal">Important:</strong> The knowledge gate quiz will test
+          <strong className="text-wfd-charcoal">Important:</strong> The Policy and Protocol Review will test
           your understanding of station layouts, safety protocols, and department SOGs. Make sure you
           review all documents before proceeding.
         </p>
       </div>
 
       <Button onClick={onComplete} className="w-full">
-        I&apos;ve Reviewed All Documents — Take the Knowledge Gate
+        I&apos;ve Reviewed All Documents — Take the Policy and Protocol Review
       </Button>
     </div>
   );

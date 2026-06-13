@@ -5,14 +5,15 @@ import { RegistrationForm } from '@/components/onboarding/registration-form';
 import { LegalWaiver } from '@/components/onboarding/legal-waiver';
 import { ResourceLibrary } from '@/components/onboarding/resource-library';
 import { KnowledgeGate } from '@/components/onboarding/knowledge-gate';
+import { OnboardingComplete } from '@/components/onboarding/onboarding-complete';
 
-type Step = 1 | 2 | 3 | 4;
+type Step = 1 | 2 | 3 | 4 | 5;
 
 const steps = [
   { step: 1 as Step, label: 'Register' },
   { step: 2 as Step, label: 'Legal' },
   { step: 3 as Step, label: 'Resources' },
-  { step: 4 as Step, label: 'Quiz' },
+  { step: 4 as Step, label: 'Review' },
 ];
 
 export default function OnboardingPage() {
@@ -69,8 +70,9 @@ export default function OnboardingPage() {
         )}
         {currentStep === 3 && <ResourceLibrary onComplete={() => setCurrentStep(4)} />}
         {currentStep === 4 && studentId && (
-          <KnowledgeGate studentId={studentId} onComplete={() => {}} />
+          <KnowledgeGate studentId={studentId} onComplete={() => setCurrentStep(5)} />
         )}
+        {currentStep === 5 && studentId && <OnboardingComplete />}
       </div>
     </div>
   );

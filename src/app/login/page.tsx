@@ -16,6 +16,18 @@ export default function LoginPage() {
     setMessage(null);
 
     const supabase = createClient();
+
+    const { data: student } = await supabase
+      .from('students')
+      .select('status, is_blacklisted')
+      .eq('email', email)
+      .single();
+
+    if (!student || student.is_blacklisted || student.status === 'expired') {
+      window.location.href = '/onboarding?token=WFD_TRAINING_2026';
+      return;
+    }
+
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {

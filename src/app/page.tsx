@@ -35,7 +35,7 @@ export default function Home() {
         </div>
 
         <p className="text-xs text-gray-400 mt-6">
-          New students: click &quot;Begin Student Onboarding&quot; to register, review legal documents, and complete the safety knowledge gate.
+          New students: click &quot;Begin Student Onboarding&quot; to register, review legal documents, and complete the Policy and Protocol Review.
         </p>
       </div>
     </div>

@@ -100,6 +100,9 @@ export default function DashboardPage() {
             {student?.status === 'certified' && (
               <Badge variant="green" className="ml-2">Certified</Badge>
             )}
+            {student?.status === 'pending' && (
+              <Badge variant="gold" className="ml-2">Pending Approval</Badge>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -136,7 +139,42 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {welcomeMsg && !welcomeDismissed && (
+      {student?.status === 'pending' ? (
+        <div className="space-y-6">
+          <Card className="p-6 bg-amber-50 border-amber-200">
+            <h2 className="text-lg font-bold text-amber-900 mb-3">Account Pending Approval</h2>
+            <p className="text-sm text-amber-800 leading-relaxed mb-4">
+              Your onboarding has been received and is awaiting administrative review. Once approved, you&apos;ll be able to request shifts, view preceptor profiles, and message administrators.
+            </p>
+            <p className="text-sm text-amber-700">
+              You&apos;ll receive an email when your account has been approved.
+            </p>
+          </Card>
+
+          <Card className="p-4">
+            <h3 className="font-semibold text-wfd-charcoal mb-3">Calendar Feed</h3>
+            <p className="text-sm text-gray-500 mb-2">
+              Subscribe to your personal calendar to see scheduled shifts once approved.
+            </p>
+            <div className="flex items-center gap-2">
+              <code className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600 truncate">
+                /api/calendar/{student?.id}.ics
+              </code>
+              <button
+                onClick={() => {
+                  const url = `${window.location.origin}/api/calendar/${student?.id}.ics`;
+                  navigator.clipboard.writeText(url);
+                }}
+                className="text-xs text-wfd-crimson hover:underline whitespace-nowrap"
+              >
+                Copy
+              </button>
+            </div>
+          </Card>
+        </div>
+      ) : (
+        <div>
+        {welcomeMsg && !welcomeDismissed && (
         <Card className="p-4 bg-blue-50 border-blue-200">
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -204,6 +242,8 @@ export default function DashboardPage() {
         date={selectedDate}
         onSubmit={handleShiftSubmit}
       />
+    </div>
+      )}
     </div>
   );
 }

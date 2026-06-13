@@ -64,7 +64,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/onboarding?status=expired', request.url));
     }
 
-    if (student.status !== 'certified') {
+    if (student.status !== 'certified' && student.status !== 'pending') {
       return NextResponse.redirect(new URL('/onboarding', request.url));
     }
   }

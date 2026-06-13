@@ -163,13 +163,14 @@ export function KnowledgeGate({ studentId, onComplete }: KnowledgeGateProps) {
       });
     } catch {}
 
+    setCertifying(false);
     onComplete();
   };
 
   if (loadingRules) {
     return (
       <div className="rounded-xl border border-gray-200 bg-gray-50 p-5 text-center">
-        <h2 className="mb-2 text-xl font-bold text-wfd-charcoal">Knowledge Gate</h2>
+        <h2 className="mb-2 text-xl font-bold text-wfd-charcoal">Policy and Protocol Review</h2>
         <p className="text-sm text-gray-600">Loading onboarding quiz...</p>
       </div>
     );
@@ -178,7 +179,7 @@ export function KnowledgeGate({ studentId, onComplete }: KnowledgeGateProps) {
   if (loadError) {
     return (
       <div className="rounded-xl border border-red-200 bg-red-50 p-5">
-        <h2 className="mb-2 text-xl font-bold text-red-800">Knowledge Gate Unavailable</h2>
+        <h2 className="mb-2 text-xl font-bold text-red-800">Policy and Protocol Review Unavailable</h2>
         <p className="text-sm text-red-700">{loadError}</p>
       </div>
     );
@@ -187,7 +188,7 @@ export function KnowledgeGate({ studentId, onComplete }: KnowledgeGateProps) {
   if (rules.length === 0 || !currentRule) {
     return (
       <div className="rounded-xl border border-orange-200 bg-orange-50 p-5">
-        <h2 className="mb-2 text-xl font-bold text-orange-800">Knowledge Gate Not Configured</h2>
+        <h2 className="mb-2 text-xl font-bold text-orange-800">Policy and Protocol Review Not Configured</h2>
         <p className="text-sm text-orange-700">
           No active onboarding quiz rules are available. Please contact EMS administration.
         </p>
@@ -203,7 +204,7 @@ export function KnowledgeGate({ studentId, onComplete }: KnowledgeGateProps) {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-2xl font-bold text-green-700">
             OK
           </div>
-          <h3 className="mb-2 text-xl font-bold text-wfd-crimson">Knowledge Gate Complete</h3>
+          <h3 className="mb-2 text-xl font-bold text-wfd-crimson">Policy and Protocol Review Complete</h3>
           <p className="mb-6 text-gray-600">
             You have passed each compliance rule. An administrator will review your onboarding
             record and grant portal access after approval.
@@ -309,7 +310,7 @@ function Header({
   return (
     <div className="mb-6">
       <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="text-xl font-bold text-wfd-charcoal">Knowledge Gate</h2>
+        <h2 className="text-xl font-bold text-wfd-charcoal">Policy and Protocol Review</h2>
         <div className="text-right text-sm text-gray-500">
           <div>
             Rule {progressStep} of {totalRules}
