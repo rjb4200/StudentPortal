@@ -49,17 +49,23 @@ export default function LoginPage() {
     setMessage(null);
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
     if (error) {
       setMessage({ type: 'error', text: error.message });
+      setLoading(false);
+      return;
+    }
+
+    const role = data?.user?.user_metadata?.role;
+    if (role === 'preceptor') {
+      window.location.href = '/preceptor';
     } else {
       window.location.href = '/admin';
     }
-    setLoading(false);
   };
 
   return (

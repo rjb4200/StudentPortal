@@ -350,7 +350,7 @@ export function DailyOps() {
               {students.map((s) => (
                 <tr key={s.id} className="border-b border-gray-100 hover:bg-gray-50">
                   <td className="py-2 px-3">
-                    <p className="font-medium">{s.full_name}</p>
+                    <a href={`/admin/accounts?edit=${s.id}`} className="font-medium text-wfd-crimson hover:underline">{s.full_name}</a>
                     <p className="text-xs text-gray-400">{s.email}</p>
                   </td>
                   <td className="py-2 px-3">

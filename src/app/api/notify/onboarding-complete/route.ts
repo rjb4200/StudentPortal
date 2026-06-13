@@ -44,16 +44,19 @@ export async function POST(request: NextRequest) {
       await supabase.auth.admin.generateLink({
         type: 'magiclink',
         email: student.email,
-        options: {
-          redirectTo: `${request.nextUrl.origin}/dashboard`,
-        },
+        options: { redirectTo: `${request.nextUrl.origin}/dashboard` },
       });
     } catch (e) {
-      // Auth creation or magic link failed — log but don't block
       console.error('Auth/magic link error:', e);
     }
 
-    // Notify admin
+    // Notify admins with onboarding_complete preference
+    const { data: admins } = await supabase
+      .from('admin_accounts')
+      .select('email')
+      .eq('is_active', true)
+      .eq('notify_onboarding_complete', true);
+
     const pushoverMsg = `New student completed onboarding: ${student.full_name} (${student.email}) from ${student.school_name}`;
 
     if (process.env.PUSHOVER_APP_TOKEN && process.env.PUSHOVER_USER_KEY) {
@@ -70,7 +73,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    if (process.env.RESEND_API_KEY) {
+    if (process.env.RESEND_API_KEY && admins?.length) {
       await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
@@ -79,7 +82,7 @@ export async function POST(request: NextRequest) {
         },
         body: JSON.stringify({
           from: 'WFD EMS Portal <onboarding@winchesterfireems.com>',
-          to: process.env.PUSHOVER_USER_KEY ? 'admin@wfd.gov' : 'rjb4200@gmail.com',
+          to: admins.map((a: any) => a.email),
           subject: 'New Student Onboarding Complete',
           html: `<p>${pushoverMsg}</p><p>Review and approve in the admin portal.</p>`,
         }),

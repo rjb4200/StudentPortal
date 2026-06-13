@@ -69,6 +69,13 @@ export default function AdminPage() {
                 Onboarding Setup
               </Link>
               <Link
+                href="/admin/accounts"
+                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                onClick={() => setMenuOpen(false)}
+              >
+                Account Management
+              </Link>
+              <Link
                 href="/admin/dev"
                 className="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-50"
                 onClick={() => setMenuOpen(false)}

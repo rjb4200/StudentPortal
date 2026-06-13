@@ -36,7 +36,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
     const role = user.user_metadata?.role;
-    if (role !== 'admin') {
+    if (role !== 'admin' && role !== 'preceptor') {
       return new NextResponse('Forbidden', { status: 403 });
     }
   }
