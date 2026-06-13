@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { createClient } from '@/lib/supabase/client';
 
 interface KnowledgeGateProps {
   studentId: string;
@@ -24,149 +25,10 @@ interface ComplianceRule {
   photos: CompliancePhoto[];
 }
 
-const rules: ComplianceRule[] = [
-  {
-    id: 'hair-grooming',
-    title: 'Hair and Grooming Standards',
-    rule:
-      'Hair must be clean, controlled, and secured so it does not interfere with PPE, patient care, or scene safety. Facial hair must not prevent an N95 or respirator seal. Students must present a professional appearance while operating in WFD spaces.',
-    instruction: 'Select every photo that is not in compliance with the hair and grooming standard.',
-    photos: [
-      {
-        id: 'hair-1',
-        label: 'Loose long hair near patient care area',
-        imageUrl: 'https://placehold.co/420x320/9b1c1f/white?text=Loose+Hair',
-        nonCompliant: true,
-        reason: 'Long hair is unsecured and could interfere with PPE or patient care.',
-      },
-      {
-        id: 'hair-2',
-        label: 'Hair secured above collar',
-        imageUrl: 'https://placehold.co/420x320/1f7a3f/white?text=Hair+Secured',
-        nonCompliant: false,
-        reason: 'Hair is secured and does not interfere with PPE.',
-      },
-      {
-        id: 'hair-3',
-        label: 'Beard interfering with respirator seal',
-        imageUrl: 'https://placehold.co/420x320/9b1c1f/white?text=Seal+Obstruction',
-        nonCompliant: true,
-        reason: 'Facial hair prevents a proper respirator seal.',
-      },
-      {
-        id: 'hair-4',
-        label: 'Clean-shaven respirator seal area',
-        imageUrl: 'https://placehold.co/420x320/1f7a3f/white?text=Seal+Clear',
-        nonCompliant: false,
-        reason: 'The respirator seal area is clear.',
-      },
-      {
-        id: 'hair-5',
-        label: 'Distracting loose accessories',
-        imageUrl: 'https://placehold.co/420x320/9b1c1f/white?text=Loose+Accessories',
-        nonCompliant: true,
-        reason: 'Loose accessories create a snag and contamination risk.',
-      },
-    ],
-  },
-  {
-    id: 'ppe-readiness',
-    title: 'PPE Readiness',
-    rule:
-      'Students must use the PPE required for the environment and task. Gloves are required for patient contact, eye protection is required when splash risk exists, and respiratory protection must be worn when airborne precautions are indicated.',
-    instruction: 'Select every photo that is not in compliance with the PPE readiness rule.',
-    photos: [
-      {
-        id: 'ppe-1',
-        label: 'Patient contact without gloves',
-        imageUrl: 'https://placehold.co/420x320/9b1c1f/white?text=No+Gloves',
-        nonCompliant: true,
-        reason: 'Gloves are required during patient contact.',
-      },
-      {
-        id: 'ppe-2',
-        label: 'Gloves and eye protection in place',
-        imageUrl: 'https://placehold.co/420x320/1f7a3f/white?text=Proper+PPE',
-        nonCompliant: false,
-        reason: 'Required PPE is in use.',
-      },
-      {
-        id: 'ppe-3',
-        label: 'Mask below nose',
-        imageUrl: 'https://placehold.co/420x320/9b1c1f/white?text=Mask+Below+Nose',
-        nonCompliant: true,
-        reason: 'Respiratory protection must cover both mouth and nose.',
-      },
-      {
-        id: 'ppe-4',
-        label: 'Splash task without eye protection',
-        imageUrl: 'https://placehold.co/420x320/9b1c1f/white?text=No+Eye+Protection',
-        nonCompliant: true,
-        reason: 'Eye protection is required when splash risk exists.',
-      },
-      {
-        id: 'ppe-5',
-        label: 'Respirator sealed correctly',
-        imageUrl: 'https://placehold.co/420x320/1f7a3f/white?text=Respirator+Sealed',
-        nonCompliant: false,
-        reason: 'Respiratory protection is worn correctly.',
-      },
-    ],
-  },
-  {
-    id: 'station-conduct',
-    title: 'Station Conduct and Scene Awareness',
-    rule:
-      'Students must keep station and scene areas clear, professional, and ready for response. Personal items may not block walkways, bay paths, equipment access, or emergency exits. Students must remain alert and follow preceptor direction.',
-    instruction: 'Select every photo that is not in compliance with station conduct expectations.',
-    photos: [
-      {
-        id: 'station-1',
-        label: 'Bag blocking bay walkway',
-        imageUrl: 'https://placehold.co/420x320/9b1c1f/white?text=Blocked+Walkway',
-        nonCompliant: true,
-        reason: 'Personal items cannot block walkways or response paths.',
-      },
-      {
-        id: 'station-2',
-        label: 'Gear staged in assigned area',
-        imageUrl: 'https://placehold.co/420x320/1f7a3f/white?text=Gear+Staged',
-        nonCompliant: false,
-        reason: 'Gear is staged without blocking access.',
-      },
-      {
-        id: 'station-3',
-        label: 'Exit partially blocked',
-        imageUrl: 'https://placehold.co/420x320/9b1c1f/white?text=Blocked+Exit',
-        nonCompliant: true,
-        reason: 'Emergency exits must remain unobstructed.',
-      },
-      {
-        id: 'station-4',
-        label: 'Equipment cabinet clear',
-        imageUrl: 'https://placehold.co/420x320/1f7a3f/white?text=Access+Clear',
-        nonCompliant: false,
-        reason: 'Equipment access remains clear.',
-      },
-      {
-        id: 'station-5',
-        label: 'Student distracted during patient movement',
-        imageUrl: 'https://placehold.co/420x320/9b1c1f/white?text=Distracted+Student',
-        nonCompliant: true,
-        reason: 'Students must remain alert during patient movement and scene activity.',
-      },
-      {
-        id: 'station-6',
-        label: 'Student following preceptor direction',
-        imageUrl: 'https://placehold.co/420x320/1f7a3f/white?text=Following+Direction',
-        nonCompliant: false,
-        reason: 'Student is attentive and following direction.',
-      },
-    ],
-  },
-];
-
 export function KnowledgeGate({ studentId, onComplete }: KnowledgeGateProps) {
+  const [rules, setRules] = useState<ComplianceRule[]>([]);
+  const [loadingRules, setLoadingRules] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [ruleIndex, setRuleIndex] = useState(0);
   const [mode, setMode] = useState<'rule' | 'question' | 'complete'>('rule');
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -174,8 +36,75 @@ export function KnowledgeGate({ studentId, onComplete }: KnowledgeGateProps) {
   const [attempts, setAttempts] = useState(0);
   const [certifying, setCertifying] = useState(false);
 
+  useEffect(() => {
+    async function loadRules() {
+      setLoadingRules(true);
+      setLoadError(null);
+
+      const supabase = createClient();
+      const { data: ruleData, error: ruleError } = await supabase
+        .from('quiz_rules')
+        .select('id, title, rule_text, instruction, sort_order')
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true });
+
+      if (ruleError) {
+        setLoadError(ruleError.message);
+        setLoadingRules(false);
+        return;
+      }
+
+      const ruleIds = (ruleData ?? []).map((rule) => rule.id);
+      if (ruleIds.length === 0) {
+        setRules([]);
+        setLoadingRules(false);
+        return;
+      }
+
+      const { data: photoData, error: photoError } = await supabase
+        .from('quiz_photos')
+        .select('id, rule_id, label, image_url, is_non_compliant, reason, sort_order')
+        .in('rule_id', ruleIds)
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true });
+
+      if (photoError) {
+        setLoadError(photoError.message);
+        setLoadingRules(false);
+        return;
+      }
+
+      const loadedRules = (ruleData ?? [])
+        .map((rule) => ({
+          id: rule.id,
+          title: rule.title,
+          rule: rule.rule_text,
+          instruction: rule.instruction,
+          photos: (photoData ?? [])
+            .filter((photo) => photo.rule_id === rule.id)
+            .sort((a, b) => a.sort_order - b.sort_order || a.label.localeCompare(b.label))
+            .map((photo) => ({
+              id: photo.id,
+              label: photo.label,
+              imageUrl: photo.image_url,
+              nonCompliant: photo.is_non_compliant,
+              reason: photo.reason,
+            })),
+        }))
+        .filter((rule) => rule.photos.length >= 4 && rule.photos.length <= 6);
+
+      setRules(loadedRules);
+      setRuleIndex(0);
+      setMode('rule');
+      setSelected(new Set());
+      setLoadingRules(false);
+    }
+
+    loadRules();
+  }, []);
+
   const currentRule = rules[ruleIndex];
-  const progressStep = mode === 'complete' ? rules.length : ruleIndex + 1;
+  const progressStep = mode === 'complete' ? rules.length : Math.min(ruleIndex + 1, rules.length);
 
   const togglePhoto = (photoId: string) => {
     if (feedback) return;
@@ -191,6 +120,8 @@ export function KnowledgeGate({ studentId, onComplete }: KnowledgeGateProps) {
   };
 
   const submitAnswer = () => {
+    if (!currentRule) return;
+
     const correctIds = currentRule.photos
       .filter((photo) => photo.nonCompliant)
       .map((photo) => photo.id)
@@ -235,10 +166,39 @@ export function KnowledgeGate({ studentId, onComplete }: KnowledgeGateProps) {
     onComplete();
   };
 
+  if (loadingRules) {
+    return (
+      <div className="rounded-xl border border-gray-200 bg-gray-50 p-5 text-center">
+        <h2 className="mb-2 text-xl font-bold text-wfd-charcoal">Knowledge Gate</h2>
+        <p className="text-sm text-gray-600">Loading onboarding quiz...</p>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="rounded-xl border border-red-200 bg-red-50 p-5">
+        <h2 className="mb-2 text-xl font-bold text-red-800">Knowledge Gate Unavailable</h2>
+        <p className="text-sm text-red-700">{loadError}</p>
+      </div>
+    );
+  }
+
+  if (rules.length === 0 || !currentRule) {
+    return (
+      <div className="rounded-xl border border-orange-200 bg-orange-50 p-5">
+        <h2 className="mb-2 text-xl font-bold text-orange-800">Knowledge Gate Not Configured</h2>
+        <p className="text-sm text-orange-700">
+          No active onboarding quiz rules are available. Please contact EMS administration.
+        </p>
+      </div>
+    );
+  }
+
   if (mode === 'complete') {
     return (
       <div>
-        <Header progressStep={progressStep} attempts={attempts} />
+        <Header progressStep={progressStep} attempts={attempts} totalRules={rules.length} />
         <div className="text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-2xl font-bold text-green-700">
             OK
@@ -259,7 +219,7 @@ export function KnowledgeGate({ studentId, onComplete }: KnowledgeGateProps) {
   if (mode === 'rule') {
     return (
       <div>
-        <Header progressStep={progressStep} attempts={attempts} />
+        <Header progressStep={progressStep} attempts={attempts} totalRules={rules.length} />
         <div className="rounded-xl border border-gray-200 bg-gray-50 p-5">
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-wfd-crimson">
             Rule {ruleIndex + 1} of {rules.length}
@@ -276,7 +236,7 @@ export function KnowledgeGate({ studentId, onComplete }: KnowledgeGateProps) {
 
   return (
     <div>
-      <Header progressStep={progressStep} attempts={attempts} />
+      <Header progressStep={progressStep} attempts={attempts} totalRules={rules.length} />
       <div className="mb-5">
         <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-wfd-crimson">
           {currentRule.title}
@@ -337,14 +297,22 @@ export function KnowledgeGate({ studentId, onComplete }: KnowledgeGateProps) {
   );
 }
 
-function Header({ progressStep, attempts }: { progressStep: number; attempts: number }) {
+function Header({
+  progressStep,
+  attempts,
+  totalRules,
+}: {
+  progressStep: number;
+  attempts: number;
+  totalRules: number;
+}) {
   return (
     <div className="mb-6">
       <div className="mb-3 flex items-center justify-between gap-3">
         <h2 className="text-xl font-bold text-wfd-charcoal">Knowledge Gate</h2>
         <div className="text-right text-sm text-gray-500">
           <div>
-            Rule {progressStep} of {rules.length}
+            Rule {progressStep} of {totalRules}
           </div>
           <div className="text-xs">Attempts: {attempts}</div>
         </div>
@@ -352,7 +320,7 @@ function Header({ progressStep, attempts }: { progressStep: number; attempts: nu
       <div className="h-2 w-full rounded-full bg-gray-200">
         <div
           className="h-2 rounded-full bg-wfd-crimson transition-all duration-300"
-          style={{ width: `${(progressStep / rules.length) * 100}%` }}
+          style={{ width: `${(progressStep / totalRules) * 100}%` }}
         />
       </div>
     </div>

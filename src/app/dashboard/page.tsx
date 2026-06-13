@@ -17,6 +17,8 @@ export default function DashboardPage() {
   const [showShiftModal, setShowShiftModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'calendar' | 'preceptors' | 'messages'>('calendar');
   const [loading, setLoading] = useState(true);
+  const [welcomeMsg, setWelcomeMsg] = useState<{ title: string; body: string } | null>(null);
+  const [welcomeDismissed, setWelcomeDismissed] = useState(false);
 
   const supabase = createClient();
 
@@ -37,13 +39,13 @@ export default function DashboardPage() {
     if (student) {
       setStudent(student);
 
-      const { data: schedules } = await supabase
-        .from('schedules')
-        .select('*')
-        .eq('student_id', student.id)
-        .order('date', { ascending: true });
+      const [{ data: schedules }, { data: welcome }] = await Promise.all([
+        supabase.from('schedules').select('*').eq('student_id', student.id).order('date', { ascending: true }),
+        supabase.from('message_templates').select('title, body').eq('template_type', 'welcome').eq('is_active', true).limit(1),
+      ]);
 
       setSchedules(schedules ?? []);
+      if (welcome?.[0]) setWelcomeMsg(welcome[0]);
     }
     setLoading(false);
   };
@@ -133,6 +135,23 @@ export default function DashboardPage() {
           </button>
         </div>
       </div>
+
+      {welcomeMsg && !welcomeDismissed && (
+        <Card className="p-4 bg-blue-50 border-blue-200">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h3 className="font-bold text-blue-900 mb-1">{welcomeMsg.title}</h3>
+              <p className="text-sm text-blue-800 whitespace-pre-line">{welcomeMsg.body}</p>
+            </div>
+            <button
+              onClick={() => setWelcomeDismissed(true)}
+              className="text-blue-400 hover:text-blue-600 text-lg leading-none shrink-0"
+            >
+              ×
+            </button>
+          </div>
+        </Card>
+      )}
 
       {activeTab === 'calendar' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -4,6 +4,10 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { QuizConfig } from '@/components/admin/quiz-config';
+import { RegistrationFieldsConfig } from '@/components/admin/registration-fields-config';
+import { LegalDocsConfig } from '@/components/admin/legal-docs-config';
+import { ResourceLibraryConfig } from '@/components/admin/resource-library-config';
 
 export function MaintenanceArchive() {
   const [exported, setExported] = useState(false);
@@ -61,6 +65,16 @@ export function MaintenanceArchive() {
 
   return (
     <div className="space-y-6">
+      <QuizConfig />
+
+      <div className="border-t border-gray-200 pt-2">
+        <h3 className="font-bold text-wfd-charcoal mb-4">Onboarding Configuration</h3>
+      </div>
+
+      <RegistrationFieldsConfig />
+      <LegalDocsConfig />
+      <ResourceLibraryConfig />
+
       <Card className="p-4">
         <h3 className="font-bold text-wfd-charcoal mb-4">Master Export</h3>
         <p className="text-sm text-gray-500 mb-4">

@@ -1,18 +1,23 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useEffect, useState, FormEvent } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import type { Tables } from '@/lib/supabase/database.types';
 
 interface RegistrationFormProps {
   onComplete: (studentId: string) => void;
 }
 
+type RegField = Tables<'registration_fields'>;
+
 export function RegistrationForm({ onComplete }: RegistrationFormProps) {
   const [loading, setLoading] = useState(false);
+  const [loadingFields, setLoadingFields] = useState(true);
   const [error, setError] = useState('');
-  const [form, setForm] = useState({
+  const [fields, setFields] = useState<RegField[]>([]);
+  const [form, setForm] = useState<Record<string, string>>({
     full_name: '',
     email: '',
     phone: '',
@@ -21,6 +26,35 @@ export function RegistrationForm({ onComplete }: RegistrationFormProps) {
     instructor_contact: '',
   });
 
+  useEffect(() => {
+    async function loadFields() {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from('registration_fields')
+        .select('*')
+        .eq('is_active', true)
+        .order('sort_order');
+
+      const sorted = (data ?? []).sort((a, b) => {
+        if (a.field_key === 'full_name' || a.field_key === 'email') return -1;
+        if (b.field_key === 'full_name' || b.field_key === 'email') return 1;
+        return a.sort_order - b.sort_order;
+      });
+      setFields(sorted);
+
+      const initial: Record<string, string> = { full_name: '', email: '' };
+      for (const f of sorted) {
+        if (!initial[f.field_key]) initial[f.field_key] = '';
+      }
+      setForm(initial);
+      setLoadingFields(false);
+    }
+    loadFields();
+  }, []);
+
+  const updateValue = (field_key: string, value: string) =>
+    setForm((prev) => ({ ...prev, [field_key]: value }));
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -28,16 +62,15 @@ export function RegistrationForm({ onComplete }: RegistrationFormProps) {
 
     try {
       const supabase = createClient();
-
       const { data: studentId, error: registrationError } = await (supabase as any).rpc(
         'register_onboarding_student',
         {
           p_full_name: form.full_name,
           p_email: form.email,
-          p_phone: form.phone,
-          p_school_name: form.school_name,
-          p_instructor_name: form.instructor_name,
-          p_instructor_contact: form.instructor_contact,
+          p_phone: form.phone || '',
+          p_school_name: form.school_name || '',
+          p_instructor_name: form.instructor_name || '',
+          p_instructor_contact: form.instructor_contact || '',
         }
       );
 
@@ -52,6 +85,20 @@ export function RegistrationForm({ onComplete }: RegistrationFormProps) {
         return;
       }
 
+      const customFields = fields.filter(
+        (f) => !['full_name', 'email', 'phone', 'school_name', 'instructor_name', 'instructor_contact'].includes(f.field_key) && form[f.field_key]
+      );
+
+      if (customFields.length > 0) {
+        await supabase.from('student_field_values').insert(
+          customFields.map((f) => ({
+            student_id: studentId,
+            field_id: f.id,
+            value: form[f.field_key],
+          }))
+        );
+      }
+
       onComplete(studentId);
     } catch (err: any) {
       setError('Unable to connect. Please check your connection and try again.');
@@ -59,8 +106,65 @@ export function RegistrationForm({ onComplete }: RegistrationFormProps) {
     }
   };
 
-  const update = (field: string, value: string) =>
-    setForm((prev) => ({ ...prev, [field]: value }));
+  if (loadingFields) {
+    return (
+      <div>
+        <h2 className="text-xl font-bold text-wfd-charcoal mb-2">Student Registration</h2>
+        <p className="text-sm text-gray-600">Loading registration form...</p>
+      </div>
+    );
+  }
+
+  const renderField = (field: RegField) => {
+    if (field.field_type === 'textarea') {
+      return (
+        <label key={field.id} className="block text-sm font-medium text-gray-700">
+          {field.label}
+          {field.is_required && <span className="text-red-500 ml-1">*</span>}
+          <textarea
+            required={field.is_required}
+            value={form[field.field_key] ?? ''}
+            onChange={(e) => updateValue(field.field_key, e.target.value)}
+            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 outline-none focus:ring-2 focus:ring-wfd-crimson"
+            rows={3}
+          />
+        </label>
+      );
+    }
+
+    if (field.field_type === 'select' && field.options) {
+      const options = field.options.split(',').map((o) => o.trim());
+      return (
+        <label key={field.id} className="block text-sm font-medium text-gray-700">
+          {field.label}
+          {field.is_required && <span className="text-red-500 ml-1">*</span>}
+          <select
+            required={field.is_required}
+            value={form[field.field_key] ?? ''}
+            onChange={(e) => updateValue(field.field_key, e.target.value)}
+            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 outline-none focus:ring-2 focus:ring-wfd-crimson"
+          >
+            <option value="">Select...</option>
+            {options.map((opt) => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
+        </label>
+      );
+    }
+
+    return (
+      <Input
+        key={field.id}
+        label={field.label + (field.is_required ? '' : ' (optional)')}
+        type={field.field_type === 'tel' ? 'tel' : 'text'}
+        required={field.is_required}
+        value={form[field.field_key] ?? ''}
+        onChange={(e) => updateValue(field.field_key, e.target.value)}
+        placeholder={field.placeholder ?? undefined}
+      />
+    );
+  };
 
   return (
     <div>
@@ -69,43 +173,7 @@ export function RegistrationForm({ onComplete }: RegistrationFormProps) {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input
-            label="Full Name"
-            required
-            value={form.full_name}
-            onChange={(e) => update('full_name', e.target.value)}
-          />
-          <Input
-            label="Email"
-            type="email"
-            required
-            value={form.email}
-            onChange={(e) => update('email', e.target.value)}
-          />
-          <Input
-            label="Phone"
-            type="tel"
-            value={form.phone}
-            onChange={(e) => update('phone', e.target.value)}
-          />
-          <Input
-            label="School / Program"
-            required
-            value={form.school_name}
-            onChange={(e) => update('school_name', e.target.value)}
-          />
-          <Input
-            label="Instructor Name"
-            required
-            value={form.instructor_name}
-            onChange={(e) => update('instructor_name', e.target.value)}
-          />
-          <Input
-            label="Instructor Contact (email or phone)"
-            required
-            value={form.instructor_contact}
-            onChange={(e) => update('instructor_contact', e.target.value)}
-          />
+          {fields.map(renderField)}
         </div>
 
         {error && (

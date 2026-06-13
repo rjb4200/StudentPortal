@@ -7,8 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
@@ -46,63 +44,6 @@ export type Database = {
           },
         ]
       }
-      admin_users: {
-        Row: {
-          created_at: string
-          email: string | null
-          id: string
-          password_hash: string
-          pushover_alert_enabled: boolean
-          pushover_daily_report: boolean
-          pushover_missed_checkoff: boolean
-          pushover_missed_checkoff_fup: boolean
-          pushover_shift_1: boolean
-          pushover_shift_2: boolean
-          pushover_shift_3: boolean
-          pushover_user_key: string | null
-          receives_daily_report: boolean
-          receives_weekly_issues_digest: boolean
-          updated_at: string
-          username: string
-        }
-        Insert: {
-          created_at?: string
-          email?: string | null
-          id?: string
-          password_hash: string
-          pushover_alert_enabled?: boolean
-          pushover_daily_report?: boolean
-          pushover_missed_checkoff?: boolean
-          pushover_missed_checkoff_fup?: boolean
-          pushover_shift_1?: boolean
-          pushover_shift_2?: boolean
-          pushover_shift_3?: boolean
-          pushover_user_key?: string | null
-          receives_daily_report?: boolean
-          receives_weekly_issues_digest?: boolean
-          updated_at?: string
-          username: string
-        }
-        Update: {
-          created_at?: string
-          email?: string | null
-          id?: string
-          password_hash?: string
-          pushover_alert_enabled?: boolean
-          pushover_daily_report?: boolean
-          pushover_missed_checkoff?: boolean
-          pushover_missed_checkoff_fup?: boolean
-          pushover_shift_1?: boolean
-          pushover_shift_2?: boolean
-          pushover_shift_3?: boolean
-          pushover_user_key?: string | null
-          receives_daily_report?: boolean
-          receives_weekly_issues_digest?: boolean
-          updated_at?: string
-          username?: string
-        }
-        Relationships: []
-      }
       audit_log: {
         Row: {
           action: string
@@ -124,495 +65,30 @@ export type Database = {
         }
         Relationships: []
       }
-      compartment_checks: {
+      broadcasts: {
         Row: {
-          checked_by: string | null
-          compartment_id: string | null
-          completed_at: string | null
-          created_at: string
-          id: string
-          item_data: Json
-          last_activity_at: string
-          shift_date: string
-          shift_period: Database["public"]["Enums"]["shift_period"]
-          started_at: string | null
-          status: Database["public"]["Enums"]["check_status"]
-          submitted_at: string | null
-          target_id: string | null
-          target_type: string | null
-          time_on_page: number
-          time_to_complete_seconds: number | null
-          unit_id: string
-          unit_kit_id: string | null
-          updated_at: string
-        }
-        Insert: {
-          checked_by?: string | null
-          compartment_id?: string | null
-          completed_at?: string | null
-          created_at?: string
-          id?: string
-          item_data?: Json
-          last_activity_at?: string
-          shift_date: string
-          shift_period: Database["public"]["Enums"]["shift_period"]
-          started_at?: string | null
-          status?: Database["public"]["Enums"]["check_status"]
-          submitted_at?: string | null
-          target_id?: string | null
-          target_type?: string | null
-          time_on_page?: number
-          time_to_complete_seconds?: number | null
-          unit_id: string
-          unit_kit_id?: string | null
-          updated_at?: string
-        }
-        Update: {
-          checked_by?: string | null
-          compartment_id?: string | null
-          completed_at?: string | null
-          created_at?: string
-          id?: string
-          item_data?: Json
-          last_activity_at?: string
-          shift_date?: string
-          shift_period?: Database["public"]["Enums"]["shift_period"]
-          started_at?: string | null
-          status?: Database["public"]["Enums"]["check_status"]
-          submitted_at?: string | null
-          target_id?: string | null
-          target_type?: string | null
-          time_on_page?: number
-          time_to_complete_seconds?: number | null
-          unit_id?: string
-          unit_kit_id?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "compartment_checks_checked_by_fkey"
-            columns: ["checked_by"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "compartment_checks_compartment_id_fkey"
-            columns: ["compartment_id"]
-            isOneToOne: false
-            referencedRelation: "unit_compartments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "compartment_checks_unit_id_fkey"
-            columns: ["unit_id"]
-            isOneToOne: false
-            referencedRelation: "units"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "compartment_checks_unit_kit_id_fkey"
-            columns: ["unit_kit_id"]
-            isOneToOne: false
-            referencedRelation: "unit_kits"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      compartment_checks_backup_20260607: {
-        Row: {
-          checked_by: string | null
-          compartment_id: string | null
-          completed_at: string | null
-          created_at: string | null
-          id: string | null
-          item_data: Json | null
-          last_activity_at: string | null
-          shift_date: string | null
-          shift_period: Database["public"]["Enums"]["shift_period"] | null
-          started_at: string | null
-          status: Database["public"]["Enums"]["check_status"] | null
-          submitted_at: string | null
-          time_on_page: number | null
-          time_to_complete_seconds: number | null
-          unit_id: string | null
-          unit_kit_id: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          checked_by?: string | null
-          compartment_id?: string | null
-          completed_at?: string | null
-          created_at?: string | null
-          id?: string | null
-          item_data?: Json | null
-          last_activity_at?: string | null
-          shift_date?: string | null
-          shift_period?: Database["public"]["Enums"]["shift_period"] | null
-          started_at?: string | null
-          status?: Database["public"]["Enums"]["check_status"] | null
-          submitted_at?: string | null
-          time_on_page?: number | null
-          time_to_complete_seconds?: number | null
-          unit_id?: string | null
-          unit_kit_id?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          checked_by?: string | null
-          compartment_id?: string | null
-          completed_at?: string | null
-          created_at?: string | null
-          id?: string | null
-          item_data?: Json | null
-          last_activity_at?: string | null
-          shift_date?: string | null
-          shift_period?: Database["public"]["Enums"]["shift_period"] | null
-          started_at?: string | null
-          status?: Database["public"]["Enums"]["check_status"] | null
-          submitted_at?: string | null
-          time_on_page?: number | null
-          time_to_complete_seconds?: number | null
-          unit_id?: string | null
-          unit_kit_id?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      daily_email_report_runs: {
-        Row: {
-          created_at: string
-          error_message: string | null
+          body: string
           id: string
           recipient_count: number
-          report_date: string
-          resend_message_id: string | null
           sent_at: string
-          status: string
+          sent_by: string
+          title: string
         }
         Insert: {
-          created_at?: string
-          error_message?: string | null
+          body: string
           id?: string
           recipient_count?: number
-          report_date: string
-          resend_message_id?: string | null
           sent_at?: string
-          status: string
+          sent_by: string
+          title: string
         }
         Update: {
-          created_at?: string
-          error_message?: string | null
+          body?: string
           id?: string
           recipient_count?: number
-          report_date?: string
-          resend_message_id?: string | null
           sent_at?: string
-          status?: string
-        }
-        Relationships: []
-      }
-      daily_manual_restock_items: {
-        Row: {
-          addressed: boolean
-          addressed_at: string | null
-          addressed_by: string | null
-          created_at: string
-          id: string
-          item_name: string
-          note: string
-          shift_date: string
-          shift_period: Database["public"]["Enums"]["shift_period"]
-          source_name: string
-          unit_id: string
-          updated_at: string
-        }
-        Insert: {
-          addressed?: boolean
-          addressed_at?: string | null
-          addressed_by?: string | null
-          created_at?: string
-          id?: string
-          item_name: string
-          note?: string
-          shift_date: string
-          shift_period?: Database["public"]["Enums"]["shift_period"]
-          source_name?: string
-          unit_id: string
-          updated_at?: string
-        }
-        Update: {
-          addressed?: boolean
-          addressed_at?: string | null
-          addressed_by?: string | null
-          created_at?: string
-          id?: string
-          item_name?: string
-          note?: string
-          shift_date?: string
-          shift_period?: Database["public"]["Enums"]["shift_period"]
-          source_name?: string
-          unit_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "daily_manual_restock_items_unit_id_fkey"
-            columns: ["unit_id"]
-            isOneToOne: false
-            referencedRelation: "units"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      daily_restock_items: {
-        Row: {
-          addressed: boolean
-          addressed_at: string | null
-          addressed_by: string | null
-          created_at: string
-          id: string
-          issue_type: string
-          item_id: string
-          shift_date: string
-          shift_period: Database["public"]["Enums"]["shift_period"]
-          target_id: string
-          target_type: string
-          unit_id: string
-          updated_at: string
-        }
-        Insert: {
-          addressed?: boolean
-          addressed_at?: string | null
-          addressed_by?: string | null
-          created_at?: string
-          id?: string
-          issue_type: string
-          item_id: string
-          shift_date: string
-          shift_period?: Database["public"]["Enums"]["shift_period"]
-          target_id: string
-          target_type: string
-          unit_id: string
-          updated_at?: string
-        }
-        Update: {
-          addressed?: boolean
-          addressed_at?: string | null
-          addressed_by?: string | null
-          created_at?: string
-          id?: string
-          issue_type?: string
-          item_id?: string
-          shift_date?: string
-          shift_period?: Database["public"]["Enums"]["shift_period"]
-          target_id?: string
-          target_type?: string
-          unit_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "daily_restock_items_unit_id_fkey"
-            columns: ["unit_id"]
-            isOneToOne: false
-            referencedRelation: "units"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      daily_section_comments: {
-        Row: {
-          comment: string
-          created_at: string
-          id: string
-          shift_date: string
-          shift_period: Database["public"]["Enums"]["shift_period"]
-          source_id: string
-          source_name: string
-          source_type: string
-          unit_id: string
-          updated_at: string
-        }
-        Insert: {
-          comment: string
-          created_at?: string
-          id?: string
-          shift_date: string
-          shift_period?: Database["public"]["Enums"]["shift_period"]
-          source_id: string
-          source_name: string
-          source_type: string
-          unit_id: string
-          updated_at?: string
-        }
-        Update: {
-          comment?: string
-          created_at?: string
-          id?: string
-          shift_date?: string
-          shift_period?: Database["public"]["Enums"]["shift_period"]
-          source_id?: string
-          source_name?: string
-          source_type?: string
-          unit_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "daily_section_comments_unit_id_fkey"
-            columns: ["unit_id"]
-            isOneToOne: false
-            referencedRelation: "units"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      daily_unit_comments: {
-        Row: {
-          comment: string
-          created_at: string
-          id: string
-          shift_date: string
-          shift_period: Database["public"]["Enums"]["shift_period"]
-          unit_id: string
-          updated_at: string
-        }
-        Insert: {
-          comment?: string
-          created_at?: string
-          id?: string
-          shift_date: string
-          shift_period?: Database["public"]["Enums"]["shift_period"]
-          unit_id: string
-          updated_at?: string
-        }
-        Update: {
-          comment?: string
-          created_at?: string
-          id?: string
-          shift_date?: string
-          shift_period?: Database["public"]["Enums"]["shift_period"]
-          unit_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "daily_unit_comments_unit_id_fkey"
-            columns: ["unit_id"]
-            isOneToOne: false
-            referencedRelation: "units"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      daily_unit_crews: {
-        Row: {
-          created_at: string
-          id: string
-          locked: boolean
-          provider_names: string
-          shift_date: string
-          shift_period: Database["public"]["Enums"]["shift_period"]
-          unit_id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          locked?: boolean
-          provider_names?: string
-          shift_date: string
-          shift_period?: Database["public"]["Enums"]["shift_period"]
-          unit_id: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          locked?: boolean
-          provider_names?: string
-          shift_date?: string
-          shift_period?: Database["public"]["Enums"]["shift_period"]
-          unit_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "daily_unit_crews_unit_id_fkey"
-            columns: ["unit_id"]
-            isOneToOne: false
-            referencedRelation: "units"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      daily_unit_ledgers: {
-        Row: {
-          archived: boolean
-          created_at: string
-          id: string
-          shift_date: string
-          shift_period: Database["public"]["Enums"]["shift_period"]
-          status_note: string | null
-          total_compartments: number
-          unit_id: string
-          unit_name: string
-          unit_status: string
-        }
-        Insert: {
-          archived?: boolean
-          created_at?: string
-          id?: string
-          shift_date: string
-          shift_period: Database["public"]["Enums"]["shift_period"]
-          status_note?: string | null
-          total_compartments?: number
-          unit_id: string
-          unit_name: string
-          unit_status: string
-        }
-        Update: {
-          archived?: boolean
-          created_at?: string
-          id?: string
-          shift_date?: string
-          shift_period?: Database["public"]["Enums"]["shift_period"]
-          status_note?: string | null
-          total_compartments?: number
-          unit_id?: string
-          unit_name?: string
-          unit_status?: string
-        }
-        Relationships: []
-      }
-      equipment_catalog: {
-        Row: {
-          category: string
-          created_at: string
-          default_par_level: number | null
-          id: string
-          input_type: Database["public"]["Enums"]["item_input_type"]
-          name: string
-          updated_at: string
-        }
-        Insert: {
-          category?: string
-          created_at?: string
-          default_par_level?: number | null
-          id?: string
-          input_type?: Database["public"]["Enums"]["item_input_type"]
-          name: string
-          updated_at?: string
-        }
-        Update: {
-          category?: string
-          created_at?: string
-          default_par_level?: number | null
-          id?: string
-          input_type?: Database["public"]["Enums"]["item_input_type"]
-          name?: string
-          updated_at?: string
+          sent_by?: string
+          title?: string
         }
         Relationships: []
       }
@@ -670,210 +146,72 @@ export type Database = {
           },
         ]
       }
-      issue_notes: {
+      legal_documents: {
         Row: {
+          body_text: string
           created_at: string
-          created_by: string
           id: string
-          issue_id: string
-          text: string
-        }
-        Insert: {
-          created_at?: string
-          created_by: string
-          id?: string
-          issue_id: string
-          text: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string
-          id?: string
-          issue_id?: string
-          text?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "issue_notes_issue_id_fkey"
-            columns: ["issue_id"]
-            isOneToOne: false
-            referencedRelation: "issues"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      issues: {
-        Row: {
-          created_at: string
-          created_by: string
-          description: string | null
-          id: string
-          status: string
-          tags: string[] | null
+          is_active: boolean
+          require_checkbox: boolean
+          sort_order: number
           title: string
-          unit_id: string | null
           updated_at: string
         }
         Insert: {
+          body_text: string
           created_at?: string
-          created_by: string
-          description?: string | null
           id?: string
-          status?: string
-          tags?: string[] | null
+          is_active?: boolean
+          require_checkbox?: boolean
+          sort_order?: number
           title: string
-          unit_id?: string | null
           updated_at?: string
         }
         Update: {
+          body_text?: string
           created_at?: string
-          created_by?: string
-          description?: string | null
           id?: string
-          status?: string
-          tags?: string[] | null
+          is_active?: boolean
+          require_checkbox?: boolean
+          sort_order?: number
           title?: string
-          unit_id?: string | null
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "issues_unit_id_fkey"
-            columns: ["unit_id"]
-            isOneToOne: false
-            referencedRelation: "units"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
-      kit_item_groups: {
+      message_templates: {
         Row: {
+          body: string
           created_at: string
           id: string
-          kit_id: string
-          name: string
-          sort_order: number
+          is_active: boolean
+          template_type: string
+          title: string
           updated_at: string
         }
         Insert: {
+          body: string
           created_at?: string
           id?: string
-          kit_id: string
-          name: string
-          sort_order?: number
+          is_active?: boolean
+          template_type?: string
+          title: string
           updated_at?: string
         }
         Update: {
+          body?: string
           created_at?: string
           id?: string
-          kit_id?: string
-          name?: string
-          sort_order?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "kit_item_groups_kit_id_fkey"
-            columns: ["kit_id"]
-            isOneToOne: false
-            referencedRelation: "kits"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      kit_items: {
-        Row: {
-          created_at: string
-          equipment_id: string
-          group_id: string | null
-          id: string
-          input_type: Database["public"]["Enums"]["item_input_type"]
-          kit_id: string
-          par_level: number | null
-          sort_order: number
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          equipment_id: string
-          group_id?: string | null
-          id?: string
-          input_type: Database["public"]["Enums"]["item_input_type"]
-          kit_id: string
-          par_level?: number | null
-          sort_order?: number
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          equipment_id?: string
-          group_id?: string | null
-          id?: string
-          input_type?: Database["public"]["Enums"]["item_input_type"]
-          kit_id?: string
-          par_level?: number | null
-          sort_order?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "kit_items_equipment_id_fkey"
-            columns: ["equipment_id"]
-            isOneToOne: false
-            referencedRelation: "equipment_catalog"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "kit_items_group_id_fkey"
-            columns: ["group_id"]
-            isOneToOne: false
-            referencedRelation: "kit_item_groups"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "kit_items_kit_id_fkey"
-            columns: ["kit_id"]
-            isOneToOne: false
-            referencedRelation: "kits"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      kits: {
-        Row: {
-          active: boolean
-          created_at: string
-          description: string | null
-          id: string
-          name: string
-          photo_url: string | null
-          sort_order: number
-          updated_at: string
-        }
-        Insert: {
-          active?: boolean
-          created_at?: string
-          description?: string | null
-          id?: string
-          name: string
-          photo_url?: string | null
-          sort_order?: number
-          updated_at?: string
-        }
-        Update: {
-          active?: boolean
-          created_at?: string
-          description?: string | null
-          id?: string
-          name?: string
-          photo_url?: string | null
-          sort_order?: number
+          is_active?: boolean
+          template_type?: string
+          title?: string
           updated_at?: string
         }
         Relationships: []
       }
       messages: {
         Row: {
+          broadcast_id: string | null
           created_at: string
           id: string
           message_text: string
@@ -881,6 +219,7 @@ export type Database = {
           student_id: string
         }
         Insert: {
+          broadcast_id?: string | null
           created_at?: string
           id?: string
           message_text: string
@@ -888,6 +227,7 @@ export type Database = {
           student_id: string
         }
         Update: {
+          broadcast_id?: string | null
           created_at?: string
           id?: string
           message_text?: string
@@ -895,6 +235,13 @@ export type Database = {
           student_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "messages_broadcast_id_fkey"
+            columns: ["broadcast_id"]
+            isOneToOne: false
+            referencedRelation: "broadcasts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "messages_student_id_fkey"
             columns: ["student_id"]
@@ -934,57 +281,198 @@ export type Database = {
         }
         Relationships: []
       }
-      qr_targets: {
+      quiz_photos: {
         Row: {
-          active: boolean
-          code: string
-          compartment_id: string | null
           created_at: string
           id: string
-          unit_id: string
-          unit_kit_id: string | null
+          image_url: string
+          is_active: boolean
+          is_non_compliant: boolean
+          label: string
+          reason: string
+          rule_id: string
+          sort_order: number
           updated_at: string
         }
         Insert: {
-          active?: boolean
-          code: string
-          compartment_id?: string | null
           created_at?: string
           id?: string
-          unit_id: string
-          unit_kit_id?: string | null
+          image_url: string
+          is_active?: boolean
+          is_non_compliant?: boolean
+          label: string
+          reason: string
+          rule_id: string
+          sort_order?: number
           updated_at?: string
         }
         Update: {
-          active?: boolean
-          code?: string
-          compartment_id?: string | null
           created_at?: string
           id?: string
-          unit_id?: string
-          unit_kit_id?: string | null
+          image_url?: string
+          is_active?: boolean
+          is_non_compliant?: boolean
+          label?: string
+          reason?: string
+          rule_id?: string
+          sort_order?: number
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "qr_targets_compartment_id_fkey"
-            columns: ["compartment_id"]
+            foreignKeyName: "quiz_photos_rule_id_fkey"
+            columns: ["rule_id"]
             isOneToOne: false
-            referencedRelation: "unit_compartments"
+            referencedRelation: "quiz_rules"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      quiz_rules: {
+        Row: {
+          created_at: string
+          id: string
+          instruction: string
+          is_active: boolean
+          rule_text: string
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          instruction: string
+          is_active?: boolean
+          rule_text: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          instruction?: string
+          is_active?: boolean
+          rule_text?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      registration_fields: {
+        Row: {
+          created_at: string
+          field_key: string
+          field_type: string
+          id: string
+          is_active: boolean
+          is_permanent: boolean
+          is_required: boolean
+          label: string
+          options: string | null
+          placeholder: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          field_key: string
+          field_type?: string
+          id?: string
+          is_active?: boolean
+          is_permanent?: boolean
+          is_required?: boolean
+          label: string
+          options?: string | null
+          placeholder?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          field_key?: string
+          field_type?: string
+          id?: string
+          is_active?: boolean
+          is_permanent?: boolean
+          is_required?: boolean
+          label?: string
+          options?: string | null
+          placeholder?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      resource_categories: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      resource_documents: {
+        Row: {
+          category_id: string
+          created_at: string
+          file_type: string
+          file_url: string
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          file_type?: string
+          file_url: string
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          file_type?: string
+          file_url?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
           {
-            foreignKeyName: "qr_targets_unit_id_fkey"
-            columns: ["unit_id"]
+            foreignKeyName: "resource_documents_category_id_fkey"
+            columns: ["category_id"]
             isOneToOne: false
-            referencedRelation: "units"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "qr_targets_unit_kit_id_fkey"
-            columns: ["unit_kit_id"]
-            isOneToOne: false
-            referencedRelation: "unit_kits"
+            referencedRelation: "resource_categories"
             referencedColumns: ["id"]
           },
         ]
@@ -1024,114 +512,44 @@ export type Database = {
           },
         ]
       }
-      shift_archives: {
+      student_field_values: {
         Row: {
-          check_data: Json
-          checked_by: string | null
-          completed_compartments: number
-          completion_percentage: number
           created_at: string
+          field_id: string
           id: string
-          last_activity_at: string | null
-          operational_date: string | null
-          shift_date: string
-          shift_id: string | null
-          shift_period: Database["public"]["Enums"]["shift_period"]
-          started_at: string | null
-          status: Database["public"]["Enums"]["check_status"]
-          submitted_at: string | null
-          time_to_complete_seconds: number | null
-          total_compartments: number
-          unit_id: string
+          student_id: string
+          value: string
         }
         Insert: {
-          check_data?: Json
-          checked_by?: string | null
-          completed_compartments?: number
-          completion_percentage?: number
           created_at?: string
+          field_id: string
           id?: string
-          last_activity_at?: string | null
-          operational_date?: string | null
-          shift_date: string
-          shift_id?: string | null
-          shift_period: Database["public"]["Enums"]["shift_period"]
-          started_at?: string | null
-          status: Database["public"]["Enums"]["check_status"]
-          submitted_at?: string | null
-          time_to_complete_seconds?: number | null
-          total_compartments?: number
-          unit_id: string
+          student_id: string
+          value?: string
         }
         Update: {
-          check_data?: Json
-          checked_by?: string | null
-          completed_compartments?: number
-          completion_percentage?: number
           created_at?: string
+          field_id?: string
           id?: string
-          last_activity_at?: string | null
-          operational_date?: string | null
-          shift_date?: string
-          shift_id?: string | null
-          shift_period?: Database["public"]["Enums"]["shift_period"]
-          started_at?: string | null
-          status?: Database["public"]["Enums"]["check_status"]
-          submitted_at?: string | null
-          time_to_complete_seconds?: number | null
-          total_compartments?: number
-          unit_id?: string
+          student_id?: string
+          value?: string
         }
         Relationships: [
           {
-            foreignKeyName: "shift_archives_checked_by_fkey"
-            columns: ["checked_by"]
+            foreignKeyName: "student_field_values_field_id_fkey"
+            columns: ["field_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "registration_fields"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "shift_archives_shift_id_fkey"
-            columns: ["shift_id"]
+            foreignKeyName: "student_field_values_student_id_fkey"
+            columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "shift_calendar"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "shift_archives_unit_id_fkey"
-            columns: ["unit_id"]
-            isOneToOne: false
-            referencedRelation: "units"
+            referencedRelation: "students"
             referencedColumns: ["id"]
           },
         ]
-      }
-      shift_calendar: {
-        Row: {
-          created_at: string
-          ends_at: string
-          id: string
-          operational_date: string
-          shift_name: string
-          starts_at: string
-        }
-        Insert: {
-          created_at?: string
-          ends_at: string
-          id?: string
-          operational_date: string
-          shift_name: string
-          starts_at: string
-        }
-        Update: {
-          created_at?: string
-          ends_at?: string
-          id?: string
-          operational_date?: string
-          shift_name?: string
-          starts_at?: string
-        }
-        Relationships: []
       }
       students: {
         Row: {
@@ -1156,7 +574,7 @@ export type Database = {
           created_at?: string
           email: string
           full_name: string
-          id: string
+          id?: string
           instructor_contact: string
           instructor_name: string
           is_blacklisted?: boolean
@@ -1187,537 +605,33 @@ export type Database = {
         }
         Relationships: []
       }
-      system_logs: {
-        Row: {
-          action: string
-          actor_id: string | null
-          actor_name: string | null
-          actor_type: string
-          after_data: Json | null
-          area: string
-          before_data: Json | null
-          created_at: string
-          id: string
-          message: string | null
-          metadata: Json | null
-          result: string
-          target_id: string | null
-          target_name: string | null
-          target_type: string | null
-        }
-        Insert: {
-          action: string
-          actor_id?: string | null
-          actor_name?: string | null
-          actor_type: string
-          after_data?: Json | null
-          area: string
-          before_data?: Json | null
-          created_at?: string
-          id?: string
-          message?: string | null
-          metadata?: Json | null
-          result?: string
-          target_id?: string | null
-          target_name?: string | null
-          target_type?: string | null
-        }
-        Update: {
-          action?: string
-          actor_id?: string | null
-          actor_name?: string | null
-          actor_type?: string
-          after_data?: Json | null
-          area?: string
-          before_data?: Json | null
-          created_at?: string
-          id?: string
-          message?: string | null
-          metadata?: Json | null
-          result?: string
-          target_id?: string | null
-          target_name?: string | null
-          target_type?: string | null
-        }
-        Relationships: []
-      }
-      template_compartment_items: {
-        Row: {
-          compartment_id: string
-          created_at: string
-          equipment_id: string
-          id: string
-          input_type: Database["public"]["Enums"]["item_input_type"]
-          par_level: number | null
-          sort_order: number
-          updated_at: string
-        }
-        Insert: {
-          compartment_id: string
-          created_at?: string
-          equipment_id: string
-          id?: string
-          input_type: Database["public"]["Enums"]["item_input_type"]
-          par_level?: number | null
-          sort_order?: number
-          updated_at?: string
-        }
-        Update: {
-          compartment_id?: string
-          created_at?: string
-          equipment_id?: string
-          id?: string
-          input_type?: Database["public"]["Enums"]["item_input_type"]
-          par_level?: number | null
-          sort_order?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "template_compartment_items_compartment_id_fkey"
-            columns: ["compartment_id"]
-            isOneToOne: false
-            referencedRelation: "template_compartments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "template_compartment_items_equipment_id_fkey"
-            columns: ["equipment_id"]
-            isOneToOne: false
-            referencedRelation: "equipment_catalog"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      template_compartments: {
-        Row: {
-          created_at: string
-          grid_position: Json
-          id: string
-          name: string
-          photo_url: string | null
-          sort_order: number
-          template_id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          grid_position?: Json
-          id?: string
-          name: string
-          photo_url?: string | null
-          sort_order?: number
-          template_id: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          grid_position?: Json
-          id?: string
-          name?: string
-          photo_url?: string | null
-          sort_order?: number
-          template_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "template_compartments_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "templates"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      templates: {
-        Row: {
-          created_at: string
-          description: string | null
-          id: string
-          name: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          name: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          name?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      unit_compartment_item_groups: {
-        Row: {
-          compartment_id: string
-          created_at: string
-          id: string
-          name: string
-          sort_order: number
-          updated_at: string
-        }
-        Insert: {
-          compartment_id: string
-          created_at?: string
-          id?: string
-          name: string
-          sort_order?: number
-          updated_at?: string
-        }
-        Update: {
-          compartment_id?: string
-          created_at?: string
-          id?: string
-          name?: string
-          sort_order?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "unit_compartment_item_groups_compartment_id_fkey"
-            columns: ["compartment_id"]
-            isOneToOne: false
-            referencedRelation: "unit_compartments"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      unit_compartment_items: {
-        Row: {
-          compartment_id: string
-          created_at: string
-          equipment_id: string
-          group_id: string | null
-          id: string
-          input_type: Database["public"]["Enums"]["item_input_type"]
-          par_level: number | null
-          sort_order: number
-          subcategory: string | null
-          subcategory_sort_order: number | null
-          updated_at: string
-        }
-        Insert: {
-          compartment_id: string
-          created_at?: string
-          equipment_id: string
-          group_id?: string | null
-          id?: string
-          input_type: Database["public"]["Enums"]["item_input_type"]
-          par_level?: number | null
-          sort_order?: number
-          subcategory?: string | null
-          subcategory_sort_order?: number | null
-          updated_at?: string
-        }
-        Update: {
-          compartment_id?: string
-          created_at?: string
-          equipment_id?: string
-          group_id?: string | null
-          id?: string
-          input_type?: Database["public"]["Enums"]["item_input_type"]
-          par_level?: number | null
-          sort_order?: number
-          subcategory?: string | null
-          subcategory_sort_order?: number | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "unit_compartment_items_compartment_id_fkey"
-            columns: ["compartment_id"]
-            isOneToOne: false
-            referencedRelation: "unit_compartments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "unit_compartment_items_equipment_id_fkey"
-            columns: ["equipment_id"]
-            isOneToOne: false
-            referencedRelation: "equipment_catalog"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "unit_compartment_items_group_id_fkey"
-            columns: ["group_id"]
-            isOneToOne: false
-            referencedRelation: "unit_compartment_item_groups"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      unit_compartments: {
-        Row: {
-          created_at: string
-          grid_position: Json
-          id: string
-          name: string
-          photo_url: string | null
-          qr_location_note: string | null
-          sort_order: number
-          unit_id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          grid_position?: Json
-          id?: string
-          name: string
-          photo_url?: string | null
-          qr_location_note?: string | null
-          sort_order?: number
-          unit_id: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          grid_position?: Json
-          id?: string
-          name?: string
-          photo_url?: string | null
-          qr_location_note?: string | null
-          sort_order?: number
-          unit_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "unit_compartments_unit_id_fkey"
-            columns: ["unit_id"]
-            isOneToOne: false
-            referencedRelation: "units"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      unit_kits: {
-        Row: {
-          created_at: string
-          id: string
-          kit_id: string
-          qr_location_note: string | null
-          sort_order: number
-          unit_id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          kit_id: string
-          qr_location_note?: string | null
-          sort_order?: number
-          unit_id: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          kit_id?: string
-          qr_location_note?: string | null
-          sort_order?: number
-          unit_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "unit_kits_kit_id_fkey"
-            columns: ["kit_id"]
-            isOneToOne: false
-            referencedRelation: "kits"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "unit_kits_unit_id_fkey"
-            columns: ["unit_id"]
-            isOneToOne: false
-            referencedRelation: "units"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      units: {
-        Row: {
-          created_at: string
-          deleted_at: string | null
-          id: string
-          monthly_check_day: number | null
-          name: string
-          oos_at: string | null
-          oos_by_name: string | null
-          status: Database["public"]["Enums"]["unit_status"]
-          unit_kind: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          deleted_at?: string | null
-          id?: string
-          monthly_check_day?: number | null
-          name: string
-          oos_at?: string | null
-          oos_by_name?: string | null
-          status?: Database["public"]["Enums"]["unit_status"]
-          unit_kind?: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          deleted_at?: string | null
-          id?: string
-          monthly_check_day?: number | null
-          name?: string
-          oos_at?: string | null
-          oos_by_name?: string | null
-          status?: Database["public"]["Enums"]["unit_status"]
-          unit_kind?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      user_roles: {
-        Row: {
-          created_at: string
-          role: Database["public"]["Enums"]["app_role"]
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_roles_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      users: {
-        Row: {
-          avatar_url: string | null
-          created_at: string
-          email: string
-          full_name: string | null
-          id: string
-          updated_at: string
-        }
-        Insert: {
-          avatar_url?: string | null
-          created_at?: string
-          email: string
-          full_name?: string | null
-          id: string
-          updated_at?: string
-        }
-        Update: {
-          avatar_url?: string | null
-          created_at?: string
-          email?: string
-          full_name?: string | null
-          id?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      weekly_email_report_runs: {
-        Row: {
-          created_at: string
-          error_message: string | null
-          id: string
-          recipient_count: number
-          report_week_start: string
-          sent_at: string
-          status: string
-        }
-        Insert: {
-          created_at?: string
-          error_message?: string | null
-          id?: string
-          recipient_count?: number
-          report_week_start: string
-          sent_at?: string
-          status: string
-        }
-        Update: {
-          created_at?: string
-          error_message?: string | null
-          id?: string
-          recipient_count?: number
-          report_week_start?: string
-          sent_at?: string
-          status?: string
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      clear_operational_records: {
-        Args: { from_date: string; to_date: string; unit_id?: string }
-        Returns: Json
-      }
-      current_user_role: {
-        Args: never
-        Returns: Database["public"]["Enums"]["app_role"]
-      }
-      delete_old_system_logs: { Args: never; Returns: number }
-      get_database_size: { Args: never; Returns: number }
-      is_admin: { Args: never; Returns: boolean }
-      is_supervisor_or_admin: { Args: never; Returns: boolean }
-      preview_operational_counts: {
-        Args: { from_date: string; to_date: string; unit_id?: string }
-        Returns: Json
-      }
-      save_compartment_check_atomic: {
+      register_onboarding_student: {
         Args: {
-          p_checked_by?: string
-          p_item_data?: Json
-          p_shift_date: string
-          p_shift_period: Database["public"]["Enums"]["shift_period"]
-          p_status: Database["public"]["Enums"]["check_status"]
-          p_target_id: string
-          p_target_type: string
-          p_time_on_page?: number
-          p_unit_id: string
+          p_email: string
+          p_full_name: string
+          p_instructor_contact: string
+          p_instructor_name: string
+          p_phone: string
+          p_school_name: string
         }
         Returns: string
       }
     }
     Enums: {
-      app_role: "user" | "supervisor" | "admin"
-      check_status: "in_progress" | "completed" | "partially_complete"
-      item_input_type: "quantity" | "checkbox" | "condition"
       message_sender: "student" | "admin"
       note_priority: "normal" | "high_accessibility"
       schedule_status: "pending" | "approved" | "rejected"
-      shift_period: "daily"
       shift_type: "full" | "day" | "night"
       station_unit:
         | "Station 1 - Downtown HQ"
         | "Station 2 - West Side"
         | "Station 3 - Industrial"
       student_status: "pending" | "certified" | "expired"
-      unit_status: "in_service" | "out_of_service"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1845,13 +759,9 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["user", "supervisor", "admin"],
-      check_status: ["in_progress", "completed", "partially_complete"],
-      item_input_type: ["quantity", "checkbox", "condition"],
       message_sender: ["student", "admin"],
       note_priority: ["normal", "high_accessibility"],
       schedule_status: ["pending", "approved", "rejected"],
-      shift_period: ["daily"],
       shift_type: ["full", "day", "night"],
       station_unit: [
         "Station 1 - Downtown HQ",
@@ -1859,8 +769,6 @@ export const Constants = {
         "Station 3 - Industrial",
       ],
       student_status: ["pending", "certified", "expired"],
-      unit_status: ["in_service", "out_of_service"],
     },
   },
 } as const
-
