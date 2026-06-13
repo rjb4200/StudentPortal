@@ -21,21 +21,21 @@ export default function Home() {
 
         <div className="space-y-3">
           <Link
-            href="/login"
+            href="/onboarding?token=WFD_TRAINING_2026"
             className="block w-full bg-wfd-crimson text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors"
           >
-            Student Sign In
+            Begin Student Onboarding
           </Link>
           <Link
             href="/login"
             className="block w-full bg-wfd-charcoal text-white py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors"
           >
-            Admin Sign In
+            Sign In
           </Link>
         </div>
 
         <p className="text-xs text-gray-400 mt-6">
-          Student access is granted by the Training Major after onboarding completion.
+          New students: click &quot;Begin Student Onboarding&quot; to register, review legal documents, and complete the safety knowledge gate.
         </p>
       </div>
     </div>
