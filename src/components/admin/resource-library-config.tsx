@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { createClient } from '@/lib/supabase/client';
+import { uploadResourceDoc } from '@/lib/supabase/storage';
 import type { Tables, TablesInsert, TablesUpdate } from '@/lib/supabase/database.types';
 
 type ResCategory = Tables<'resource_categories'>;
@@ -26,6 +27,7 @@ export function ResourceLibraryConfig() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => { loadAll(); }, []);
 
@@ -67,6 +69,22 @@ export function ResourceLibraryConfig() {
     if (deleteError) setError(deleteError.message);
     else { setMessage('Category deleted.'); setSelectedCatId(null); await loadAll(); }
     setSaving(false);
+  }
+
+  async function handleDocUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setError(null);
+    try {
+      const url = await uploadResourceDoc(file);
+      setDocForm((form) => ({ ...form, file_url: url }));
+      setMessage('File uploaded. URL populated.');
+    } catch (err: any) {
+      setError(err.message || 'Upload failed.');
+    }
+    setUploading(false);
+    e.target.value = '';
   }
 
   async function saveDoc() {
@@ -167,6 +185,13 @@ export function ResourceLibraryConfig() {
               <div className="grid gap-2 sm:grid-cols-2">
                 <Input label="Name" value={docForm.name} onChange={(e) => setDocForm(f => ({ ...f, name: e.target.value }))} />
                 <Input label="File URL" value={docForm.file_url} onChange={(e) => setDocForm(f => ({ ...f, file_url: e.target.value }))} />
+                <div className="flex items-center gap-2">
+                  <label className={`rounded-lg border border-gray-300 px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 transition-colors ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                    Choose File
+                    <input type="file" accept=".pdf,.doc,.docx,.txt" onChange={handleDocUpload} className="hidden" disabled={uploading} />
+                  </label>
+                  {uploading && <span className="text-xs text-gray-500">Uploading...</span>}
+                </div>
                 <Input label="File Type" value={docForm.file_type} onChange={(e) => setDocForm(f => ({ ...f, file_type: e.target.value }))} />
                 <Input label="Sort Order" type="number" value={docForm.sort_order} onChange={(e) => setDocForm(f => ({ ...f, sort_order: Number(e.target.value) }))} />
                 <label className="flex items-end gap-2 text-sm font-medium text-gray-700">

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { createClient } from '@/lib/supabase/client';
+import { uploadQuizPhoto } from '@/lib/supabase/storage';
 import type { Tables, TablesInsert, TablesUpdate } from '@/lib/supabase/database.types';
 
 type QuizRule = Tables<'quiz_rules'>;
@@ -46,6 +47,7 @@ export function QuizConfig() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   const selectedRule = rules.find((rule) => rule.id === selectedRuleId) ?? null;
   const selectedPhotos = photos
@@ -196,6 +198,22 @@ export function QuizConfig() {
       await loadQuizConfig();
     }
     setSaving(false);
+  }
+
+  async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setError(null);
+    try {
+      const url = await uploadQuizPhoto(file);
+      setPhotoForm((form) => ({ ...form, image_url: url }));
+      setMessage('Photo uploaded. URL populated.');
+    } catch (err: any) {
+      setError(err.message || 'Upload failed.');
+    }
+    setUploading(false);
+    e.target.value = '';
   }
 
   async function savePhoto() {
@@ -496,6 +514,13 @@ export function QuizConfig() {
                       value={photoForm.image_url}
                       onChange={(event) => setPhotoForm((form) => ({ ...form, image_url: event.target.value }))}
                     />
+                    <div className="flex items-center gap-2">
+                      <label className={`rounded-lg border border-gray-300 px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 transition-colors ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                        Choose File
+                        <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" disabled={uploading} />
+                      </label>
+                      {uploading && <span className="text-xs text-gray-500">Uploading...</span>}
+                    </div>
                     {photoForm.image_url.trim() && (
                       <img
                         src={photoForm.image_url}
