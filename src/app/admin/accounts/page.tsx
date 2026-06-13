@@ -2,7 +2,6 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { createAdminClient } from '@/lib/supabase/admin';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -97,21 +96,24 @@ function AccountsPageInner() {
       setSaving(false); cancelEdit(); await loadAll(); return;
     }
 
-    const adminClient = createAdminClient();
-
     if (editType === 'admin') {
       if (!form.full_name.trim() || !form.email.trim()) { setMessage('Name and email required.'); setSaving(false); return; }
 
       let authUserId = editing?.auth_user_id;
       if (!authUserId && !editing) {
-        const { data: user, error: createErr } = await adminClient.auth.admin.createUser({
-          email: form.email, password: formPassword || undefined,
-          email_confirm: true, user_metadata: { role: 'admin' },
+        if (!formPassword) { setMessage('Password is required for new accounts.'); setSaving(false); return; }
+        const res = await fetch('/api/admin/create-auth-user', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: form.email.trim(), password: formPassword, role: 'admin' }),
         });
-        if (createErr) { setMessage('Error creating auth user: ' + createErr.message); setSaving(false); return; }
-        authUserId = user?.user?.id;
+        const json = await res.json();
+        if (json.error) { setMessage('Error: ' + json.error); setSaving(false); return; }
+        authUserId = json.userId;
       } else if (formPassword && editing) {
-        await adminClient.auth.admin.updateUserById(authUserId, { password: formPassword });
+        await fetch('/api/admin/update-auth-user', {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: authUserId, password: formPassword }),
+        });
       }
 
       const payload: any = {
@@ -136,14 +138,19 @@ function AccountsPageInner() {
 
       let authUserId = editing?.auth_user_id;
       if (!authUserId && !editing) {
-        const { data: user, error: createErr } = await adminClient.auth.admin.createUser({
-          email: form.email, password: formPassword || undefined,
-          email_confirm: true, user_metadata: { role: 'preceptor' },
+        if (!formPassword) { setMessage('Password is required for new accounts.'); setSaving(false); return; }
+        const res = await fetch('/api/admin/create-auth-user', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: form.email.trim(), password: formPassword, role: 'preceptor' }),
         });
-        if (createErr) { setMessage('Error creating auth user: ' + createErr.message); setSaving(false); return; }
-        authUserId = user?.user?.id;
+        const json = await res.json();
+        if (json.error) { setMessage('Error: ' + json.error); setSaving(false); return; }
+        authUserId = json.userId;
       } else if (formPassword && editing) {
-        await adminClient.auth.admin.updateUserById(authUserId, { password: formPassword });
+        await fetch('/api/admin/update-auth-user', {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: authUserId, password: formPassword }),
+        });
       }
 
       const payload: any = {
@@ -179,8 +186,14 @@ function AccountsPageInner() {
     if (!confirm(`Delete ${row.full_name} (${row.email}) permanently?`)) return;
     if (!confirm('FINAL WARNING: This cannot be undone. Proceed?')) return;
 
-    const adminClient = createAdminClient();
-    if (row.auth_user_id) { try { await adminClient.auth.admin.deleteUser(row.auth_user_id); } catch {} }
+    if (row.auth_user_id) {
+      try {
+        await fetch('/api/admin/delete-auth-user', {
+          method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: row.auth_user_id }),
+        });
+      } catch {}
+    }
 
     const table = type === 'admin' ? 'admin_accounts' : 'preceptors';
     await supabase.from(table).delete().eq('id', row.id);
