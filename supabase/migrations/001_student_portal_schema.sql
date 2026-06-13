@@ -137,8 +137,8 @@ ALTER TABLE audit_log ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Students can view own record" ON students
   FOR SELECT USING (auth.uid() = id);
 
-CREATE POLICY "Students can insert own record" ON students
-  FOR INSERT WITH CHECK (auth.uid() = id);
+CREATE POLICY "Allow onboarding registration" ON students
+  FOR INSERT WITH CHECK (status = 'pending'::student_status);
 
 CREATE POLICY "Students can update own record" ON students
   FOR UPDATE USING (auth.uid() = id);

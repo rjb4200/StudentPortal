@@ -29,24 +29,6 @@ export function RegistrationForm({ onComplete }: RegistrationFormProps) {
     try {
       const supabase = createClient();
 
-      const { data: existing, error: checkError } = await supabase
-        .from('students')
-        .select('id')
-        .eq('email', form.email)
-        .single();
-
-      if (checkError && checkError.code !== 'PGRST116') {
-        setError('Connection error. Please try again.');
-        setLoading(false);
-        return;
-      }
-
-      if (existing) {
-        setError('A student with this email is already registered.');
-        setLoading(false);
-        return;
-      }
-
       const { data: student, error: insertError } = await (supabase
         .from('students')
         .insert({
@@ -62,6 +44,11 @@ export function RegistrationForm({ onComplete }: RegistrationFormProps) {
         .single());
 
       if (insertError) {
+        if (insertError.code === '23505') {
+          setError('A student with this email is already registered.');
+          setLoading(false);
+          return;
+        }
         setError(insertError.message);
         setLoading(false);
         return;
