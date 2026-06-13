@@ -1,16 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { DailyOps } from '@/components/admin/daily-ops';
 import { PreceptorAnalytics } from '@/components/admin/preceptor-analytics';
 import { MaintenanceArchive } from '@/components/admin/maintenance-archive';
+import Link from 'next/link';
 
 type Tab = 'daily' | 'analytics' | 'maintenance';
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<Tab>('daily');
   const [loading, setLoading] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -20,6 +23,14 @@ export default function AdminPage() {
       }
       setLoading(false);
     });
+
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   if (loading) {
@@ -38,7 +49,29 @@ export default function AdminPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-wfd-charcoal mb-6">Admin Command Center</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-wfd-charcoal">Admin Command Center</h1>
+        <div className="relative" ref={menuRef}>
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-100 text-gray-600 text-lg leading-none transition-colors"
+            aria-label="Menu"
+          >
+            ≡
+          </button>
+          {menuOpen && (
+            <div className="absolute right-0 top-10 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+              <Link
+                href="/admin/setup"
+                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                onClick={() => setMenuOpen(false)}
+              >
+                Onboarding Setup
+              </Link>
+            </div>
+          )}
+        </div>
+      </div>
 
       <div className="flex gap-2 mb-6 border-b border-gray-200">
         {tabs.map((tab) => (

@@ -24,11 +24,7 @@ export function DailyOps() {
   const [broadcastBody, setBroadcastBody] = useState('');
   const [broadcasting, setBroadcasting] = useState(false);
   const [showBroadcast, setShowBroadcast] = useState(false);
-  const [welcomeTitle, setWelcomeTitle] = useState('');
-  const [welcomeBody, setWelcomeBody] = useState('');
-  const [welcomeActive, setWelcomeActive] = useState(false);
-  const [welcomeId, setWelcomeId] = useState<string | null>(null);
-  const [savingWelcome, setSavingWelcome] = useState(false);
+  const [welcomePreview, setWelcomePreview] = useState<{ title: string; body: string; is_active: boolean } | null>(null);
   const [showTemplates, setShowTemplates] = useState(false);
   const [templateTitle, setTemplateTitle] = useState('');
   const [templateBody, setTemplateBody] = useState('');
@@ -70,10 +66,7 @@ export function DailyOps() {
     );
     setTemplates(allTemplates ?? []);
     if (welcomeMsg?.[0]) {
-      setWelcomeId(welcomeMsg[0].id);
-      setWelcomeTitle(welcomeMsg[0].title);
-      setWelcomeBody(welcomeMsg[0].body);
-      setWelcomeActive(welcomeMsg[0].is_active);
+      setWelcomePreview({ title: welcomeMsg[0].title, body: welcomeMsg[0].body, is_active: welcomeMsg[0].is_active });
     }
   };
 
@@ -170,22 +163,6 @@ export function DailyOps() {
       await supabase.from('broadcasts').update({ recipient_count: certifiedStudents.length }).eq('id', broadcast.id);
     }
     setBroadcastTitle(''); setBroadcastBody(''); setShowBroadcast(false); setBroadcasting(false);
-    await loadAll();
-  };
-
-  const handleSaveWelcome = async () => {
-    setSavingWelcome(true);
-    if (welcomeId) {
-      await supabase.from('message_templates').update({
-        title: welcomeTitle, body: welcomeBody, is_active: welcomeActive, updated_at: new Date().toISOString(),
-      }).eq('id', welcomeId);
-    } else {
-      const { data } = await supabase.from('message_templates').insert({
-        title: welcomeTitle, body: welcomeBody, is_active: welcomeActive, template_type: 'welcome',
-      }).select('id').single();
-      if (data) setWelcomeId(data.id);
-    }
-    setSavingWelcome(false);
     await loadAll();
   };
 
@@ -488,17 +465,24 @@ export function DailyOps() {
         )}
       </Card>
 
-      {/* Welcome Message */}
+      {/* Welcome Message Preview */}
       <Card className="p-4 lg:col-span-2">
-        <h3 className="font-bold text-wfd-charcoal mb-3">Welcome Message</h3>
-        <p className="text-sm text-gray-500 mb-3">Shown to students on their dashboard after completing onboarding.</p>
-        <div className="grid gap-3 md:grid-cols-2">
-          <Input label="Title" value={welcomeTitle} onChange={(e) => setWelcomeTitle(e.target.value)} />
-          <textarea value={welcomeBody} onChange={(e) => setWelcomeBody(e.target.value)} className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-wfd-crimson" rows={3} />
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-            <input type="checkbox" checked={welcomeActive} onChange={(e) => setWelcomeActive(e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-wfd-crimson" /> Active
-          </label>
-          <Button type="button" onClick={handleSaveWelcome} loading={savingWelcome}>Save Welcome Message</Button>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <h3 className="font-bold text-wfd-charcoal text-sm">Welcome Message</h3>
+            {welcomePreview ? (
+              <div className="mt-1">
+                <p className="text-sm font-medium truncate">{welcomePreview.title}</p>
+                <p className="text-xs text-gray-500 truncate">{welcomePreview.body.substring(0, 100)}{welcomePreview.body.length > 100 ? '...' : ''}</p>
+                {!welcomePreview.is_active && <span className="text-xs text-orange-600 font-medium">(inactive)</span>}
+              </div>
+            ) : (
+              <p className="text-xs text-gray-400 mt-1">No welcome message configured.</p>
+            )}
+          </div>
+          <a href="/admin/setup" className="text-xs text-wfd-crimson hover:underline whitespace-nowrap shrink-0">
+            Edit in Onboarding Setup →
+          </a>
         </div>
       </Card>
 
