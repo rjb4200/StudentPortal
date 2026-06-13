@@ -28,10 +28,12 @@ export function RegistrationForm({ onComplete }: RegistrationFormProps) {
 
     try {
       const supabase = createClient();
+      const studentId = crypto.randomUUID();
 
-      const { data: student, error: insertError } = await (supabase
+      const { error: insertError } = await (supabase
         .from('students')
         .insert({
+          id: studentId,
           full_name: form.full_name,
           email: form.email,
           phone: form.phone || null,
@@ -39,9 +41,7 @@ export function RegistrationForm({ onComplete }: RegistrationFormProps) {
           instructor_name: form.instructor_name,
           instructor_contact: form.instructor_contact,
           status: 'pending',
-        } as any)
-        .select('id')
-        .single());
+        } as any));
 
       if (insertError) {
         if (insertError.code === '23505') {
@@ -54,7 +54,7 @@ export function RegistrationForm({ onComplete }: RegistrationFormProps) {
         return;
       }
 
-      onComplete(student.id);
+      onComplete(studentId);
     } catch (err: any) {
       setError('Unable to connect. Please check your connection and try again.');
       setLoading(false);

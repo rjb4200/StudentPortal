@@ -140,6 +140,11 @@ CREATE POLICY "Students can view own record" ON students
 CREATE POLICY "Allow onboarding registration" ON students
   FOR INSERT WITH CHECK (status = 'pending'::student_status);
 
+CREATE POLICY "Allow pending onboarding updates" ON students
+  FOR UPDATE
+  USING (status = 'pending'::student_status)
+  WITH CHECK (status = 'pending'::student_status);
+
 CREATE POLICY "Students can update own record" ON students
   FOR UPDATE USING (auth.uid() = id);
 

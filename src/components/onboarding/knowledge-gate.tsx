@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { HotspotQuiz } from './hotspot-quiz';
 import { ImageGridQuiz } from './image-grid-quiz';
@@ -152,8 +151,6 @@ export function KnowledgeGate({ studentId, onComplete }: KnowledgeGateProps) {
 
   const handleComplete = async () => {
     setCertifying(true);
-    const supabase = createClient();
-    await supabase.from('students').update({ status: 'certified' }).eq('id', studentId);
 
     try {
       await fetch('/api/notify/onboarding-complete', {
