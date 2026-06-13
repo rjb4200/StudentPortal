@@ -6,7 +6,6 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { approveStudent } from '@/lib/auth';
 
 export function DailyOps() {
   const [pendingStudents, setPendingStudents] = useState<any[]>([]);
@@ -71,7 +70,11 @@ export function DailyOps() {
   const handleApprove = async (student: any) => {
     setApproving(student.id);
     try {
-      await approveStudent(student.id, student.email);
+      await fetch('/api/admin/approve-student', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studentId: student.id }),
+      });
       await loadAll();
       setTickerEvents((prev) => [
         { type: 'approval', text: `Approved: ${student.full_name}`, time: new Date().toISOString() },
