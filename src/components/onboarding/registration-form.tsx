@@ -26,41 +26,52 @@ export function RegistrationForm({ onComplete }: RegistrationFormProps) {
     setLoading(true);
     setError('');
 
-    const supabase = createClient();
+    try {
+      const supabase = createClient();
 
-    const { data: existing } = await supabase
-      .from('students')
-      .select('id')
-      .eq('email', form.email)
-      .single();
+      const { data: existing, error: checkError } = await supabase
+        .from('students')
+        .select('id')
+        .eq('email', form.email)
+        .single();
 
-    if (existing) {
-      setError('A student with this email is already registered.');
+      if (checkError && checkError.code !== 'PGRST116') {
+        setError('Connection error. Please try again.');
+        setLoading(false);
+        return;
+      }
+
+      if (existing) {
+        setError('A student with this email is already registered.');
+        setLoading(false);
+        return;
+      }
+
+      const { data: student, error: insertError } = await (supabase
+        .from('students')
+        .insert({
+          full_name: form.full_name,
+          email: form.email,
+          phone: form.phone || null,
+          school_name: form.school_name,
+          instructor_name: form.instructor_name,
+          instructor_contact: form.instructor_contact,
+          status: 'pending',
+        } as any)
+        .select('id')
+        .single());
+
+      if (insertError) {
+        setError(insertError.message);
+        setLoading(false);
+        return;
+      }
+
+      onComplete(student.id);
+    } catch (err: any) {
+      setError('Unable to connect. Please check your connection and try again.');
       setLoading(false);
-      return;
     }
-
-    const { data: student, error: insertError } = await (supabase
-      .from('students')
-      .insert({
-        full_name: form.full_name,
-        email: form.email,
-        phone: form.phone || null,
-        school_name: form.school_name,
-        instructor_name: form.instructor_name,
-        instructor_contact: form.instructor_contact,
-        status: 'pending',
-      } as any)
-      .select('id')
-      .single());
-
-    if (insertError) {
-      setError(insertError.message);
-      setLoading(false);
-      return;
-    }
-
-    onComplete(student.id);
   };
 
   const update = (field: string, value: string) =>
