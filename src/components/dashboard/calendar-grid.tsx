@@ -1,0 +1,133 @@
+'use client';
+
+import { useState } from 'react';
+import {
+  startOfMonth,
+  endOfMonth,
+  startOfWeek,
+  endOfWeek,
+  eachDayOfInterval,
+  format,
+  addMonths,
+  subMonths,
+  isToday,
+  isPast,
+  isSameMonth,
+} from 'date-fns';
+
+interface Schedule {
+  id: string;
+  date: string;
+  shift_type: 'full' | 'day' | 'night';
+  status: 'pending' | 'approved' | 'rejected';
+}
+
+interface CalendarGridProps {
+  schedules: Schedule[];
+  onDateClick: (date: string) => void;
+}
+
+export function CalendarGrid({ schedules, onDateClick }: CalendarGridProps) {
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+
+  const monthStart = startOfMonth(currentMonth);
+  const monthEnd = endOfMonth(currentMonth);
+  const calStart = startOfWeek(monthStart);
+  const calEnd = endOfWeek(monthEnd);
+
+  const days = eachDayOfInterval({ start: calStart, end: calEnd });
+
+  const getScheduleForDate = (date: Date): Schedule | undefined => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    return schedules.find((s) => s.date === dateStr);
+  };
+
+  const getCellStyle = (date: Date, schedule?: Schedule) => {
+    if (!schedule) return '';
+    switch (schedule.status) {
+      case 'pending':
+        return 'bg-yellow-100 border-yellow-400 text-yellow-800';
+      case 'approved':
+        return 'bg-wfd-crimson text-white font-semibold';
+      case 'rejected':
+        return 'bg-gray-100 text-gray-400 line-through';
+      default:
+        return '';
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-lg shadow border border-gray-200 p-4">
+      <div className="flex items-center justify-between mb-4">
+        <button
+          onClick={() => setCurrentMonth((m) => subMonths(m, 1))}
+          className="px-3 py-1 text-sm text-gray-600 hover:text-wfd-crimson font-medium"
+        >
+          &larr; Prev
+        </button>
+        <h3 className="text-lg font-bold text-wfd-charcoal">
+          {format(currentMonth, 'MMMM yyyy')}
+        </h3>
+        <button
+          onClick={() => setCurrentMonth((m) => addMonths(m, 1))}
+          className="px-3 py-1 text-sm text-gray-600 hover:text-wfd-crimson font-medium"
+        >
+          Next &rarr;
+        </button>
+      </div>
+
+      <div className="grid grid-cols-7 gap-1">
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
+          <div key={d} className="text-center text-xs font-semibold text-gray-400 py-2">
+            {d}
+          </div>
+        ))}
+
+        {days.map((day) => {
+          const schedule = getScheduleForDate(day);
+          const dateStr = format(day, 'yyyy-MM-dd');
+          const past = isPast(day) && !isToday(day);
+          const inMonth = isSameMonth(day, currentMonth);
+          const today = isToday(day);
+
+          return (
+            <button
+              key={dateStr}
+              onClick={() => onDateClick(dateStr)}
+              disabled={past}
+              className={`aspect-square flex flex-col items-center justify-center rounded-lg text-sm transition-colors
+                ${!inMonth ? 'text-gray-300' : ''}
+                ${past ? 'text-gray-300 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-100'}
+                ${today ? 'ring-2 ring-wfd-crimson ring-offset-1' : ''}
+                ${getCellStyle(day, schedule)}
+              `}
+            >
+              <span className="text-xs">{format(day, 'd')}</span>
+              {schedule && (
+                <span className="text-[10px] leading-tight mt-0.5">
+                  {schedule.shift_type === 'full'
+                    ? 'Full'
+                    : schedule.shift_type === 'day'
+                    ? 'Day'
+                    : 'Night'}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="flex items-center gap-4 mt-4 text-xs text-gray-500">
+        <span className="flex items-center gap-1">
+          <span className="w-3 h-3 rounded bg-yellow-100 border border-yellow-400" /> Pending
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-3 h-3 rounded bg-wfd-crimson" /> Approved
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-3 h-3 rounded bg-gray-100" /> Rejected
+        </span>
+      </div>
+    </div>
+  );
+}
