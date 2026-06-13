@@ -134,7 +134,7 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@wfd.gov"
+                placeholder="you@winchesterfireems.com"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wfd-charcoal focus:border-transparent outline-none text-gray-900 mb-4"
               />
               <label className="block text-sm font-medium text-gray-700 mb-1">

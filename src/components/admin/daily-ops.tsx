@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { approveStudent } from '@/lib/auth';
-import { createAdminClient } from '@/lib/supabase/admin';
 
 export function DailyOps() {
   const [pendingStudents, setPendingStudents] = useState<any[]>([]);
@@ -133,8 +132,12 @@ export function DailyOps() {
     if (!confirm(`FINAL WARNING: All data for ${student.full_name} will be permanently deleted. Proceed?`)) {
       return;
     }
-    const adminClient = createAdminClient();
-    try { await adminClient.auth.admin.deleteUser(student.id); } catch {}
+    try {
+      await fetch('/api/admin/delete-auth-user', {
+        method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: student.id }),
+      });
+    } catch {}
     try {
       await supabase.from('students').delete().eq('id', student.id);
       await loadAll();
