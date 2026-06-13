@@ -15,7 +15,7 @@ CREATE TYPE message_sender AS ENUM ('student', 'admin');
 
 -- 2.1 students
 CREATE TABLE students (
-  id uuid NOT NULL,
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
   full_name text NOT NULL,
   email text NOT NULL,
   phone text,
@@ -31,7 +31,6 @@ CREATE TABLE students (
   signature_timestamp timestamptz,
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT students_pkey PRIMARY KEY (id),
-  CONSTRAINT students_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE,
   CONSTRAINT students_email_key UNIQUE (email)
 );
 
