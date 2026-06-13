@@ -12,7 +12,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+      <html lang="en">
+      <head>
+        <link rel="icon" type="image/jpeg" href="https://winchesterfireems.com/images/WFD_Logo_1848.jpg" />
+      </head>
       <body className="bg-white text-wfd-charcoal min-h-screen font-sans">
         <header className="bg-wfd-charcoal text-white py-4 shadow-md">
           <div className="max-w-7xl mx-auto px-4 flex items-center gap-4">
