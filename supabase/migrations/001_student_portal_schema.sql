@@ -199,7 +199,7 @@ CREATE POLICY "Admins can insert audit_log" ON audit_log
   FOR INSERT WITH CHECK (((auth.jwt() -> 'user_metadata'::text) ->> 'role'::text) = 'admin'::text);
 
 -- 4. Onboarding registration helper
--- Allows an incomplete pending registration to be overwritten by the same email.
+-- Allows pending (any) or expired (not blacklisted) entries to be overwritten by the same email.
 CREATE OR REPLACE FUNCTION public.register_onboarding_student(
   p_full_name text,
   p_email text,
@@ -224,28 +224,35 @@ BEGIN
   LIMIT 1;
 
   IF FOUND THEN
-    IF existing_student.status = 'pending'::student_status
-      AND existing_student.legal_signature IS NULL
-      AND existing_student.signature_timestamp IS NULL THEN
-      UPDATE students
-      SET
-        full_name = p_full_name,
-        email = p_email,
-        phone = NULLIF(p_phone, ''),
-        school_name = p_school_name,
-        instructor_name = p_instructor_name,
-        instructor_contact = p_instructor_contact,
-        no_show_count = 0,
-        is_blacklisted = false,
-        created_at = now()
-      WHERE id = existing_student.id
-      RETURNING id INTO new_student_id;
-
-      RETURN new_student_id;
+    IF existing_student.is_blacklisted THEN
+      RAISE EXCEPTION 'A student with this email is already registered.'
+        USING ERRCODE = '23505';
     END IF;
 
-    RAISE EXCEPTION 'A student with this email is already registered.'
-      USING ERRCODE = '23505';
+    IF existing_student.status = 'certified'::student_status THEN
+      RAISE EXCEPTION 'A student with this email is already registered.'
+        USING ERRCODE = '23505';
+    END IF;
+
+    UPDATE students
+    SET
+      full_name = p_full_name,
+      email = p_email,
+      phone = NULLIF(p_phone, ''),
+      school_name = p_school_name,
+      instructor_name = p_instructor_name,
+      instructor_contact = p_instructor_contact,
+      status = 'pending'::student_status,
+      legal_signature = NULL,
+      signature_ip = NULL,
+      signature_timestamp = NULL,
+      no_show_count = 0,
+      is_blacklisted = false,
+      created_at = now()
+    WHERE id = existing_student.id
+    RETURNING id INTO new_student_id;
+
+    RETURN new_student_id;
   END IF;
 
   INSERT INTO students (

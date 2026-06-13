@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { approveStudent } from '@/lib/auth';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export function DailyOps() {
   const [pendingStudents, setPendingStudents] = useState<any[]>([]);
@@ -15,8 +16,6 @@ export function DailyOps() {
   const [activeStudentId, setActiveStudentId] = useState<string | null>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [replyText, setReplyText] = useState('');
-  const [noteText, setNoteText] = useState('');
-  const [notePriority, setNotePriority] = useState<'normal' | 'high_accessibility'>('normal');
   const [tickerEvents, setTickerEvents] = useState<any[]>([]);
   const [approving, setApproving] = useState<string | null>(null);
   const [templates, setTemplates] = useState<any[]>([]);
@@ -106,16 +105,6 @@ export function DailyOps() {
     setMessages(msgs ?? []);
   };
 
-  const handleAddNote = async (studentId: string) => {
-    if (!noteText.trim()) return;
-    await supabase.from('admin_notes').insert({
-      student_id: studentId,
-      note_text: noteText.trim(),
-      priority: notePriority,
-    });
-    setNoteText('');
-  };
-
   const handleKillSwitch = async (student: any) => {
     const newState = !student.is_blacklisted;
     if (newState && !confirm(`Are you sure you want to blacklist ${student.full_name}? This will prevent them from accessing the portal.`)) {
@@ -135,6 +124,21 @@ export function DailyOps() {
       .update({ no_show_count: newCount })
       .eq('id', student.id);
     await loadAll();
+  };
+
+  const handleDeleteStudent = async (student: any) => {
+    if (!confirm(`Are you sure you want to permanently delete ${student.full_name} (${student.email})? This will remove their student record, schedules, evaluations, and messages. This cannot be undone.`)) {
+      return;
+    }
+    if (!confirm(`FINAL WARNING: All data for ${student.full_name} will be permanently deleted. Proceed?`)) {
+      return;
+    }
+    const adminClient = createAdminClient();
+    try { await adminClient.auth.admin.deleteUser(student.id); } catch {}
+    try {
+      await supabase.from('students').delete().eq('id', student.id);
+      await loadAll();
+    } catch {}
   };
 
   const handleSendBroadcast = async () => {
@@ -339,7 +343,6 @@ export function DailyOps() {
                 <th className="py-2 px-3 font-medium text-gray-500">Student</th>
                 <th className="py-2 px-3 font-medium text-gray-500">Status</th>
                 <th className="py-2 px-3 font-medium text-gray-500">No-Shows</th>
-                <th className="py-2 px-3 font-medium text-gray-500">Notes</th>
                 <th className="py-2 px-3 font-medium text-gray-500">Actions</th>
               </tr>
             </thead>
@@ -365,30 +368,6 @@ export function DailyOps() {
                     </Button>
                   </td>
                   <td className="py-2 px-3">
-                    <div className="flex items-center gap-1">
-                      <select
-                        value={notePriority}
-                        onChange={(e) => setNotePriority(e.target.value as any)}
-                        className="text-xs border border-gray-200 rounded px-1 py-0.5"
-                      >
-                        <option value="normal">Normal</option>
-                        <option value="high_accessibility">High Pri</option>
-                      </select>
-                      <input
-                        value={noteText}
-                        onChange={(e) => setNoteText(e.target.value)}
-                        placeholder="Add note..."
-                        className="text-xs border border-gray-200 rounded px-2 py-0.5 w-24"
-                      />
-                      <button
-                        onClick={() => handleAddNote(s.id)}
-                        className="text-xs text-wfd-crimson hover:underline"
-                      >
-                        Save
-                      </button>
-                    </div>
-                  </td>
-                  <td className="py-2 px-3">
                     <button
                       onClick={() => handleKillSwitch(s)}
                       className={`px-3 py-1 rounded text-xs font-medium ${
@@ -398,6 +377,12 @@ export function DailyOps() {
                       }`}
                     >
                       {s.is_blacklisted ? 'Reactivate' : 'Blacklist'}
+                    </button>
+                    <button
+                      onClick={() => handleDeleteStudent(s)}
+                      className="px-3 py-1 rounded text-xs font-medium bg-red-600 text-white hover:bg-red-700 ml-1"
+                    >
+                      Delete
                     </button>
                   </td>
                 </tr>
