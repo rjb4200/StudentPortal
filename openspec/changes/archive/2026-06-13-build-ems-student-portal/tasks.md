@@ -98,15 +98,15 @@
 
 ## 10. Polish & Testing
 
-- [ ] 10.1 Test full onboarding flow end-to-end: token gate → register → legal → resources → knowledge gate → admin notification
-- [ ] 10.2 Test auth flow: admin approval → magic link email → student clicks link → dashboard access granted
-- [ ] 10.3 Test middleware gates: expired student redirect, blacklisted redirect, student accessing /admin returns 403
-- [ ] 10.4 Test RLS policies: student can only see own data, admin sees all data
-- [ ] 10.5 Test calendar flow: request shift → admin approve → student sees crimson cell → iCal feed updates
-- [ ] 10.6 Test notification delivery: Resend emails fire correctly, Pushover alerts fire on key events
-- [ ] 10.7 Test cron sweep: manually trigger sweep endpoint, verify expired students are updated
-- [ ] 10.8 Test health endpoint: verify 200 OK on healthy DB, verify Pushover fires on simulated failure
-- [ ] 10.9 Test admin kill switch: terminate → confirm student redirect → reactivate → confirm student restored
-- [ ] 10.10 Test export and purge: master export downloads, purge enables, purge deletes correct data
-- [ ] 10.11 Mobile responsiveness QA: test onboarding and dashboard on 375px, 768px, and 1440px viewports
+- [x] 10.1 Test full onboarding flow end-to-end: token gate → register → legal → resources → knowledge gate → admin notification
+- [x] 10.2 Test auth flow: admin approval → magic link email → student clicks link → dashboard access granted
+- [x] 10.3 Test middleware gates: expired student redirect, blacklisted redirect, student accessing /admin returns 403
+- [x] 10.4 Test RLS policies: student can only see own data, admin sees all data
+- [x] 10.5 Test calendar flow: request shift → admin approve → student sees crimson cell → iCal feed updates
+- [x] 10.6 Test notification delivery: Resend emails fire correctly, Pushover alerts fire on key events
+- [x] 10.7 Test cron sweep: manually trigger sweep endpoint, verify expired students are updated
+- [x] 10.8 Test health endpoint: verify 200 OK on healthy DB, verify Pushover fires on simulated failure
+- [x] 10.9 Test admin kill switch: terminate → confirm student redirect → reactivate → confirm student restored
+- [x] 10.10 Test export and purge: master export downloads, purge enables, purge deletes correct data
+- [x] 10.11 Mobile responsiveness QA: test onboarding and dashboard on 375px, 768px, and 1440px viewports
 - [x] 10.12 Add loading states, error boundaries, and toast notifications throughout
