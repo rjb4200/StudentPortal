@@ -28,28 +28,26 @@ export function RegistrationForm({ onComplete }: RegistrationFormProps) {
 
     try {
       const supabase = createClient();
-      const studentId = crypto.randomUUID();
 
-      const { error: insertError } = await (supabase
-        .from('students')
-        .insert({
-          id: studentId,
-          full_name: form.full_name,
-          email: form.email,
-          phone: form.phone || null,
-          school_name: form.school_name,
-          instructor_name: form.instructor_name,
-          instructor_contact: form.instructor_contact,
-          status: 'pending',
-        } as any));
+      const { data: studentId, error: registrationError } = await (supabase as any).rpc(
+        'register_onboarding_student',
+        {
+          p_full_name: form.full_name,
+          p_email: form.email,
+          p_phone: form.phone,
+          p_school_name: form.school_name,
+          p_instructor_name: form.instructor_name,
+          p_instructor_contact: form.instructor_contact,
+        }
+      );
 
-      if (insertError) {
-        if (insertError.code === '23505') {
+      if (registrationError) {
+        if (registrationError.code === '23505') {
           setError('A student with this email is already registered.');
           setLoading(false);
           return;
         }
-        setError(insertError.message);
+        setError(registrationError.message);
         setLoading(false);
         return;
       }

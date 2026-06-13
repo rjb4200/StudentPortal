@@ -197,3 +197,78 @@ CREATE POLICY "Admins can read audit_log" ON audit_log
 
 CREATE POLICY "Admins can insert audit_log" ON audit_log
   FOR INSERT WITH CHECK (((auth.jwt() -> 'user_metadata'::text) ->> 'role'::text) = 'admin'::text);
+
+-- 4. Onboarding registration helper
+-- Allows an incomplete pending registration to be overwritten by the same email.
+CREATE OR REPLACE FUNCTION public.register_onboarding_student(
+  p_full_name text,
+  p_email text,
+  p_phone text,
+  p_school_name text,
+  p_instructor_name text,
+  p_instructor_contact text
+)
+RETURNS uuid
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  existing_student students%ROWTYPE;
+  new_student_id uuid;
+BEGIN
+  SELECT *
+  INTO existing_student
+  FROM students
+  WHERE lower(email) = lower(p_email)
+  LIMIT 1;
+
+  IF FOUND THEN
+    IF existing_student.status = 'pending'::student_status
+      AND existing_student.legal_signature IS NULL
+      AND existing_student.signature_timestamp IS NULL THEN
+      UPDATE students
+      SET
+        full_name = p_full_name,
+        email = p_email,
+        phone = NULLIF(p_phone, ''),
+        school_name = p_school_name,
+        instructor_name = p_instructor_name,
+        instructor_contact = p_instructor_contact,
+        no_show_count = 0,
+        is_blacklisted = false,
+        created_at = now()
+      WHERE id = existing_student.id
+      RETURNING id INTO new_student_id;
+
+      RETURN new_student_id;
+    END IF;
+
+    RAISE EXCEPTION 'A student with this email is already registered.'
+      USING ERRCODE = '23505';
+  END IF;
+
+  INSERT INTO students (
+    full_name,
+    email,
+    phone,
+    school_name,
+    instructor_name,
+    instructor_contact,
+    status
+  ) VALUES (
+    p_full_name,
+    p_email,
+    NULLIF(p_phone, ''),
+    p_school_name,
+    p_instructor_name,
+    p_instructor_contact,
+    'pending'::student_status
+  )
+  RETURNING id INTO new_student_id;
+
+  RETURN new_student_id;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.register_onboarding_student(text, text, text, text, text, text) TO anon, authenticated;
