@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
       await adminClient.from('students').update({ id: authMatch.id }).eq('id', studentId);
     }
 
-    await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/otp`, {
+    await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/otp?redirect_to=${encodeURIComponent(`${request.nextUrl.origin}/dashboard`)}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -71,7 +71,6 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         email: student.email,
         create_user: false,
-        redirect_to: `${request.nextUrl.origin}/dashboard`,
       }),
     });
   } catch (e) {
