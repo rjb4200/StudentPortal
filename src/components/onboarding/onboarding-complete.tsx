@@ -37,21 +37,12 @@ export function OnboardingComplete({ studentId, password }: OnboardingCompletePr
     async function load() {
       const supabase = createClient();
 
-      const { data: student } = await supabase
-        .from('students')
-        .select('email')
-        .eq('id', studentId)
-        .single();
+      const [{ data: student }, { data: template }] = await Promise.all([
+        supabase.from('students').select('email').eq('id', studentId).single(),
+        supabase.from('message_templates').select('title, body').eq('template_type', 'completion').eq('is_active', true).limit(1),
+      ]);
 
       if (student?.email) setEmail(student.email);
-
-      const { data: template } = await supabase
-        .from('message_templates')
-        .select('title, body')
-        .eq('template_type', 'completion')
-        .eq('is_active', true)
-        .limit(1);
-
       if (template?.[0]) {
         setTitle(template[0].title);
         setBody(template[0].body);
