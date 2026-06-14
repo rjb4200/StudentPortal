@@ -11,6 +11,11 @@ const pageLinks: { href: string; label: string; note?: string }[] = [
   { href: '/dashboard', label: 'Dashboard', note: 'student view (requires auth)' },
   { href: '/admin', label: 'Admin Command Center', note: 'daily ops, analytics, maintenance' },
   { href: '/admin/setup', label: 'Onboarding Setup', note: 'quiz, fields, legal, resources, welcome' },
+  { href: '/admin/accounts', label: 'Account Management', note: 'admin, preceptor, student accounts' },
+  { href: '/preceptor', label: 'Preceptor Dashboard', note: 'coming soon' },
+  { href: '/blacklisted', label: 'Blacklisted Page' },
+  { href: '/expired', label: 'Expired Page' },
+  { href: '/reset-password', label: 'Reset Password' },
   { href: '/api/health', label: 'API: Health Check' },
   { href: '/api/cron/sweep', label: 'API: Cron Sweep', note: 'daily 00:00 UTC' },
 ];
