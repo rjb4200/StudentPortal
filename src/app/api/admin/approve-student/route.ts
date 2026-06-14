@@ -33,45 +33,8 @@ export async function POST(request: NextRequest) {
     .eq('id', studentId)
     .single();
 
-  if (!student) {
-    return NextResponse.json({ error: 'Student not found' }, { status: 404 });
-  }
-
-  if (student.status !== 'pending') {
-    return NextResponse.json({ success: true, message: 'Already approved' });
-  }
-
-  let authCreated = false;
-
-  try {
-    const { data: existing } = await adminClient.auth.admin.listUsers();
-    const found = existing?.users?.find((u) => u.email === student.email);
-
-    if (!found) {
-      await adminClient.auth.admin.createUser({
-        email: student.email,
-        email_confirm: true,
-        user_metadata: { role: 'student' },
-      });
-      authCreated = true;
-    }
-
-    const { data: authUser } = await adminClient.auth.admin.listUsers();
-    const authMatch = authUser?.users?.find((u) => u.email === student.email);
-    if (authMatch && authMatch.id !== studentId) {
-      await adminClient.from('students').update({ id: authMatch.id }).eq('id', studentId);
-    }
-
-    await adminClient.auth.signInWithOtp({
-      email: student.email,
-      options: {
-        shouldCreateUser: false,
-        emailRedirectTo: `${request.nextUrl.origin}/dashboard`,
-      },
-    });
-  } catch (e) {
-    console.error('Auth error:', e);
-  }
+  if (!student) return NextResponse.json({ error: 'Student not found' }, { status: 404 });
+  if (student.status !== 'pending') return NextResponse.json({ success: true, message: 'Already approved' });
 
   await adminClient
     .from('students')
@@ -81,5 +44,5 @@ export async function POST(request: NextRequest) {
     })
     .eq('id', studentId);
 
-  return NextResponse.json({ success: true, authCreated });
+  return NextResponse.json({ success: true });
 }

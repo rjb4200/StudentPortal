@@ -4,15 +4,30 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 const DEFAULT_TITLE = 'Onboarding Submitted!';
-const DEFAULT_BODY = `Welcome to the Winchester Fire Department EMS Student Portal!
+const DEFAULT_BODY_NO_PASSWORD = `Your onboarding has been received.
 
-We're excited to have you join us and are looking forward to you scheduling ride time with our preceptors.
-
-📧 Check your email for a magic link to log in. Once an administrator reviews and approves your onboarding, you'll be able to request shifts, subscribe to your calendar, and more.
+Use your existing WFD credentials to log in once an administrator approves your account.
 
 If you have questions, contact your instructor.`;
 
-export function OnboardingComplete() {
+const DEFAULT_BODY_WITH_PASSWORD = (email: string, password: string) => `Welcome to the Winchester Fire Department EMS Student Portal!
+
+We're excited to have you join us and are looking forward to you scheduling ride time with our preceptors.
+
+Your login credentials:
+  Username: ${email}
+  Password: ${password}
+
+Save these credentials — you will need them to log in once an administrator approves your account.
+
+If you have questions, contact your instructor.`;
+
+interface OnboardingCompleteProps {
+  studentId: string;
+  password: string | null;
+}
+
+export function OnboardingComplete({ studentId, password }: OnboardingCompleteProps) {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [loading, setLoading] = useState(true);
@@ -20,19 +35,30 @@ export function OnboardingComplete() {
   useEffect(() => {
     async function load() {
       const supabase = createClient();
-      const { data } = await supabase
+
+      const { data: student } = await supabase
+        .from('students')
+        .select('email')
+        .eq('id', studentId)
+        .single();
+
+      const { data: template } = await supabase
         .from('message_templates')
         .select('title, body')
         .eq('template_type', 'completion')
         .eq('is_active', true)
         .limit(1);
 
-      if (data?.[0]) {
-        setTitle(data[0].title);
-        setBody(data[0].body);
+      if (template?.[0]) {
+        setTitle(template[0].title);
+        setBody(template[0].body);
       } else {
         setTitle(DEFAULT_TITLE);
-        setBody(DEFAULT_BODY);
+        setBody(
+          password
+            ? DEFAULT_BODY_WITH_PASSWORD(student?.email || '', password)
+            : DEFAULT_BODY_NO_PASSWORD
+        );
       }
       setLoading(false);
     }
@@ -53,7 +79,15 @@ export function OnboardingComplete() {
         ✓
       </div>
       <h2 className="mb-2 text-xl font-bold text-wfd-crimson">{title}</h2>
-      <div className="text-gray-700 whitespace-pre-line leading-relaxed">{body}</div>
+      <div className="text-gray-700 whitespace-pre-line leading-relaxed">
+        {body}
+        {password && (
+          <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg inline-block text-left">
+            <p className="text-sm font-bold text-amber-900">Save your credentials:</p>
+            <p className="text-sm text-amber-800 mt-1">You will need these to log in once approved.</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

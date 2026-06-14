@@ -9,6 +9,7 @@ import { EvaluationForm } from '@/components/dashboard/evaluation-form';
 import { Messages } from '@/components/dashboard/messages';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 export default function DashboardPage() {
   const [student, setStudent] = useState<any>(null);
@@ -191,6 +192,10 @@ export default function DashboardPage() {
         </Card>
       )}
 
+      {student?.status === 'certified' && !student?.password_changed && (
+        <PasswordChangePrompt studentId={student?.id} onChanged={() => setStudent({ ...student, password_changed: true })} />
+      )}
+
       {activeTab === 'calendar' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
@@ -245,5 +250,39 @@ export default function DashboardPage() {
     </div>
       )}
     </div>
+  );
+}
+
+function PasswordChangePrompt({ studentId, onChanged }: { studentId: string; onChanged: () => void }) {
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [changing, setChanging] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleChange = async () => {
+    if (newPassword !== confirmPassword) { setError('Passwords do not match.'); return; }
+    if (newPassword.length < 6) { setError('Password must be at least 6 characters.'); return; }
+
+    setChanging(true); setError('');
+    const supabase = createClient();
+    const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+    if (updateError) { setError(updateError.message); setChanging(false); return; }
+
+    await supabase.from('students').update({ password_changed: true }).eq('id', studentId);
+    setChanging(false);
+    onChanged();
+  };
+
+  return (
+    <Card className="p-4 bg-amber-50 border-amber-200">
+      <h3 className="font-bold text-amber-900 mb-1">Change Your Password</h3>
+      <p className="text-sm text-amber-800 mb-3">Your account uses a temporary password. Please set a new one.</p>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="New password" className="px-3 py-1.5 border border-amber-300 rounded-lg text-sm" />
+        <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Confirm password" className="px-3 py-1.5 border border-amber-300 rounded-lg text-sm" />
+      </div>
+      {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
+      <Button onClick={handleChange} loading={changing} size="sm" className="mt-2">Update Password</Button>
+    </Card>
   );
 }

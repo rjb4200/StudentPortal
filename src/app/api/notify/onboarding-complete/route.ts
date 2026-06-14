@@ -20,19 +20,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false }, { status: 404 });
     }
 
-    let authCreated = false;
+    let tempPassword: string | null = null;
 
     try {
-      const { data: existingUsers } = await supabase.auth.admin.listUsers();
-      const existing = existingUsers?.users?.find((u) => u.email === student.email);
+      const { data: existing } = await supabase.auth.admin.listUsers();
+      const found = existing?.users?.find((u) => u.email === student.email);
 
-      if (!existing) {
+      if (!found) {
+        tempPassword = String(Math.floor(100000 + Math.random() * 900000));
         await supabase.auth.admin.createUser({
           email: student.email,
+          password: tempPassword,
           email_confirm: true,
           user_metadata: { role: 'student' },
         });
-        authCreated = true;
       }
 
       const { data: authUser } = await supabase.auth.admin.listUsers();
@@ -40,24 +41,9 @@ export async function POST(request: NextRequest) {
       if (authMatch && authMatch.id !== studentId) {
         await supabase.from('students').update({ id: authMatch.id }).eq('id', studentId);
       }
-
-      await supabase.auth.signInWithOtp({
-        email: student.email,
-        options: {
-          shouldCreateUser: false,
-          emailRedirectTo: `${request.nextUrl.origin}/dashboard`,
-        },
-      });
     } catch (e) {
-      console.error('Auth/magic link error:', e);
+      console.error('Auth error:', e);
     }
-
-    // Notify admins with onboarding_complete preference
-    const { data: admins } = await supabase
-      .from('admin_accounts')
-      .select('email')
-      .eq('is_active', true)
-      .eq('notify_onboarding_complete', true);
 
     const pushoverMsg = `New student completed onboarding: ${student.full_name} (${student.email}) from ${student.school_name}`;
 
@@ -75,6 +61,12 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    const { data: admins } = await supabase
+      .from('admin_accounts')
+      .select('email')
+      .eq('is_active', true)
+      .eq('notify_onboarding_complete', true);
+
     if (process.env.RESEND_API_KEY && admins?.length) {
       await fetch('https://api.resend.com/emails', {
         method: 'POST',
@@ -91,7 +83,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return NextResponse.json({ success: true, authCreated });
+    return NextResponse.json({ success: true, password: tempPassword });
   } catch {
     return NextResponse.json({ success: false }, { status: 500 });
   }

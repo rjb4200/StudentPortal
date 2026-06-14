@@ -19,6 +19,7 @@ const steps = [
 export default function OnboardingPage() {
   const [currentStep, setCurrentStep] = useState<Step>(1);
   const [studentId, setStudentId] = useState<string | null>(null);
+  const [studentPassword, setStudentPassword] = useState<string | null>(null);
 
   const handleRegistrationComplete = useCallback((id: string) => {
     setStudentId(id);
@@ -70,9 +71,9 @@ export default function OnboardingPage() {
         )}
         {currentStep === 3 && <ResourceLibrary onComplete={() => setCurrentStep(4)} />}
         {currentStep === 4 && studentId && (
-          <KnowledgeGate studentId={studentId} onComplete={() => setCurrentStep(5)} />
+          <KnowledgeGate studentId={studentId} onComplete={(password) => { setStudentPassword(password); setCurrentStep(5); }} />
         )}
-        {currentStep === 5 && studentId && <OnboardingComplete />}
+        {currentStep === 5 && studentId && <OnboardingComplete studentId={studentId} password={studentPassword} />}
       </div>
     </div>
   );

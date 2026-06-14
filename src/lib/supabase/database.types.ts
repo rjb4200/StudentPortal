@@ -614,6 +614,7 @@ export type Database = {
           is_blacklisted: boolean
           legal_signature: string | null
           no_show_count: number
+          password_changed: boolean
           phone: string | null
           school_name: string
           signature_ip: string | null
@@ -631,6 +632,7 @@ export type Database = {
           is_blacklisted?: boolean
           legal_signature?: string | null
           no_show_count?: number
+          password_changed?: boolean
           phone?: string | null
           school_name: string
           signature_ip?: string | null
@@ -648,6 +650,7 @@ export type Database = {
           is_blacklisted?: boolean
           legal_signature?: string | null
           no_show_count?: number
+          password_changed?: boolean
           phone?: string | null
           school_name?: string
           signature_ip?: string | null
