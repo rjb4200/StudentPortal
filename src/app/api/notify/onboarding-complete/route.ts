@@ -85,14 +85,12 @@ export async function POST(request: NextRequest) {
 
     if (process.env.RESEND_API_KEY) {
       const loginUrl = `${request.nextUrl.origin}/login`;
-      const passwordDisplay = tempPassword
-        ? `<div style="margin:20px 0;padding:16px 18px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;">
+      const passwordDisplay = `<div style="margin:20px 0;padding:16px 18px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;">
             <p style="margin:0 0 8px 0;color:#1C1C1E;font-size:14px;font-weight:700;">Your Login Credentials</p>
             <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Username:</strong> ${student.email}</p>
-            <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Password:</strong> ${tempPassword}</p>
-            <p style="margin:12px 0 0 0;color:#6b7280;font-size:12px;">You will need these credentials to log in once an administrator approves your account.</p>
-          </div>`
-        : `<p style="margin:20px 0;color:#4b5563;font-size:14px;line-height:1.6;">Your account has been linked to your existing WFD credentials. Log in with your usual password once an administrator approves your account.</p>`;
+            <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Password:</strong> ${tempPassword || 'Use your existing WFD password'}</p>
+            <p style="margin:12px 0 0 0;color:#6b7280;font-size:12px;">You will need these to log in once an administrator approves your account.</p>
+          </div>`;
 
       const studentHtml = `<div style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,Helvetica,sans-serif;color:#1C1C1E;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f4f5;margin:0;padding:32px 12px;">
