@@ -41,10 +41,17 @@ export async function POST(request: NextRequest) {
         await supabase.from('students').update({ id: authMatch.id }).eq('id', studentId);
       }
 
-      await supabase.auth.admin.generateLink({
-        type: 'magiclink',
-        email: student.email,
-        options: { redirectTo: `${request.nextUrl.origin}/dashboard` },
+      await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/otp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        },
+        body: JSON.stringify({
+          email: student.email,
+          create_user: false,
+          options: { redirectTo: `${request.nextUrl.origin}/dashboard` },
+        }),
       });
     } catch (e) {
       console.error('Auth/magic link error:', e);
