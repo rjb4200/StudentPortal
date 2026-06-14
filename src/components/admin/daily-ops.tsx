@@ -36,17 +36,11 @@ export function DailyOps() {
   const [replyText, setReplyText] = useState('');
   const [tickerEvents, setTickerEvents] = useState<any[]>([]);
   const [approving, setApproving] = useState<string | null>(null);
-  const [templates, setTemplates] = useState<any[]>([]);
   const [broadcastTitle, setBroadcastTitle] = useState('');
   const [broadcastBody, setBroadcastBody] = useState('');
   const [broadcasting, setBroadcasting] = useState(false);
   const [showBroadcast, setShowBroadcast] = useState(false);
   const [welcomePreview, setWelcomePreview] = useState<{ title: string; body: string; is_active: boolean } | null>(null);
-  const [showTemplates, setShowTemplates] = useState(false);
-  const [templateTitle, setTemplateTitle] = useState('');
-  const [templateBody, setTemplateBody] = useState('');
-  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
-  const [savingTemplate, setSavingTemplate] = useState(false);
 
   const supabase = createClient();
 
@@ -60,14 +54,12 @@ export function DailyOps() {
       { data: allStudents },
       { data: allSchedules },
       { data: recentEvals },
-      { data: allTemplates },
       { data: welcomeMsg },
     ] = await Promise.all([
       supabase.from('students').select('*').eq('status', 'pending').order('created_at', { ascending: false }),
       supabase.from('students').select('*').order('created_at', { ascending: false }),
       supabase.from('schedules').select('*, students!inner(full_name, email)').order('created_at', { ascending: false }),
       supabase.from('evaluations').select('*, students!inner(full_name), preceptors!inner(full_name)').order('created_at', { ascending: false }).limit(10),
-      supabase.from('message_templates').select('*').order('created_at', { ascending: false }),
       supabase.from('message_templates').select('*').eq('template_type', 'welcome').limit(1),
     ]);
 
@@ -81,7 +73,6 @@ export function DailyOps() {
         time: e.created_at,
       }))
     );
-    setTemplates(allTemplates ?? []);
     if (welcomeMsg?.[0]) {
       setWelcomePreview({ title: welcomeMsg[0].title, body: welcomeMsg[0].body, is_active: welcomeMsg[0].is_active });
     }
@@ -194,30 +185,6 @@ export function DailyOps() {
     }
     setBroadcastTitle(''); setBroadcastBody(''); setShowBroadcast(false); setBroadcasting(false);
     await loadAll();
-  };
-
-  const handleSaveTemplate = async () => {
-    if (!templateTitle.trim() || !templateBody.trim()) return;
-    setSavingTemplate(true);
-    const payload: any = { title: templateTitle.trim(), body: templateBody.trim(), template_type: 'general', updated_at: new Date().toISOString() };
-    if (editingTemplateId) {
-      await supabase.from('message_templates').update(payload).eq('id', editingTemplateId);
-    } else {
-      await supabase.from('message_templates').insert({ ...payload, is_active: true, template_type: 'general' });
-    }
-    setTemplateTitle(''); setTemplateBody(''); setEditingTemplateId(null); setSavingTemplate(false);
-    await loadAll();
-  };
-
-  const handleDeleteTemplate = async (id: string) => {
-    if (!confirm('Delete this template?')) return;
-    await supabase.from('message_templates').delete().eq('id', id);
-    await loadAll();
-  };
-
-  const useTemplate = (body: string, target: 'reply' | 'broadcast') => {
-    if (target === 'reply') setReplyText(body);
-    else setBroadcastBody(body);
   };
 
   const loadMessages = async (studentId: string) => {
@@ -334,16 +301,6 @@ export function DailyOps() {
                     placeholder="Reply..."
                     className="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-wfd-charcoal outline-none text-gray-900"
                   />
-                  <select
-                    onChange={(e) => { if (e.target.value) useTemplate(e.target.value, 'reply'); e.target.value = ''; }}
-                    className="px-2 py-1.5 border border-gray-300 rounded-lg text-xs text-gray-600"
-                    defaultValue=""
-                  >
-                    <option value="" disabled>Templates...</option>
-                    {templates.filter((t: any) => t.template_type === 'general').map((t: any) => (
-                      <option key={t.id} value={t.body}>{t.title}</option>
-                    ))}
-                  </select>
                   <Button onClick={handleSendReply} disabled={!replyText.trim()}>
                     Send
                   </Button>
@@ -447,46 +404,6 @@ export function DailyOps() {
         </div>
       </Card>
 
-      {/* Message Templates */}
-      <Card className="p-4 lg:col-span-2">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-bold text-wfd-charcoal">Message Templates</h3>
-          <Button type="button" size="sm" variant="secondary" onClick={() => setShowTemplates(!showTemplates)}>
-            {showTemplates ? 'Hide' : 'Manage'}
-          </Button>
-        </div>
-        {showTemplates && (
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-              {templates.filter((t: any) => t.template_type !== 'welcome').map((t: any) => (
-                <div key={t.id} className="rounded-lg border border-gray-200 p-2 flex items-center justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{t.title}</p>
-                    <p className="text-xs text-gray-500 truncate">{t.body.substring(0, 60)}...</p>
-                  </div>
-                  <div className="flex gap-1">
-                    <Button type="button" size="sm" variant="secondary" onClick={() => { setEditingTemplateId(t.id); setTemplateTitle(t.title); setTemplateBody(t.body); }}>Edit</Button>
-                    <Button type="button" size="sm" variant="danger" onClick={() => handleDeleteTemplate(t.id)}>Del</Button>
-                  </div>
-                </div>
-              ))}
-              {templates.filter((t: any) => t.template_type !== 'welcome').length === 0 && <p className="text-sm text-gray-500">No templates.</p>}
-            </div>
-            <div className="space-y-2">
-              <Input label="Template Title" value={templateTitle} onChange={(e) => setTemplateTitle(e.target.value)} />
-              <label className="block text-sm font-medium text-gray-700">
-                Body
-                <textarea value={templateBody} onChange={(e) => setTemplateBody(e.target.value)} className="mt-1 min-h-20 w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-wfd-crimson" />
-              </label>
-              <Button type="button" onClick={handleSaveTemplate} loading={savingTemplate}>
-                {editingTemplateId ? 'Update Template' : 'Create Template'}
-              </Button>
-              {editingTemplateId && <Button type="button" variant="secondary" size="sm" onClick={() => { setEditingTemplateId(null); setTemplateTitle(''); setTemplateBody(''); }}>Cancel</Button>}
-            </div>
-          </div>
-        )}
-      </Card>
-
       {/* Welcome Message Preview */}
       <Card className="p-4 lg:col-span-2">
         <div className="flex items-center justify-between gap-4">
@@ -519,12 +436,6 @@ export function DailyOps() {
                 Message
                 <textarea value={broadcastBody} onChange={(e) => setBroadcastBody(e.target.value)} className="mt-1 min-h-32 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-wfd-crimson" />
               </label>
-              <select onChange={(e) => { if (e.target.value) useTemplate(e.target.value, 'broadcast'); e.target.value = ''; }} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600" defaultValue="">
-                <option value="" disabled>Insert template...</option>
-                {templates.filter((t: any) => t.template_type === 'general').map((t: any) => (
-                  <option key={t.id} value={t.body}>{t.title}</option>
-                ))}
-              </select>
               <div className="flex gap-2">
                 <Button type="button" onClick={handleSendBroadcast} loading={broadcasting}>
                   Send to {students.filter((s: any) => s.status === 'certified' && !s.is_blacklisted).length} students

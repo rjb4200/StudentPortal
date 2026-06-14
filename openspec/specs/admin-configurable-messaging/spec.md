@@ -1,6 +1,6 @@
 # admin-configurable-messaging
 
-**Purpose:** Allow training staff to send broadcast messages, manage reusable message templates, and configure a welcome message shown to students on their dashboard after onboarding.
+**Purpose:** Allow training staff to send broadcast messages and configure a welcome message shown to students on their dashboard after onboarding.
 
 ## Requirements
 
@@ -15,21 +15,6 @@ The system SHALL allow admin users to compose and send a message to all certifie
 - **WHEN** an admin sends a broadcast and no certified students exist
 - **THEN** the system confirms there are no recipients without creating messages
 
-### Requirement: Admin message templates
-The system SHALL allow admin users to create, edit, and delete reusable message templates from the Admin Command Center.
-
-#### Scenario: Create template
-- **WHEN** an admin creates a template with title and body text
-- **THEN** the template is stored and available for quick insertion when composing messages or broadcasts
-
-#### Scenario: Use template in broadcast
-- **WHEN** an admin selects a template while composing a broadcast
-- **THEN** the template body populates the broadcast message text
-
-#### Scenario: Use template in 1:1 reply
-- **WHEN** an admin selects a template while replying to an individual student
-- **THEN** the template body populates the reply text
-
 ### Requirement: Configurable onboarding welcome message
 The system SHALL allow admin users to configure a welcome message displayed to students after completing onboarding or after registration approval.
 
@@ -42,7 +27,7 @@ The system SHALL allow admin users to configure a welcome message displayed to s
 - **THEN** no welcome message is shown to students
 
 ### Requirement: Messaging configuration security
-The system SHALL restrict message template, broadcast, and welcome message writes to admin users. Authenticated students SHALL receive broadcasts and see the welcome message.
+The system SHALL restrict broadcast and welcome message writes to admin users. Authenticated students SHALL receive broadcasts and see the welcome message.
 
 #### Scenario: Non-admin broadcast blocked
 - **WHEN** a non-admin user attempts to create a broadcast

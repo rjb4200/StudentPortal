@@ -63,7 +63,7 @@ All four steps are now database-driven (not hard-coded). Admin configuration is 
 - **Registration fields**: `registration_fields` + `student_field_values`
 - **Legal documents**: `legal_documents`
 - **Resource library**: `resource_categories` + `resource_documents`
-- **Messaging**: `message_templates` + `broadcasts` (in Daily Ops, not Maintenance)
+- **Messaging**: broadcasts in Daily Ops; fixed welcome/completion messages use `message_templates`
 
 ## OpenSpec (Spec-Driven Development)
 
