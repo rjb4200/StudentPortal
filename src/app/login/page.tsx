@@ -16,19 +16,6 @@ export default function LoginPage() {
     setMessage(null);
 
     const supabase = createClient();
-
-    const { data: student } = await supabase
-      .from('students')
-      .select('email')
-      .eq('email', email)
-      .single();
-
-    if (!student) {
-      setMessage({ type: 'error', text: 'No student account found for this email.' });
-      setLoading(false);
-      return;
-    }
-
     const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {

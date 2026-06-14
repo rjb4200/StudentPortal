@@ -30,6 +30,7 @@ interface OnboardingCompleteProps {
 export function OnboardingComplete({ studentId, password }: OnboardingCompleteProps) {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
+  const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -41,6 +42,8 @@ export function OnboardingComplete({ studentId, password }: OnboardingCompletePr
         .select('email')
         .eq('id', studentId)
         .single();
+
+      if (student?.email) setEmail(student.email);
 
       const { data: template } = await supabase
         .from('message_templates')
@@ -79,13 +82,22 @@ export function OnboardingComplete({ studentId, password }: OnboardingCompletePr
         ✓
       </div>
       <h2 className="mb-2 text-xl font-bold text-wfd-crimson">{title}</h2>
-      <div className="text-gray-700 whitespace-pre-line leading-relaxed">
-        {body}
-        {password && (
-          <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg inline-block text-left">
-            <p className="text-sm font-bold text-amber-900">Save your credentials:</p>
-            <p className="text-sm text-amber-800 mt-1">You will need these to log in once approved.</p>
-          </div>
+      <div className="text-gray-700 whitespace-pre-line leading-relaxed mb-4">{body}</div>
+
+      <div className="inline-block p-4 bg-amber-50 border border-amber-200 rounded-lg text-left">
+        {password ? (
+          <>
+            <p className="text-sm font-bold text-amber-900 mb-2">Save your login credentials:</p>
+            <p className="text-sm text-amber-800"><strong>Username:</strong> {email}</p>
+            <p className="text-sm text-amber-800"><strong>Password:</strong> {password}</p>
+            <p className="text-xs text-amber-700 mt-2">You will need these to log in once an administrator approves your account.</p>
+          </>
+        ) : (
+          <>
+            <p className="text-sm font-bold text-amber-900 mb-2">Use your existing WFD credentials</p>
+            <p className="text-sm text-amber-800">Your account has been linked to your existing WFD login.</p>
+            <p className="text-xs text-amber-700 mt-2">Log in with your usual password once an administrator approves your account.</p>
+          </>
         )}
       </div>
     </div>
