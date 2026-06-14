@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
         await supabase.from('students').update({ id: authMatch.id }).eq('id', studentId);
       }
 
-      await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/otp?redirect_to=${encodeURIComponent(`${request.nextUrl.origin}/dashboard`)}`, {
+      await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/otp?redirect_to=${request.nextUrl.origin}/dashboard`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
