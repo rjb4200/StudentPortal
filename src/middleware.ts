@@ -3,6 +3,11 @@ import { createServerClient } from '@supabase/ssr';
 
 const ONBOARDING_TOKEN = process.env.ONBOARDING_TOKEN || 'WFD_TRAINING_2026';
 
+function onboardingUrl(base: string, extra: string = '') {
+  const url = new URL(`/onboarding?token=${ONBOARDING_TOKEN}${extra}`, base);
+  return url;
+}
+
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -53,19 +58,19 @@ export async function middleware(request: NextRequest) {
       .single();
 
     if (!student) {
-      return NextResponse.redirect(new URL('/onboarding', request.url));
+      return NextResponse.redirect(onboardingUrl(request.url));
     }
 
     if (student.is_blacklisted) {
-      return NextResponse.redirect(new URL('/onboarding?status=blacklisted', request.url));
+      return NextResponse.redirect(onboardingUrl(request.url, '&status=blacklisted'));
     }
 
     if (student.status === 'expired' || (student.access_until && new Date(student.access_until) < new Date())) {
-      return NextResponse.redirect(new URL('/onboarding?status=expired', request.url));
+      return NextResponse.redirect(onboardingUrl(request.url, '&status=expired'));
     }
 
     if (student.status !== 'certified' && student.status !== 'pending') {
-      return NextResponse.redirect(new URL('/onboarding', request.url));
+      return NextResponse.redirect(onboardingUrl(request.url));
     }
   }
 
