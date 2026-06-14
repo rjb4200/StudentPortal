@@ -51,6 +51,11 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
 
+    const role = user.user_metadata?.role;
+    if (role === 'admin' || role === 'preceptor') {
+      return NextResponse.redirect(new URL('/admin', request.url));
+    }
+
     const { data: student } = await supabase
       .from('students')
       .select('status, access_until, is_blacklisted')
