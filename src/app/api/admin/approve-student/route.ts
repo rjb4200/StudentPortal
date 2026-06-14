@@ -54,12 +54,12 @@ export async function POST(request: NextRequest) {
         user_metadata: { role: 'student' },
       });
       authCreated = true;
+    }
 
-      const { data: authUser } = await adminClient.auth.admin.listUsers();
-      const created = authUser?.users?.find((u) => u.email === student.email);
-      if (created) {
-        await adminClient.from('students').update({ id: created.id }).eq('id', studentId);
-      }
+    const { data: authUser } = await adminClient.auth.admin.listUsers();
+    const authMatch = authUser?.users?.find((u) => u.email === student.email);
+    if (authMatch && authMatch.id !== studentId) {
+      await adminClient.from('students').update({ id: authMatch.id }).eq('id', studentId);
     }
 
     await adminClient.auth.admin.generateLink({
