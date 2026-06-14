@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         email: student.email,
         create_user: false,
-        options: { redirectTo: `${request.nextUrl.origin}/dashboard` },
+        redirect_to: `${request.nextUrl.origin}/dashboard`,
       }),
     });
   } catch (e) {

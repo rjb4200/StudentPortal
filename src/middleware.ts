@@ -62,11 +62,11 @@ export async function middleware(request: NextRequest) {
     }
 
     if (student.is_blacklisted) {
-      return NextResponse.redirect(onboardingUrl(request.url, '&status=blacklisted'));
+      return NextResponse.redirect(new URL('/blacklisted', request.url));
     }
 
     if (student.status === 'expired' || (student.access_until && new Date(student.access_until) < new Date())) {
-      return NextResponse.redirect(onboardingUrl(request.url, '&status=expired'));
+      return NextResponse.redirect(new URL('/expired', request.url));
     }
 
     if (student.status !== 'certified' && student.status !== 'pending') {
