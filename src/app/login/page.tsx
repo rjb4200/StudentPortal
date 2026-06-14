@@ -16,7 +16,7 @@ export default function LoginPage() {
     setMessage(null);
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({ email: email.toLowerCase().trim(), password });
 
     if (error) {
       setMessage({ type: 'error', text: 'Invalid email or password.' });
@@ -35,7 +35,7 @@ export default function LoginPage() {
     setMessage(null);
 
     const supabase = createClient();
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    const { error } = await supabase.auth.resetPasswordForEmail(email.toLowerCase().trim(), {
       redirectTo: `${window.location.origin}/reset-password`,
     });
 
@@ -53,7 +53,7 @@ export default function LoginPage() {
     setMessage(null);
 
     const supabase = createClient();
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email: email.toLowerCase().trim(), password });
 
     if (error) {
       setMessage({ type: 'error', text: 'Invalid email or password.' });
