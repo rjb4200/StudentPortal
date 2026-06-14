@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 
 interface KnowledgeGateProps {
   studentId: string;
-  onComplete: (password: string | null) => void;
+  onComplete: (password: string | null, email: string) => void;
 }
 
 interface CompliancePhoto {
@@ -156,6 +156,7 @@ export function KnowledgeGate({ studentId, onComplete }: KnowledgeGateProps) {
     setCertifying(true);
 
     let password: string | null = null;
+    let email = '';
     try {
       const res = await fetch('/api/notify/onboarding-complete', {
         method: 'POST',
@@ -164,10 +165,11 @@ export function KnowledgeGate({ studentId, onComplete }: KnowledgeGateProps) {
       });
       const data = await res.json();
       password = data.password ?? null;
+      email = data.email ?? '';
     } catch {}
 
     setCertifying(false);
-    onComplete(password);
+    onComplete(password, email);
   };
 
   if (loadingRules) {

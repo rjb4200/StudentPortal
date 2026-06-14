@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return NextResponse.json({ success: true, password: tempPassword });
+    return NextResponse.json({ success: true, password: tempPassword, email: student.email });
   } catch {
     return NextResponse.json({ success: false }, { status: 500 });
   }

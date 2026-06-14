@@ -25,24 +25,25 @@ If you have questions, contact your instructor.`;
 interface OnboardingCompleteProps {
   studentId: string;
   password: string | null;
+  email: string;
 }
 
-export function OnboardingComplete({ studentId, password }: OnboardingCompleteProps) {
+export function OnboardingComplete({ studentId, password, email }: OnboardingCompleteProps) {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
-  const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
       const supabase = createClient();
 
-      const [{ data: student }, { data: template }] = await Promise.all([
-        supabase.from('students').select('email').eq('id', studentId).single(),
-        supabase.from('message_templates').select('title, body').eq('template_type', 'completion').eq('is_active', true).limit(1),
-      ]);
+      const { data: template } = await supabase
+        .from('message_templates')
+        .select('title, body')
+        .eq('template_type', 'completion')
+        .eq('is_active', true)
+        .limit(1);
 
-      if (student?.email) setEmail(student.email);
       if (template?.[0]) {
         setTitle(template[0].title);
         setBody(template[0].body);
@@ -50,7 +51,7 @@ export function OnboardingComplete({ studentId, password }: OnboardingCompletePr
         setTitle(DEFAULT_TITLE);
         setBody(
           password
-            ? DEFAULT_BODY_WITH_PASSWORD(student?.email || '', password)
+            ? DEFAULT_BODY_WITH_PASSWORD(email, password)
             : DEFAULT_BODY_NO_PASSWORD
         );
       }
