@@ -50,6 +50,8 @@ export async function POST(request: NextRequest) {
         body: JSON.stringify({
           email: student.email,
           create_user: false,
+          data: {},
+          gotrue_meta_security: {},
         }),
       });
     } catch (e) {
