@@ -14,13 +14,13 @@ export default function RootLayout({
   return (
       <html lang="en">
       <head>
-        <link rel="icon" type="image/jpeg" href="https://winchesterfireems.com/images/WFD_Logo_1848.jpg" />
+        <link rel="icon" type="image/jpeg" href="https://ejjsahtohaydoogtilgp.supabase.co/storage/v1/object/public/branding/wfd-logo-1848.jpg" />
       </head>
       <body className="bg-white text-wfd-charcoal min-h-screen font-sans">
         <header className="bg-wfd-charcoal text-white py-4 shadow-md">
           <div className="max-w-7xl mx-auto px-4 flex items-center gap-4">
             <img
-              src="https://winchesterfireems.com/images/WFD_Logo_1848.jpg"
+              src="https://ejjsahtohaydoogtilgp.supabase.co/storage/v1/object/public/branding/wfd-logo-1848.jpg"
               alt="Winchester Fire Department"
               className="h-14 w-auto rounded"
             />
