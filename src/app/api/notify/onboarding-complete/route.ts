@@ -41,18 +41,12 @@ export async function POST(request: NextRequest) {
         await supabase.from('students').update({ id: authMatch.id }).eq('id', studentId);
       }
 
-      await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/otp?redirect_to=${request.nextUrl.origin}/dashboard`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      await supabase.auth.signInWithOtp({
+        email: student.email,
+        options: {
+          shouldCreateUser: false,
+          emailRedirectTo: `${request.nextUrl.origin}/dashboard`,
         },
-        body: JSON.stringify({
-          email: student.email,
-          create_user: false,
-          data: {},
-          gotrue_meta_security: {},
-        }),
       });
     } catch (e) {
       console.error('Auth/magic link error:', e);
