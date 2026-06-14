@@ -21,7 +21,7 @@ export default function Home() {
 
         <div className="space-y-3">
           <Link
-            href="/onboarding?token=WFD_TRAINING_2026"
+            href="/onboarding"
             className="block w-full bg-wfd-crimson text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors"
           >
             Begin Student Onboarding

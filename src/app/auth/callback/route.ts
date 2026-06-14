@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
           .single();
 
         if (!student || student.status !== 'certified') {
-          return NextResponse.redirect(`${origin}/onboarding?token=WFD_TRAINING_2026`);
+          return NextResponse.redirect(`${origin}/onboarding`);
         }
       }
 

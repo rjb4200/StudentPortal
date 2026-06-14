@@ -7,6 +7,26 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function getExpirationCountdown(accessUntil: string | null | undefined) {
+  if (!accessUntil) return null;
+
+  const expiresAt = new Date(accessUntil);
+  if (Number.isNaN(expiresAt.getTime())) return null;
+
+  const daysRemaining = Math.max(0, Math.ceil((expiresAt.getTime() - Date.now()) / DAY_MS));
+  const variant: 'green' | 'orange' | 'red' | 'gray' =
+    daysRemaining === 0 ? 'gray' : daysRemaining <= 7 ? 'red' : daysRemaining <= 30 ? 'orange' : 'green';
+
+  return {
+    daysRemaining,
+    label: String(daysRemaining).padStart(3, '0'),
+    title: `${daysRemaining} day${daysRemaining === 1 ? '' : 's'} remaining until access expiration (${expiresAt.toLocaleDateString()})`,
+    variant,
+  };
+}
+
 export function DailyOps() {
   const [pendingStudents, setPendingStudents] = useState<any[]>([]);
   const [schedules, setSchedules] = useState<any[]>([]);
@@ -353,46 +373,57 @@ export function DailyOps() {
               </tr>
             </thead>
             <tbody>
-              {students.map((s) => (
-                <tr key={s.id} className="border-b border-gray-100 hover:bg-gray-50">
-                  <td className="py-2 px-3">
-                    <a href={`/admin/accounts?edit=${s.id}`} className="font-medium text-wfd-crimson hover:underline">{s.full_name}</a>
-                    <p className="text-xs text-gray-400">{s.email}</p>
-                  </td>
-                  <td className="py-2 px-3">
-                    <Badge variant={s.status === 'certified' ? 'green' : s.status === 'pending' ? 'gold' : 'gray'}>
-                      {s.status}
-                    </Badge>
-                    {s.is_blacklisted && <Badge variant="red" className="ml-1">Blacklisted</Badge>}
-                    {(s.no_show_count >= 3) && (
-                      <Badge variant="red" className="ml-1">{s.no_show_count} no-shows</Badge>
-                    )}
-                  </td>
-                  <td className="py-2 px-3">
-                    <Button variant="secondary" size="sm" onClick={() => handleNoShow(s)}>
-                      +No-Show ({s.no_show_count || 0})
-                    </Button>
-                  </td>
-                  <td className="py-2 px-3">
-                    <button
-                      onClick={() => handleKillSwitch(s)}
-                      className={`px-3 py-1 rounded text-xs font-medium ${
-                        s.is_blacklisted
-                          ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                          : 'bg-red-100 text-red-700 hover:bg-red-200'
-                      }`}
-                    >
-                      {s.is_blacklisted ? 'Reactivate' : 'Blacklist'}
-                    </button>
-                    <button
-                      onClick={() => handleDeleteStudent(s)}
-                      className="px-3 py-1 rounded text-xs font-medium bg-red-600 text-white hover:bg-red-700 ml-1"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {students.map((s) => {
+                const expirationCountdown = getExpirationCountdown(s.access_until);
+
+                return (
+                  <tr key={s.id} className="border-b border-gray-100 hover:bg-gray-50">
+                    <td className="py-2 px-3">
+                      <a href={`/admin/accounts?edit=${s.id}`} className="font-medium text-wfd-crimson hover:underline">{s.full_name}</a>
+                      <p className="text-xs text-gray-400">{s.email}</p>
+                    </td>
+                    <td className="py-2 px-3">
+                      <Badge variant={s.status === 'certified' ? 'green' : s.status === 'pending' ? 'gold' : 'gray'}>
+                        {s.status}
+                      </Badge>
+                      {expirationCountdown && (
+                        <span title={expirationCountdown.title}>
+                          <Badge variant={expirationCountdown.variant} className="ml-1">
+                            {expirationCountdown.label}
+                          </Badge>
+                        </span>
+                      )}
+                      {s.is_blacklisted && <Badge variant="red" className="ml-1">Blacklisted</Badge>}
+                      {(s.no_show_count >= 3) && (
+                        <Badge variant="red" className="ml-1">{s.no_show_count} no-shows</Badge>
+                      )}
+                    </td>
+                    <td className="py-2 px-3">
+                      <Button variant="secondary" size="sm" onClick={() => handleNoShow(s)}>
+                        +No-Show ({s.no_show_count || 0})
+                      </Button>
+                    </td>
+                    <td className="py-2 px-3">
+                      <button
+                        onClick={() => handleKillSwitch(s)}
+                        className={`px-3 py-1 rounded text-xs font-medium ${
+                          s.is_blacklisted
+                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                            : 'bg-red-100 text-red-700 hover:bg-red-200'
+                        }`}
+                      >
+                        {s.is_blacklisted ? 'Reactivate' : 'Blacklist'}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteStudent(s)}
+                        className="px-3 py-1 rounded text-xs font-medium bg-red-600 text-white hover:bg-red-700 ml-1"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

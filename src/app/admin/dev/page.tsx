@@ -7,7 +7,7 @@ import Link from 'next/link';
 const pageLinks: { href: string; label: string; note?: string }[] = [
   { href: '/', label: 'Home', note: 'landing page' },
   { href: '/login', label: 'Login' },
-  { href: '/onboarding?token=WFD_TRAINING_2026', label: 'Onboarding', note: 'student registration flow' },
+  { href: '/onboarding', label: 'Onboarding', note: 'student registration flow' },
   { href: '/dashboard', label: 'Dashboard', note: 'student view (requires auth)' },
   { href: '/admin', label: 'Admin Command Center', note: 'daily ops, analytics, maintenance' },
   { href: '/admin/setup', label: 'Onboarding Setup', note: 'quiz, fields, legal, resources, welcome' },

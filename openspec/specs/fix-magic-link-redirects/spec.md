@@ -27,4 +27,4 @@ The system SHALL redirect expired students to a dedicated `/expired` page that i
 
 #### Scenario: Expired student re-registers
 - **WHEN** an expired student clicks the re-register link on the `/expired` page
-- **THEN** they are taken to `/onboarding?token=WFD_TRAINING_2026` where they can re-register
+- **THEN** they are taken to `/onboarding` where they can re-register

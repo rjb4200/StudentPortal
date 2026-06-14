@@ -1,13 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 
-const ONBOARDING_TOKEN = process.env.ONBOARDING_TOKEN || 'WFD_TRAINING_2026';
-
-function onboardingUrl(base: string, extra: string = '') {
-  const url = new URL(`/onboarding?token=${ONBOARDING_TOKEN}${extra}`, base);
-  return url;
-}
-
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -58,7 +51,7 @@ export async function middleware(request: NextRequest) {
       .single();
 
     if (!student) {
-      return NextResponse.redirect(onboardingUrl(request.url));
+      return NextResponse.redirect(new URL('/onboarding', request.url));
     }
 
     if (student.is_blacklisted) {
@@ -70,14 +63,7 @@ export async function middleware(request: NextRequest) {
     }
 
     if (student.status !== 'certified' && student.status !== 'pending') {
-      return NextResponse.redirect(onboardingUrl(request.url));
-    }
-  }
-
-  if (pathname.startsWith('/onboarding')) {
-    const token = request.nextUrl.searchParams.get('token');
-    if (token !== ONBOARDING_TOKEN) {
-      return new NextResponse('Access Denied', { status: 403 });
+      return NextResponse.redirect(new URL('/onboarding', request.url));
     }
   }
 
@@ -85,5 +71,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/onboarding/:path*', '/dashboard/:path*', '/admin/:path*'],
+  matcher: ['/dashboard/:path*', '/admin/:path*'],
 };

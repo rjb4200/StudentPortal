@@ -1,10 +1,10 @@
 ## ADDED Requirements
 
 ### Requirement: Student registration form
-The system SHALL present a multi-step registration form collecting full name, email, phone, school name, instructor name, and instructor contact. The email field SHALL be validated for uniqueness against the students table.
+The system SHALL present a multi-step registration form collecting full name, email, phone, school name, instructor name, and instructor contact. The email field SHALL be validated for uniqueness against the students table. The onboarding route SHALL be anonymously accessible at `/onboarding` without requiring a query token.
 
 #### Scenario: Successful registration
-- **WHEN** a student submits a complete registration form with a unique email and valid token `?token=WFD_TRAINING_2026`
+- **WHEN** a student submits a complete registration form with a unique email from `/onboarding`
 - **THEN** the student record is created with status `pending` and the workflow advances to the legal waiver step
 
 #### Scenario: Duplicate email registration
@@ -15,9 +15,9 @@ The system SHALL present a multi-step registration form collecting full name, em
 - **WHEN** a student submits the form with any required field empty
 - **THEN** the system highlights the missing fields and blocks submission
 
-#### Scenario: Invalid or missing access token
-- **WHEN** a user navigates to `/onboarding` without a valid token query parameter
-- **THEN** the system displays an access denied message
+#### Scenario: Direct onboarding access
+- **WHEN** a user navigates directly to `/onboarding` without a token query parameter
+- **THEN** the system displays the onboarding registration flow
 
 ### Requirement: Legal waiver and HIPAA NDA signing
 The system SHALL display the WFD Observer Liability Waiver and institutional HIPAA NDA in a scrollable container. The student SHALL enter their full legal name and check a validation checkbox. Upon submission, the system SHALL capture the student's IP address and timestamp as their legal signature.

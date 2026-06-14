@@ -10,7 +10,7 @@ export default function ExpiredPage() {
           Your access to the WFD EMS Student Portal has expired. Your previous registration information will be available when you re-register.
         </p>
         <Link
-          href="/onboarding?token=WFD_TRAINING_2026"
+          href="/onboarding"
           className="inline-block rounded-lg bg-wfd-crimson text-white px-6 py-3 font-semibold hover:bg-red-700 transition-colors"
         >
           Re-register for Student Portal

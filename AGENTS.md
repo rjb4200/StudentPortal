@@ -21,7 +21,6 @@ SUPABASE_SERVICE_ROLE_KEY         # secret — server-only, used by admin client
 RESEND_API_KEY                    # email (Resend)
 PUSHOVER_APP_TOKEN                # push notifications
 PUSHOVER_USER_KEY                 # push notifications
-ONBOARDING_TOKEN                  # WFD_TRAINING_2026 — required ?token= param for /onboarding
 ```
 
 ## Supabase MCP
@@ -46,10 +45,10 @@ After any DDL change:
 
 ## Auth & Access Control
 
-- **Onboarding**: Anonymous access via `/onboarding?token=WFD_TRAINING_2026`. Registration uses the `register_onboarding_student` RPC (SECURITY DEFINER, allows upsert of incomplete pending entries by email).
+- **Onboarding**: Anonymous access via `/onboarding`. Registration uses the `register_onboarding_student` RPC (SECURITY DEFINER, allows upsert of incomplete pending entries by email).
 - **Student auth**: Students exist as `students` rows first (status `pending`). Admin approval calls `approveStudent()` in `src/lib/auth.ts` — creates a Supabase Auth user via admin client, sets `students.id = auth.users.id`.
 - **Admin role**: Checked via `auth.jwt() -> 'user_metadata' -> 'role' = 'admin'` in RLS policies and middleware. Admin auth user: `rjb4200@gmail.com`.
-- **Middleware** (`src/middleware.ts`): Protects `/admin` (admin role), `/dashboard` (certified + not blacklisted + not expired), `/onboarding` (token gate).
+- **Middleware** (`src/middleware.ts`): Protects `/admin` (admin role) and `/dashboard` (certified + not blacklisted + not expired). `/onboarding` is publicly accessible.
 
 ## RLS
 
