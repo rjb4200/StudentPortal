@@ -54,9 +54,17 @@ export async function POST(request: NextRequest) {
         console.error('Failed to link auth_user_id:', linkError);
         return NextResponse.json({ success: false, error: 'Failed to link student to auth user' }, { status: 500 });
       }
+
+      const { data: verify } = await supabase
+        .from('students')
+        .select('auth_user_id')
+        .eq('id', studentId)
+        .single();
+
+      console.log('auth_user_id link verify:', { studentId, expected: authUserId, actual: verify?.auth_user_id });
     }
 
-    console.log('Onboarding complete auth result:', { isNewAccount, tempPassword: tempPassword ? '***' : null, email: student.email });
+    console.log('Onboarding complete auth result:', { isNewAccount, tempPassword: tempPassword ? '***' : null, email: student.email, authUserId });
 
     const pushoverMsg = `New student completed onboarding: ${student.full_name} (${student.email}) from ${student.school_name}`;
 
