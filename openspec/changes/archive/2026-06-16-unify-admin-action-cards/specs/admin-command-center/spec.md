@@ -23,6 +23,8 @@ The admin daily operations tab SHALL display pending schedule requests within th
 - **WHEN** an admin clicks "Reject" on a schedule request in the unified list
 - **THEN** the schedule status changes to `rejected`
 
+## ADDED Requirements
+
 ### Requirement: Quiz flag acknowledgment
 The admin daily operations tab SHALL display unacknowledged quiz flags within the unified "Action Required" card. Each entry SHALL show a type badge ("Flag"), the student's name, rule title, attempt count, date, and an Acknowledge button. Quiz flags SHALL appear after schedule requests.
 
