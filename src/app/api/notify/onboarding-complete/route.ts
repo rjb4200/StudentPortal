@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
       .eq('notify_onboarding_complete', true);
 
     if (serverEnv.RESEND_API_KEY && admins?.length) {
-      await fetch('https://api.resend.com/emails', {
+      const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${serverEnv.RESEND_API_KEY}`,
@@ -87,6 +87,9 @@ export async function POST(request: NextRequest) {
           html: `<p>${pushoverMsg}</p><p>Review and approve in the admin portal.</p>`,
         }),
       });
+      if (!res.ok) {
+        console.error('Resend admin email failed:', res.status, await res.text());
+      }
     }
 
     if (serverEnv.RESEND_API_KEY) {
@@ -134,7 +137,7 @@ export async function POST(request: NextRequest) {
   </table>
 </div>`;
 
-      await fetch('https://api.resend.com/emails', {
+      const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${serverEnv.RESEND_API_KEY}`,
@@ -147,10 +150,14 @@ export async function POST(request: NextRequest) {
           html: studentHtml,
         }),
       });
+      if (!res.ok) {
+        console.error('Resend student email failed:', res.status, await res.text());
+      }
     }
 
     return NextResponse.json({ success: true, password: tempPassword, email: student.email, isNewAccount });
-  } catch {
+  } catch (e) {
+    console.error('Onboarding complete error:', e);
     return NextResponse.json({ success: false }, { status: 500 });
   }
 }
