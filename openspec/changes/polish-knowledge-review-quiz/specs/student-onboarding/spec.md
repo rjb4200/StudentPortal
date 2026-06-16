@@ -1,3 +1,7 @@
+## Purpose
+
+Update the knowledge gate quiz behavior to reflect polished UX: hidden labels during selection, persistent feedback panels, slide transitions, image fallback, and success micro-feedback.
+
 ## MODIFIED Requirements
 
 ### Requirement: Knowledge gate safety quiz

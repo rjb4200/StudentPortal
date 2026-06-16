@@ -1,3 +1,7 @@
+## Purpose
+
+Update the rule-before-question retry flow to use persistent feedback panels with hidden labels during selection, replacing the brief auto-dismiss behavior.
+
 ## MODIFIED Requirements
 
 ### Requirement: Rule-before-question retry flow
