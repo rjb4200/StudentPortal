@@ -91,19 +91,37 @@ The system SHALL distinguish between student, preceptor, and admin roles. Admin 
 - **THEN** the API returns a forbidden response and does not perform the admin action
 
 ### Requirement: Row Level Security on all tables
-All database tables SHALL have Row Level Security (RLS) enabled. Students SHALL only read and write their own enrollment-scoped records by resolving `auth.uid()` through `students.auth_user_id`; related tables SHALL continue to reference the immutable `students.id` enrollment id. Admin users SHALL have full `ALL` access to all tables.
+All database tables SHALL have Row Level Security (RLS) enabled. Students SHALL only read and write their own enrollment-scoped records by resolving `auth.uid()` through `students.auth_user_id`; related tables SHALL reference the immutable `students.id` enrollment id via EXISTS subqueries. Admin users SHALL have full `ALL` access to all tables via `user_metadata.role = 'admin'`.
 
-#### Scenario: Student queries own records
+The `students` table SHALL use `auth.uid() = auth_user_id` for student SELECT and UPDATE policies. The `schedules`, `evaluations`, `messages`, and `student_field_values` tables SHALL use EXISTS subqueries routing through `students.auth_user_id`. INSERT policies on `schedules`, `evaluations`, and `messages` SHALL additionally require `students.status = 'certified'` and `students.is_blacklisted = false`. Onboarding field value inserts SHALL require `students.status = 'pending'`.
+
+#### Scenario: Student queries own students record
+- **WHEN** a student queries the students table by `auth_user_id`
+- **THEN** the row where `auth_user_id` matches `auth.uid()` is returned
+
+#### Scenario: Student queries own schedules
 - **WHEN** a student queries the schedules table
 - **THEN** only rows where `student_id` references a student row whose `auth_user_id` matches the authenticated UUID are returned
 
-#### Scenario: Student attempts to query another student's records
-- **WHEN** a student queries the schedules table with another student's UUID
-- **THEN** no rows are returned
+#### Scenario: Student inserts own schedule
+- **WHEN** a certified, non-blacklisted student inserts a schedule row
+- **THEN** the insert succeeds because the associated student row passes the `status = 'certified'` and `is_blacklisted = false` checks
+
+#### Scenario: Pending student cannot insert schedule
+- **WHEN** a pending student attempts to insert a schedule row
+- **THEN** the insert is blocked because the EXISTS check requires `status = 'certified'`
+
+#### Scenario: Student cannot view another student's records
+- **WHEN** a student queries the schedules table filtering by another student's UUID
+- **THEN** no rows are returned because the EXISTS check fails for a different student's `auth_user_id`
+
+#### Scenario: Onboarding inserts field values for pending student
+- **WHEN** a pending, non-blacklisted student inserts a student_field_values row
+- **THEN** the insert succeeds because the EXISTS check requires `status = 'pending'` and `is_blacklisted = false`
 
 #### Scenario: Admin queries all records
-- **WHEN** an admin queries the schedules table
-- **THEN** all rows are returned regardless of `student_id`
+- **WHEN** an admin queries any table
+- **THEN** all rows are returned regardless of ownership or status
 
 ### Requirement: Separate admin accounts with identical permissions
 The Training Major and EMS Assistant Chief SHALL have separate Supabase Auth accounts. Both SHALL have identical permission sets granting full access to admin functionality.
