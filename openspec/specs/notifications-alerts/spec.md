@@ -1,4 +1,8 @@
-## ADDED Requirements
+## Purpose
+
+Transactional email notifications, Pushover alerts, iCal feeds, and email delivery handling.
+
+## Requirements
 
 ### Requirement: Resend transactional emails
 The system SHALL send transactional emails via the Resend API for onboarding confirmations, schedule approvals, schedule rejections, and preceptor evaluation receipts.

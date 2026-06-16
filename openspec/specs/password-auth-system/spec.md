@@ -1,4 +1,8 @@
-## ADDED Requirements
+## Purpose
+
+Password-based student authentication replacing the deprecated magic link system.
+
+## Requirements
 
 ### Requirement: Temporary password generation on onboarding
 The system SHALL create a Supabase Auth user with a random 6-digit temporary password when a student completes the onboarding quiz, or reuse an existing auth user for the same email if one already exists.

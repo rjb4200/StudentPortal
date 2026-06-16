@@ -1,4 +1,8 @@
-## ADDED Requirements
+## Purpose
+
+Server-side student approval API route and queue integration.
+
+## Requirements
 
 ### Requirement: Server-side student approval
 The system SHALL provide a server-side API route for approving pending students that creates a Supabase Auth user if one does not exist, updates the student record to certified status with a 120-day access expiry, and performs the approval without sending an email.
