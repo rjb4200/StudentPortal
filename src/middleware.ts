@@ -47,7 +47,7 @@ export async function middleware(request: NextRequest) {
     const { data: student } = await supabase
       .from('students')
       .select('status, access_until, is_blacklisted')
-      .eq('id', user.id)
+      .eq('auth_user_id', user.id)
       .single();
 
     if (!student) {
@@ -60,6 +60,10 @@ export async function middleware(request: NextRequest) {
 
     if (student.status === 'expired' || (student.access_until && new Date(student.access_until) < new Date())) {
       return NextResponse.redirect(new URL('/expired', request.url));
+    }
+
+    if (student.status === 'archived') {
+      return NextResponse.redirect(new URL('/onboarding?status=archived', request.url));
     }
 
     if (student.status !== 'certified' && student.status !== 'pending') {

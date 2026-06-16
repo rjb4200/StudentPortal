@@ -20,6 +20,7 @@ export async function approveStudent(studentId: string, email: string) {
         .update({
           status: 'certified',
           access_until: new Date(Date.now() + 120 * 24 * 60 * 60 * 1000).toISOString(),
+          auth_user_id: found.id,
         })
         .eq('id', studentId)
         .select()
@@ -38,7 +39,7 @@ export async function approveStudent(studentId: string, email: string) {
   const { data: student } = await supabase
     .from('students')
     .update({
-      id: authUser.user.id,
+      auth_user_id: authUser.user.id,
       status: 'certified',
       access_until: new Date(Date.now() + 120 * 24 * 60 * 60 * 1000).toISOString(),
     })

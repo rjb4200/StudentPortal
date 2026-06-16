@@ -1,0 +1,50 @@
+## MODIFIED Requirements
+
+### Requirement: Quiz completion sends auth magic link
+The system SHALL create or reuse a Supabase Auth user and send a magic link email to the student immediately when the onboarding quiz is completed. Completion SHALL link the auth user to the student enrollment through `students.auth_user_id` and SHALL NOT change `students.id`.
+
+#### Scenario: Quiz completed by new student
+- **WHEN** a student completes the onboarding quiz and the notification API is called
+- **THEN** a Supabase Auth user is created for the student's email, `students.auth_user_id` is set to that auth user id, and a magic link is sent
+
+#### Scenario: Quiz completed by re-registering student
+- **WHEN** a student completes the quiz and an auth user already exists for their email
+- **THEN** creation is skipped, the current enrollment row is linked through `students.auth_user_id`, and a magic link is sent to the existing auth user
+
+#### Scenario: Quiz completion preserves enrollment identity
+- **WHEN** onboarding completion links or reuses an auth user
+- **THEN** the student's existing `students.id` value remains unchanged and related enrollment-scoped records continue to reference the same student id
+
+#### Scenario: Quiz complete spinner stops
+- **WHEN** the Finish Onboarding button is clicked and the API call completes
+- **THEN** the spinner stops and the onboarding continues to the completion screen
+
+### Requirement: Pending student dashboard access
+The system SHALL allow students with `status = 'pending'` who have an auth account linked by `students.auth_user_id` to access the dashboard, displaying a pending-approval message with calendar link instructions.
+
+#### Scenario: Pending student logs in
+- **WHEN** a pending student logs in via magic link
+- **THEN** the dashboard resolves the student row by `auth_user_id` and displays the pending-approval message with the iCal feed link
+
+#### Scenario: Pending dashboard limits
+- **WHEN** a pending student views the dashboard
+- **THEN** they see the pending message and calendar link but cannot access schedule requests, evaluation forms, or preceptor profiles
+
+#### Scenario: Pending student approved
+- **WHEN** an admin approves a pending student
+- **THEN** the student's dashboard upgrades to the full certified view on next login
+
+### Requirement: Login email validation
+The system SHALL validate the entered email against eligible students table rows before sending a magic link on the login page.
+
+#### Scenario: Registered student requests magic link
+- **WHEN** a student with a valid active or pending `students` row enters their email on the login page
+- **THEN** a magic link is sent
+
+#### Scenario: Unregistered email on login
+- **WHEN** an email that does not exist in the `students` table is entered on the login page
+- **THEN** the user is redirected to the onboarding page
+
+#### Scenario: Expired archived or blacklisted student on login
+- **WHEN** a student with status `expired`, status `archived`, or `is_blacklisted = true` enters their email on the login page
+- **THEN** the user is redirected to the onboarding page with the appropriate status query parameter

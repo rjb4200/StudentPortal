@@ -13,7 +13,8 @@ export async function GET() {
     .from('students')
     .select('id')
     .lt('access_until', new Date().toISOString())
-    .neq('status', 'expired');
+    .neq('status', 'expired')
+    .neq('status', 'archived');
 
   if (expired && expired.length > 0) {
     const ids = expired.map((s) => s.id);

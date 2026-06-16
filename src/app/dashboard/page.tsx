@@ -34,7 +34,7 @@ export default function DashboardPage() {
     const { data: student } = await supabase
       .from('students')
       .select('*')
-      .eq('id', user.id)
+      .eq('auth_user_id', user.id)
       .single();
 
     if (student) {

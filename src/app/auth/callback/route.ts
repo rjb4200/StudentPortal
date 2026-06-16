@@ -36,11 +36,27 @@ export async function GET(request: NextRequest) {
       if (user) {
         const { data: student } = await supabase
           .from('students')
-          .select('status')
-          .eq('id', user.id)
+          .select('status, access_until, is_blacklisted')
+          .eq('auth_user_id', user.id)
           .single();
 
-        if (!student || student.status !== 'certified') {
+        if (!student) {
+          return NextResponse.redirect(`${origin}/onboarding`);
+        }
+
+        if (student.is_blacklisted) {
+          return NextResponse.redirect(`${origin}/blacklisted`);
+        }
+
+        if (student.status === 'expired' || (student.access_until && new Date(student.access_until) < new Date())) {
+          return NextResponse.redirect(`${origin}/expired`);
+        }
+
+        if (student.status === 'archived') {
+          return NextResponse.redirect(`${origin}/onboarding?status=archived`);
+        }
+
+        if (student.status !== 'certified' && student.status !== 'pending') {
           return NextResponse.redirect(`${origin}/onboarding`);
         }
       }

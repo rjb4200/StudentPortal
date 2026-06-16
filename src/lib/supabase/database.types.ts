@@ -605,6 +605,7 @@ export type Database = {
       students: {
         Row: {
           access_until: string | null
+          auth_user_id: string | null
           created_at: string
           email: string
           full_name: string
@@ -612,10 +613,12 @@ export type Database = {
           instructor_contact: string
           instructor_name: string
           is_blacklisted: boolean
+          is_test_record: boolean
           legal_signature: string | null
           no_show_count: number
           password_changed: boolean
           phone: string | null
+          previous_student_id: string | null
           school_name: string
           signature_ip: string | null
           signature_timestamp: string | null
@@ -623,6 +626,7 @@ export type Database = {
         }
         Insert: {
           access_until?: string | null
+          auth_user_id?: string | null
           created_at?: string
           email: string
           full_name: string
@@ -630,10 +634,12 @@ export type Database = {
           instructor_contact: string
           instructor_name: string
           is_blacklisted?: boolean
+          is_test_record?: boolean
           legal_signature?: string | null
           no_show_count?: number
           password_changed?: boolean
           phone?: string | null
+          previous_student_id?: string | null
           school_name: string
           signature_ip?: string | null
           signature_timestamp?: string | null
@@ -641,6 +647,7 @@ export type Database = {
         }
         Update: {
           access_until?: string | null
+          auth_user_id?: string | null
           created_at?: string
           email?: string
           full_name?: string
@@ -648,16 +655,26 @@ export type Database = {
           instructor_contact?: string
           instructor_name?: string
           is_blacklisted?: boolean
+          is_test_record?: boolean
           legal_signature?: string | null
           no_show_count?: number
           password_changed?: boolean
           phone?: string | null
+          previous_student_id?: string | null
           school_name?: string
           signature_ip?: string | null
           signature_timestamp?: string | null
           status?: Database["public"]["Enums"]["student_status"]
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "students_previous_student_id_fkey"
+            columns: ["previous_student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: { [_ in never]: never }
@@ -680,7 +697,7 @@ export type Database = {
       schedule_status: "pending" | "approved" | "rejected"
       shift_type: "full" | "day" | "night"
       station_unit: "Station 1 - Downtown HQ" | "Station 2 - West Side" | "Station 3 - Industrial"
-      student_status: "pending" | "certified" | "expired"
+      student_status: "pending" | "certified" | "expired" | "archived"
     }
     CompositeTypes: { [_ in never]: never }
   }
@@ -734,7 +751,7 @@ export const Constants = {
       schedule_status: ["pending", "approved", "rejected"],
       shift_type: ["full", "day", "night"],
       station_unit: ["Station 1 - Downtown HQ", "Station 2 - West Side", "Station 3 - Industrial"],
-      student_status: ["pending", "certified", "expired"],
+      student_status: ["pending", "certified", "expired", "archived"],
     },
   },
 } as const

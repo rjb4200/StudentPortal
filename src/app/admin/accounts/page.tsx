@@ -89,7 +89,11 @@ function AccountsPageInner() {
         full_name: form.full_name, email: form.email, phone: form.phone || null,
         school_name: form.school_name, instructor_name: form.instructor_name,
         instructor_contact: form.instructor_contact, status: form.status,
-        is_blacklisted: form.is_blacklisted, no_show_count: Number(form.no_show_count) || 0,
+        is_blacklisted: form.is_blacklisted,
+        is_test_record: form.is_test_record,
+        auth_user_id: form.auth_user_id || null,
+        previous_student_id: form.previous_student_id || null,
+        no_show_count: Number(form.no_show_count) || 0,
       }).eq('id', editing.id);
       if (error) { setMessage('Error: ' + error.message); setSaving(false); return; }
       setMessage('Student updated.');
@@ -175,6 +179,30 @@ function AccountsPageInner() {
     setSaving(false); cancelEdit(); await loadAll();
   }
 
+  async function resetTestStudent(row: any) {
+    if (!row.is_test_record) {
+      setMessage('Only records marked as test records can be reset.');
+      return;
+    }
+    if (!confirm(`Reset all test student records for ${row.email}? This deletes test-only student data and linked auth users.`)) return;
+
+    setSaving(true); setMessage(null);
+    const res = await fetch('/api/admin/reset-test-student', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: row.email }),
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      setMessage('Error: ' + (json.error || 'Unable to reset test student.'));
+      setSaving(false);
+      return;
+    }
+
+    setMessage(`Reset ${json.deleted} test student record(s).`);
+    setSaving(false); cancelEdit(); await loadAll();
+  }
+
   async function disableAccount(type: 'admin' | 'preceptor', id: string) {
     if (!confirm('Disable this account?')) return;
     const table = type === 'admin' ? 'admin_accounts' : 'preceptors';
@@ -240,10 +268,14 @@ function AccountsPageInner() {
                     <option value="pending">Pending</option>
                     <option value="certified">Certified</option>
                     <option value="expired">Expired</option>
+                    <option value="archived">Archived</option>
                   </select>
                 </label>
+                <Input label="Auth User ID" value={form.auth_user_id || ''} onChange={e => setForm({...form, auth_user_id: e.target.value})} />
+                <Input label="Previous Student ID" value={form.previous_student_id || ''} onChange={e => setForm({...form, previous_student_id: e.target.value})} />
                 <div className="flex items-end gap-6 pb-2">
                   <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.is_blacklisted || false} onChange={e => setForm({...form, is_blacklisted: e.target.checked})} className="h-4 w-4" /> Blacklisted</label>
+                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.is_test_record || false} onChange={e => setForm({...form, is_test_record: e.target.checked})} className="h-4 w-4" /> Test record</label>
                   <Input label="No-Shows" type="number" value={form.no_show_count ?? 0} onChange={e => setForm({...form, no_show_count: Number(e.target.value)})} />
                 </div>
               </>
@@ -287,6 +319,7 @@ function AccountsPageInner() {
           <div className="mt-4 flex gap-2">
             <Button onClick={saveEdit} loading={saving}>Save</Button>
             {editing && (editType === 'admin' || editType === 'preceptor') && <Button variant="danger" onClick={() => deleteAccount(editType, editing)}>Delete Account</Button>}
+            {editing && editType === 'student' && editing.is_test_record && <Button variant="danger" onClick={() => resetTestStudent(editing)}>Reset Test Student</Button>}
             <Button variant="secondary" onClick={cancelEdit}>Cancel</Button>
           </div>
         </div>
@@ -351,7 +384,7 @@ function AccountsPageInner() {
                 <div key={s.id} className="flex items-center justify-between rounded-lg border border-gray-200 p-3">
                   <div className="min-w-0">
                     <p className="font-medium truncate">{s.full_name}</p>
-                    <p className="text-xs text-gray-500">{s.email} — {s.school_name} — <Badge variant={s.status === 'certified' ? 'green' : s.status === 'pending' ? 'gold' : 'gray'}>{s.status}</Badge></p>
+                    <p className="text-xs text-gray-500">{s.email} — {s.school_name} — <Badge variant={s.status === 'certified' ? 'green' : s.status === 'pending' ? 'gold' : 'gray'}>{s.status}</Badge>{s.is_test_record && <Badge variant="gold" className="ml-1">Test</Badge>}</p>
                   </div>
                   <div className="flex gap-1 shrink-0">
                     <Button size="sm" variant="secondary" onClick={() => startEdit(s, 'student')}>Edit</Button>

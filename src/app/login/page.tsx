@@ -16,7 +16,37 @@ export default function LoginPage() {
     setMessage(null);
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email: email.toLowerCase().trim(), password });
+    const normalizedEmail = email.toLowerCase().trim();
+    const { data: students, error: lookupError } = await supabase
+      .from('students')
+      .select('status, is_blacklisted')
+      .ilike('email', normalizedEmail)
+      .order('created_at', { ascending: false });
+
+    if (lookupError) {
+      setMessage({ type: 'error', text: lookupError.message });
+      setLoading(false);
+      return;
+    }
+
+    if (!students?.length) {
+      window.location.href = '/onboarding';
+      return;
+    }
+
+    if (students.some((student) => student.is_blacklisted)) {
+      window.location.href = '/blacklisted';
+      return;
+    }
+
+    const activeStudent = students.find((student) => student.status === 'pending' || student.status === 'certified');
+    if (!activeStudent) {
+      const latest = students[0];
+      window.location.href = latest.status === 'archived' ? '/onboarding?status=archived' : '/expired';
+      return;
+    }
+
+    const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
 
     if (error) {
       setMessage({ type: 'error', text: 'Invalid email or password.' });

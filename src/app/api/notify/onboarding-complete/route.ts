@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
 
     const { data: student } = await supabase
       .from('students')
-      .select('id, full_name, email, school_name')
+      .select('id, auth_user_id, full_name, email, school_name')
       .eq('id', studentId)
       .single();
 
@@ -24,22 +24,28 @@ export async function POST(request: NextRequest) {
 
     try {
       const { data: existing } = await supabase.auth.admin.listUsers();
-      const found = existing?.users?.find((u) => u.email === student.email);
+      let authMatch = existing?.users?.find((u) => u.email?.toLowerCase() === student.email.toLowerCase());
 
-      if (!found) {
+      if (!authMatch) {
         tempPassword = String(Math.floor(100000 + Math.random() * 900000));
-        await supabase.auth.admin.createUser({
+        const { data: created, error: createError } = await supabase.auth.admin.createUser({
           email: student.email,
           password: tempPassword,
           email_confirm: true,
           user_metadata: { role: 'student' },
         });
+
+        if (createError) throw createError;
+        authMatch = created.user;
       }
 
-      const { data: authUser } = await supabase.auth.admin.listUsers();
-      const authMatch = authUser?.users?.find((u) => u.email === student.email);
-      if (authMatch && authMatch.id !== studentId) {
-        await supabase.from('students').update({ id: authMatch.id }).eq('id', studentId);
+      if (authMatch && student.auth_user_id !== authMatch.id) {
+        const { error: linkError } = await supabase
+          .from('students')
+          .update({ auth_user_id: authMatch.id })
+          .eq('id', studentId);
+
+        if (linkError) throw linkError;
       }
     } catch (e) {
       console.error('Auth error:', e);
