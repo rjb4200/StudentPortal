@@ -80,6 +80,15 @@ export default function LoginPage() {
       return;
     }
 
+    const { data: sessionData } = await supabase.auth.getSession();
+    console.log('Auth session before student query:', { hasSession: !!sessionData.session, userId: data.user.id });
+
+    const { data: allStudents } = await supabase
+      .from('students')
+      .select('id, status, auth_user_id')
+      .limit(5);
+    console.log('Any students visible to this user:', allStudents);
+
     const { data: student, error: studentError } = await supabase
       .from('students')
       .select('status, is_blacklisted, auth_user_id')
