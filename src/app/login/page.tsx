@@ -30,9 +30,15 @@ const REASON_MESSAGES: Record<string, LoginMessage> = {
     actionLabel: 'Re-register',
     actionHref: '/onboarding?status=archived',
   },
+  'account-no-link': {
+    type: 'warning',
+    text: 'Your login account exists but no student registration is linked. Please complete onboarding.',
+    actionLabel: 'Start Onboarding',
+    actionHref: '/onboarding',
+  },
   'not-registered': {
     type: 'warning',
-    text: 'No student registration was found for this email. Please complete onboarding before signing in.',
+    text: 'No student registration was found. Please complete onboarding before signing in.',
     actionLabel: 'Start Onboarding',
     actionHref: '/onboarding',
   },
@@ -60,46 +66,56 @@ export default function LoginPage() {
 
     const supabase = createClient();
     const normalizedEmail = email.toLowerCase().trim();
-    const { data: students, error: lookupError } = await supabase
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
+
+    if (error || !data?.user) {
+      setMessage({
+        type: 'error',
+        text: 'Invalid email or password.',
+        actionLabel: "Don't have an account? Start Onboarding",
+        actionHref: '/onboarding',
+      });
+      setLoading(false);
+      return;
+    }
+
+    const { data: student, error: studentError } = await supabase
       .from('students')
       .select('status, is_blacklisted')
-      .ilike('email', normalizedEmail)
-      .order('created_at', { ascending: false });
+      .eq('auth_user_id', data.user.id)
+      .single();
 
-    if (lookupError) {
-      setMessage({ type: 'error', text: lookupError.message });
+    if (studentError || !student) {
+      setMessage(REASON_MESSAGES['account-no-link']);
       setLoading(false);
       return;
     }
 
-    if (!students?.length) {
-      setMessage(REASON_MESSAGES['not-registered']);
-      setLoading(false);
-      return;
-    }
-
-    if (students.some((student) => student.is_blacklisted)) {
+    if (student.is_blacklisted) {
       setMessage(REASON_MESSAGES['blacklisted']);
       setLoading(false);
       return;
     }
 
-    const activeStudent = students.find((student) => student.status === 'pending' || student.status === 'certified');
-    if (!activeStudent) {
-      const latest = students[0];
-      const reason = latest.status === 'archived' ? 'archived' : 'expired';
-      setMessage(REASON_MESSAGES[reason]);
+    if (student.status === 'archived') {
+      setMessage(REASON_MESSAGES['archived']);
       setLoading(false);
       return;
     }
 
-    const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
-
-    if (error) {
-      setMessage({ type: 'error', text: 'Invalid email or password.' });
-    } else {
-      window.location.href = '/dashboard';
+    if (student.status === 'expired') {
+      setMessage(REASON_MESSAGES['expired']);
+      setLoading(false);
+      return;
     }
+
+    if (student.status === 'certified' || student.status === 'pending') {
+      window.location.href = '/dashboard';
+      return;
+    }
+
+    setMessage(REASON_MESSAGES['not-registered']);
     setLoading(false);
   };
 
@@ -196,6 +212,12 @@ export default function LoginPage() {
               >
                 Forgot password?
               </button>
+              <a
+                href="/onboarding"
+                className="block w-full mt-1 text-xs text-gray-400 hover:text-wfd-crimson text-center"
+              >
+                Don't have an account? Start Onboarding
+              </a>
             </form>
           ) : (
             <form onSubmit={handleAdminLogin}>
