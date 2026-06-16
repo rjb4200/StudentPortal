@@ -51,23 +51,23 @@ export async function middleware(request: NextRequest) {
       .single();
 
     if (!student) {
-      return NextResponse.redirect(new URL('/onboarding', request.url));
+      return NextResponse.redirect(new URL('/login?reason=not-registered', request.url));
     }
 
     if (student.is_blacklisted) {
-      return NextResponse.redirect(new URL('/blacklisted', request.url));
+      return NextResponse.redirect(new URL('/login?reason=blacklisted', request.url));
     }
 
     if (student.status === 'expired' || (student.access_until && new Date(student.access_until) < new Date())) {
-      return NextResponse.redirect(new URL('/expired', request.url));
+      return NextResponse.redirect(new URL('/login?reason=expired', request.url));
     }
 
     if (student.status === 'archived') {
-      return NextResponse.redirect(new URL('/onboarding?status=archived', request.url));
+      return NextResponse.redirect(new URL('/login?reason=archived', request.url));
     }
 
     if (student.status !== 'certified' && student.status !== 'pending') {
-      return NextResponse.redirect(new URL('/onboarding', request.url));
+      return NextResponse.redirect(new URL('/login?reason=not-registered', request.url));
     }
   }
 

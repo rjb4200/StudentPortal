@@ -1,17 +1,57 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { canAccessAdmin, canAccessPreceptor } from '@/lib/roles';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+
+type LoginMessage = {
+  type: 'error' | 'warning' | 'success';
+  text: string;
+  actionLabel?: string;
+  actionHref?: string;
+};
+
+const REASON_MESSAGES: Record<string, LoginMessage> = {
+  expired: {
+    type: 'warning',
+    text: 'Your access has expired. Please re-register to continue.',
+    actionLabel: 'Re-register',
+    actionHref: '/onboarding',
+  },
+  blacklisted: {
+    type: 'error',
+    text: 'This account has been removed from the WFD EMS Student Portal. If you believe this is an error, contact your class instructor or the WFD EMS Training Division.',
+  },
+  archived: {
+    type: 'warning',
+    text: 'Your previous registration has been archived. Please re-register to access the portal.',
+    actionLabel: 'Re-register',
+    actionHref: '/onboarding?status=archived',
+  },
+  'not-registered': {
+    type: 'warning',
+    text: 'No student registration was found for this email. Please complete onboarding before signing in.',
+    actionLabel: 'Start Onboarding',
+    actionHref: '/onboarding',
+  },
+};
 
 export default function LoginPage() {
   const [mode, setMode] = useState<'student' | 'admin'>('student');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [message, setMessage] = useState<LoginMessage | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const reason = params.get('reason');
+    if (reason && REASON_MESSAGES[reason]) {
+      setMessage(REASON_MESSAGES[reason]);
+    }
+  }, []);
 
   const handleStudentLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,19 +73,23 @@ export default function LoginPage() {
     }
 
     if (!students?.length) {
-      window.location.href = '/onboarding';
+      setMessage(REASON_MESSAGES['not-registered']);
+      setLoading(false);
       return;
     }
 
     if (students.some((student) => student.is_blacklisted)) {
-      window.location.href = '/blacklisted';
+      setMessage(REASON_MESSAGES['blacklisted']);
+      setLoading(false);
       return;
     }
 
     const activeStudent = students.find((student) => student.status === 'pending' || student.status === 'certified');
     if (!activeStudent) {
       const latest = students[0];
-      window.location.href = latest.status === 'archived' ? '/onboarding?status=archived' : '/expired';
+      const reason = latest.status === 'archived' ? 'archived' : 'expired';
+      setMessage(REASON_MESSAGES[reason]);
+      setLoading(false);
       return;
     }
 
@@ -176,10 +220,20 @@ export default function LoginPage() {
               className={`mt-4 p-3 rounded-lg text-sm ${
                 message.type === 'success'
                   ? 'bg-wfd-sage/10 text-wfd-sage border border-wfd-sage/30'
+                  : message.type === 'warning'
+                  ? 'bg-wfd-gold/10 text-wfd-gold border border-wfd-gold/30'
                   : 'bg-wfd-crimson/10 text-wfd-crimson border border-wfd-crimson/30'
               }`}
             >
               {message.text}
+              {message.actionLabel && message.actionHref && (
+                <a
+                  href={message.actionHref}
+                  className="inline-block mt-2 rounded-lg bg-wfd-crimson text-white px-3 py-1 text-xs font-semibold hover:brightness-90 transition-all"
+                >
+                  {message.actionLabel}
+                </a>
+              )}
             </div>
           )}
         </div>

@@ -41,23 +41,23 @@ export async function GET(request: NextRequest) {
           .single();
 
         if (!student) {
-          return NextResponse.redirect(`${origin}/onboarding`);
+          return NextResponse.redirect(`${origin}/login?reason=not-registered`);
         }
 
         if (student.is_blacklisted) {
-          return NextResponse.redirect(`${origin}/blacklisted`);
+          return NextResponse.redirect(`${origin}/login?reason=blacklisted`);
         }
 
         if (student.status === 'expired' || (student.access_until && new Date(student.access_until) < new Date())) {
-          return NextResponse.redirect(`${origin}/expired`);
+          return NextResponse.redirect(`${origin}/login?reason=expired`);
         }
 
         if (student.status === 'archived') {
-          return NextResponse.redirect(`${origin}/onboarding?status=archived`);
+          return NextResponse.redirect(`${origin}/login?reason=archived`);
         }
 
         if (student.status !== 'certified' && student.status !== 'pending') {
-          return NextResponse.redirect(`${origin}/onboarding`);
+          return NextResponse.redirect(`${origin}/login?reason=not-registered`);
         }
       }
 
