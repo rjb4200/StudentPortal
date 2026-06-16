@@ -34,8 +34,8 @@ export function OnboardingIntro({ onBegin }: OnboardingIntroProps) {
       <div className="bg-wfd-charcoal px-6 py-4 text-center">
         <p className="text-gray-400 text-xs">
           Need help? Contact your instructor or email{' '}
-          <a href="mailto:training@winchesterfire.org" className="text-wfd-gold hover:underline">
-            training@winchesterfire.org
+          <a href="mailto:jbrown@winchesterky.com" className="text-wfd-gold hover:underline">
+            jbrown@winchesterky.com
           </a>
         </p>
       </div>

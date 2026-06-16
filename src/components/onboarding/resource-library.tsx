@@ -143,8 +143,8 @@ export function ResourceLibrary({ onComplete, onBack }: ResourceLibraryProps) {
       <div className="mt-6 pt-4 border-t border-gray-100">
         <p className="text-xs text-gray-400">
           Need help? Contact your instructor or email{' '}
-          <a href="mailto:training@winchesterfire.org" className="text-wfd-crimson hover:underline">
-            training@winchesterfire.org
+          <a href="mailto:jbrown@winchesterky.com" className="text-wfd-crimson hover:underline">
+            jbrown@winchesterky.com
           </a>
         </p>
       </div>
