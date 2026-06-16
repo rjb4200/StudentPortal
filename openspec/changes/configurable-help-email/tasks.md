@@ -1,8 +1,8 @@
 ## 1. Database
 
 - [x] 1.1 Create migration `005_portal_settings.sql` — `portal_settings` table with `key` text PK, `value` text, `updated_at` timestamptz; seed `help_email` = `jbrown@winchesterky.com`; RLS enabled with admin write, anon read on public keys
-- [ ] 1.2 Apply migration to live Supabase project via `supabase_apply_migration`
-- [ ] 1.3 Run `supabase_generate_typescript_types` and update `src/lib/supabase/database.types.ts`
+- [x] 1.2 Apply migration to live Supabase project via `supabase_apply_migration`
+- [x] 1.3 Run `supabase_generate_typescript_types` and update `src/lib/supabase/database.types.ts`
 
 ## 2. API
 
@@ -25,5 +25,5 @@
 ## 5. Verification
 
 - [x] 5.1 Run `npm run build` and confirm zero errors
-- [ ] 5.2 Manually verify: admin changes help email on `/admin/setup`, refresh onboarding — help footer shows new email
-- [ ] 5.3 Manually verify: default email shown when no setting configured
+- [x] 5.2 Manually verify: admin changes help email on `/admin/setup`, refresh onboarding — help footer shows new email
+- [x] 5.3 Manually verify: default email shown when no setting configured
