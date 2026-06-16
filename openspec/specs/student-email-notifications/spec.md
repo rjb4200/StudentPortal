@@ -1,0 +1,37 @@
+# student-email-notifications Specification
+
+## Purpose
+TBD - created by archiving change student-email-notifications. Update Purpose after archive.
+## Requirements
+### Requirement: Account approved email
+When an admin approves a student, the system SHALL send the student a WFD-branded email notifying them their account is active. The email SHALL use the same HTML template as the onboarding credential email with the WFD logo, crimson `#A40104` header band, charcoal `#1C1C1E` bottom border, credential-style body box, and a "Go to Student Portal Login" CTA button linking to `/login`.
+
+#### Scenario: Admin approves a student
+- **WHEN** an admin successfully approves a pending student via the approve-student API
+- **THEN** the system sends an email to the student at their registered address with subject "WFD EMS Student Portal — Account Approved" and a body that includes the student's name, confirmation that their account is active, and a link to `/login`
+
+#### Scenario: Student already approved
+- **WHEN** an admin attempts to approve a student who is already certified
+- **THEN** the system returns success without sending a duplicate email
+
+### Requirement: Schedule approved email
+When an admin approves a scheduled shift day, the system SHALL send the student a WFD-branded email with the date, shift type, and a link to their dashboard. The schedule update and email delivery SHALL happen in a single server-side API route.
+
+#### Scenario: Admin approves a schedule request
+- **WHEN** an admin clicks "Approve" on a pending schedule request in the daily ops panel
+- **THEN** the system updates the schedule status to 'approved' and sends the student an email with subject "Shift Approved — WFD EMS Student Portal" containing the date, shift type, and a link to `/dashboard`
+
+### Requirement: Schedule rejected email
+When an admin rejects a scheduled shift day, the system SHALL send the student a WFD-branded email with the date, shift type, and instructions to contact their preceptor or the Training Major.
+
+#### Scenario: Admin rejects a schedule request
+- **WHEN** an admin clicks "Reject" on a pending schedule request in the daily ops panel
+- **THEN** the system updates the schedule status to 'rejected' and sends the student an email with subject "Shift Request Update — WFD EMS Student Portal" containing the date, shift type, and instructions to contact staff for more information
+
+### Requirement: WFD-branded email template consistency
+All student-facing emails SHALL use a consistent WFD-branded HTML template with crimson `#A40104` header background, charcoal `#1C1C1E` bottom border, WFD logo from branding storage, body text in `#4b5563`, footer text in `#6b7280`, and CTA buttons in crimson `#A40104` with `border-radius: 10px`. The `from` address SHALL be `onboarding@winchesterfireems.com` for account-related emails and `noreply@winchesterfireems.com` for schedule-related emails.
+
+#### Scenario: All student emails share the same visual template
+- **WHEN** any student-facing transactional email is rendered
+- **THEN** it uses the WFD logo header with crimson background, charcoal divider, branded body and footer, and matching CTA button styling
+

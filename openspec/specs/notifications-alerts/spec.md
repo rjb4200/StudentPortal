@@ -1,11 +1,9 @@
 ## Purpose
 
 Transactional email notifications, Pushover alerts, iCal feeds, and email delivery handling.
-
 ## Requirements
-
 ### Requirement: Resend transactional emails
-The system SHALL send transactional emails via the Resend API for onboarding confirmations, schedule approvals, schedule rejections, and preceptor evaluation receipts.
+The system SHALL send transactional emails via the Resend API for onboarding confirmations, schedule approvals, schedule rejections, and preceptor evaluation receipts. All student-facing emails SHALL use the WFD-branded HTML template with crimson `#A40104` for header background, CTA buttons, and branded color elements.
 
 #### Scenario: Onboarding completion email
 - **WHEN** a student completes the knowledge gate
@@ -22,6 +20,10 @@ The system SHALL send transactional emails via the Resend API for onboarding con
 #### Scenario: Evaluation receipt email
 - **WHEN** a student submits a clinical evaluation
 - **THEN** Resend sends a confirmation receipt email to the student summarizing their submission
+
+#### Scenario: Account approved email
+- **WHEN** an admin approves a pending student
+- **THEN** Resend sends a WFD-branded email to the student notifying them their account is active with a link to `/login`
 
 ### Requirement: Pushover admin alerts
 The system SHALL send Pushover notifications to admin devices for critical events: new student onboarding completion, evaluation flag alerts, and system health emergencies.
@@ -73,3 +75,4 @@ If a Resend email delivery fails, the system SHALL log the failure and retry up 
 #### Scenario: Email retry on failure
 - **WHEN** a Resend API call returns a non-2xx status
 - **THEN** the system retries the delivery up to 3 times with increasing delays before logging a permanent failure
+
