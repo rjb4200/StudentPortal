@@ -1,9 +1,7 @@
 # admin-configurable-onboarding-quiz
 
 **Purpose:** Allow training staff to manage the onboarding compliance quiz (rules, photos, correct answers, and active state) from the Admin Command Center without code changes or redeploys.
-
 ## Requirements
-
 ### Requirement: Admin-managed quiz rules
 The system SHALL allow admin users to create, edit, reorder, activate, deactivate, and delete onboarding quiz rules from the Admin Command Center.
 
@@ -38,15 +36,17 @@ The onboarding knowledge gate SHALL load active quiz rules and active quiz photo
 - **THEN** it is not shown to students in the onboarding quiz
 
 ### Requirement: Rule-before-question retry flow
-The student quiz SHALL show each rule before its photo question, require students to select all non-compliant photos, and return students to the rule text after any failed answer before allowing another attempt.
+The student quiz SHALL show each rule before its photo question, require students to select all non-compliant photos from images alone (labels hidden during selection), and display a persistent feedback panel with per-photo results after any failed answer. The student must manually choose to review the rule or retry the question.
 
 #### Scenario: Correct photo selection
 - **WHEN** a student selects exactly all non-compliant photos for a rule
-- **THEN** the system advances to the next rule or completes the quiz if no rules remain
+- **THEN** the system displays a brief "Correct!" success confirmation for approximately 1.5 seconds
+- **AND** the system advances to the next rule or completes the quiz if no rules remain
 
 #### Scenario: Incorrect photo selection
 - **WHEN** a student submits an incorrect photo selection
-- **THEN** the system displays failure feedback and returns the student to that rule before retrying the same question
+- **THEN** the system displays a persistent feedback panel showing missed, correctly identified, and incorrectly selected photos with their labels and reasons
+- **AND** the panel remains visible until the student clicks "Review Rule" to re-read the rule or "Retry" to re-attempt the question
 
 ### Requirement: Quiz configuration security
 The system SHALL restrict quiz configuration writes to admin users and allow onboarding users to read only active quiz rules and photos.
@@ -58,3 +58,4 @@ The system SHALL restrict quiz configuration writes to admin users and allow onb
 #### Scenario: Non-admin write blocked
 - **WHEN** a non-admin user attempts to create, update, or delete quiz configuration
 - **THEN** the database rejects the operation
+

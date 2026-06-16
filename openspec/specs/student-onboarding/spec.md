@@ -60,34 +60,37 @@ The system SHALL present downloadable WFD Station Maps (Station 1 Downtown HQ, S
 - **THEN** the browser initiates a file download of the SOG document
 
 ### Requirement: Knowledge gate safety quiz
-The system SHALL present a slide deck with interspersed safety quizzes including hotspot image testing. The student SHALL click defined zones on scene photographs to identify safety hazards, improper PPE, and apparatus positioning errors. Three cumulative failures SHALL reset progress to slide 1. Completion of all slides SHALL set `is_certified = true` on the student record.
+The system SHALL present a photo-grid compliance quiz where students visually inspect photographs and tap every photo that is not in compliance with the displayed rule. Photo labels and reasons SHALL be hidden during selection and revealed only after submission. The system SHALL show slide transitions between rule, question, and feedback modes. Three or more failed attempts on a rule followed by a successful pass SHALL trigger an admin flag.
 
-#### Scenario: Correct hotspot identification
-- **WHEN** a student clicks within the defined zone boundary of a safety hazard in a scene photograph
-- **THEN** the system marks the answer correct and advances to the next slide
+#### Scenario: Correct photo selection
+- **WHEN** a student correctly selects all non-compliant photos for a rule based on visual inspection alone
+- **THEN** the system displays a "Correct!" success indicator and advances to the next rule or completion
 
-#### Scenario: Incorrect hotspot identification
-- **WHEN** a student clicks outside all defined zone boundaries on a scene photograph
-- **THEN** the system increments the failure counter and displays the remaining strikes
+#### Scenario: Incorrect photo selection
+- **WHEN** a student submits an incorrect photo selection
+- **THEN** the system displays a persistent feedback panel showing per-photo results with labels and reasons
+- **AND** the feedback panel does not auto-dismiss
 
-#### Scenario: Three failures trigger reset
-- **WHEN** a student accumulates three incorrect answers across the knowledge gate
-- **THEN** the system resets progress to slide 1 and clears the failure counter
+#### Scenario: Image load failure
+- **WHEN** a quiz photo image fails to load
+- **THEN** the system displays a branded fallback placeholder instead of a broken image icon
+- **AND** the quiz remains functional
 
 #### Scenario: Knowledge gate completion
-- **WHEN** a student correctly completes all quiz slides
-- **THEN** the `is_certified` field is set to `true`, a Pushover notification is sent to the Training Major, and an email notification is dispatched
+- **WHEN** a student correctly completes all quiz rules
+- **THEN** the system presents the completion screen and allows the student to finish onboarding
 
 ### Requirement: Image grid quiz for acceptable/unacceptable actions
-The system SHALL present a grid of images depicting safety scenarios. The student SHALL click each image to toggle between acceptable and unacceptable classifications. All images SHALL be correctly classified to pass.
+The system SHALL present a grid of photos for each rule where students visually identify non-compliant images. Photo labels and reasons SHALL be hidden during the selection phase and revealed only in the feedback panel after submission.
 
 #### Scenario: Correct image classification
-- **WHEN** a student correctly classifies all images in the grid as acceptable or unacceptable
-- **THEN** the system advances past this quiz section
+- **WHEN** a student correctly identifies all non-compliant photos in the grid by visual inspection
+- **THEN** the system displays a success micro-feedback and advances past this rule
 
 #### Scenario: Incorrect image classification
 - **WHEN** a student submits classifications with incorrect answers
-- **THEN** the system highlights incorrect answers, increments the failure counter, and allows retry
+- **THEN** the system displays a persistent feedback panel showing missed and incorrect selections with per-photo labels and reasons
+- **AND** the student may choose to review the rule or retry
 
 ### Requirement: Post-onboarding notification
 Upon knowledge gate completion, the system SHALL send an email to the Training Major containing the new student's name, school, and instructor details, requesting account approval.
