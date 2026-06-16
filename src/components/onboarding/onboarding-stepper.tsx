@@ -59,17 +59,11 @@ export function OnboardingStepper({ currentStep }: StepperProps) {
           );
         })}
       </div>
-      <div className="mb-2">
-        <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-          <span>Step {currentStep} of {steps.length}</span>
-          <span>{progressPercent}% complete</span>
-        </div>
-        <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-wfd-crimson rounded-full transition-all duration-500 ease-out"
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
+      <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden mt-1">
+        <div
+          className="h-full bg-wfd-crimson rounded-full transition-all duration-500 ease-out"
+          style={{ width: `${progressPercent}%` }}
+        />
       </div>
     </div>
   );
