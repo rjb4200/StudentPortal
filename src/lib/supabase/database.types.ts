@@ -7,6 +7,8 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
@@ -332,6 +334,94 @@ export type Database = {
         }
         Relationships: []
       }
+      portal_settings: {
+        Row: {
+          created_at: string
+          id: string
+          key: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          key: string
+          updated_at?: string
+          value?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
+      quiz_flags: {
+        Row: {
+          acknowledged: boolean
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          attempt_count: number
+          created_at: string
+          id: string
+          rule_id: string
+          rule_title: string
+          student_email: string
+          student_id: string
+          student_name: string
+        }
+        Insert: {
+          acknowledged?: boolean
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          attempt_count?: number
+          created_at?: string
+          id?: string
+          rule_id: string
+          rule_title: string
+          student_email: string
+          student_id: string
+          student_name: string
+        }
+        Update: {
+          acknowledged?: boolean
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          attempt_count?: number
+          created_at?: string
+          id?: string
+          rule_id?: string
+          rule_title?: string
+          student_email?: string
+          student_id?: string
+          student_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_flags_acknowledged_by_fkey"
+            columns: ["acknowledged_by"]
+            isOneToOne: false
+            referencedRelation: "admin_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_flags_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_rules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_flags_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quiz_photos: {
         Row: {
           created_at: string
@@ -528,24 +618,6 @@ export type Database = {
           },
         ]
       }
-      portal_settings: {
-        Row: {
-          key: string
-          updated_at: string
-          value: string
-        }
-        Insert: {
-          key: string
-          updated_at?: string
-          value?: string
-        }
-        Update: {
-          key?: string
-          updated_at?: string
-          value?: string
-        }
-        Relationships: []
-      }
       schedules: {
         Row: {
           created_at: string
@@ -631,7 +703,7 @@ export type Database = {
           instructor_contact: string
           instructor_name: string
           is_blacklisted: boolean
-          is_test_record: boolean
+          is_test_record: boolean | null
           legal_signature: string | null
           no_show_count: number
           password_changed: boolean
@@ -652,7 +724,7 @@ export type Database = {
           instructor_contact: string
           instructor_name: string
           is_blacklisted?: boolean
-          is_test_record?: boolean
+          is_test_record?: boolean | null
           legal_signature?: string | null
           no_show_count?: number
           password_changed?: boolean
@@ -673,7 +745,7 @@ export type Database = {
           instructor_contact?: string
           instructor_name?: string
           is_blacklisted?: boolean
-          is_test_record?: boolean
+          is_test_record?: boolean | null
           legal_signature?: string | null
           no_show_count?: number
           password_changed?: boolean
@@ -684,18 +756,12 @@ export type Database = {
           signature_timestamp?: string | null
           status?: Database["public"]["Enums"]["student_status"]
         }
-        Relationships: [
-          {
-            foreignKeyName: "students_previous_student_id_fkey"
-            columns: ["previous_student_id"]
-            isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
-    Views: { [_ in never]: never }
+    Views: {
+      [_ in never]: never
+    }
     Functions: {
       register_onboarding_student: {
         Args: {
@@ -714,52 +780,134 @@ export type Database = {
       note_priority: "normal" | "high_accessibility"
       schedule_status: "pending" | "approved" | "rejected"
       shift_type: "full" | "day" | "night"
-      station_unit: "Station 1 - Downtown HQ" | "Station 2 - West Side" | "Station 3 - Industrial"
+      station_unit:
+        | "Station 1 - Downtown HQ"
+        | "Station 2 - West Side"
+        | "Station 3 - Industrial"
       student_status: "pending" | "certified" | "expired" | "archived"
     }
-    CompositeTypes: { [_ in never]: never }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
 }
 
 type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
 type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
-  D extends keyof (DefaultSchema["Tables"] & DefaultSchema["Views"]) | { schema: keyof DatabaseWithoutInternals },
-  T extends D extends { schema: keyof DatabaseWithoutInternals } ? keyof (DatabaseWithoutInternals[D["schema"]]["Tables"] & DatabaseWithoutInternals[D["schema"]]["Views"]) : never = never,
-> = D extends { schema: keyof DatabaseWithoutInternals }
-  ? (DatabaseWithoutInternals[D["schema"]]["Tables"] & DatabaseWithoutInternals[D["schema"]]["Views"])[T] extends { Row: infer R } ? R : never
-  : D extends keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] & DefaultSchema["Views"])[D] extends { Row: infer R } ? R : never
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
     : never
 
 export type TablesInsert<
-  D extends keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
-  T extends D extends { schema: keyof DatabaseWithoutInternals } ? keyof DatabaseWithoutInternals[D["schema"]]["Tables"] : never = never,
-> = D extends { schema: keyof DatabaseWithoutInternals }
-  ? DatabaseWithoutInternals[D["schema"]]["Tables"][T] extends { Insert: infer I } ? I : never
-  : D extends keyof DefaultSchema["Tables"] ? DefaultSchema["Tables"][D] extends { Insert: infer I } ? I : never : never
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
 
 export type TablesUpdate<
-  D extends keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
-  T extends D extends { schema: keyof DatabaseWithoutInternals } ? keyof DatabaseWithoutInternals[D["schema"]]["Tables"] : never = never,
-> = D extends { schema: keyof DatabaseWithoutInternals }
-  ? DatabaseWithoutInternals[D["schema"]]["Tables"][T] extends { Update: infer U } ? U : never
-  : D extends keyof DefaultSchema["Tables"] ? DefaultSchema["Tables"][D] extends { Update: infer U } ? U : never : never
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
 
 export type Enums<
-  D extends keyof DefaultSchema["Enums"] | { schema: keyof DatabaseWithoutInternals },
-  T extends D extends { schema: keyof DatabaseWithoutInternals } ? keyof DatabaseWithoutInternals[D["schema"]]["Enums"] : never = never,
-> = D extends { schema: keyof DatabaseWithoutInternals }
-  ? DatabaseWithoutInternals[D["schema"]]["Enums"][T]
-  : D extends keyof DefaultSchema["Enums"] ? DefaultSchema["Enums"][D] : never
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
 
 export type CompositeTypes<
-  D extends keyof DefaultSchema["CompositeTypes"] | { schema: keyof DatabaseWithoutInternals },
-  T extends D extends { schema: keyof DatabaseWithoutInternals } ? keyof DatabaseWithoutInternals[D["schema"]]["CompositeTypes"] : never = never,
-> = D extends { schema: keyof DatabaseWithoutInternals }
-  ? DatabaseWithoutInternals[D["schema"]]["CompositeTypes"][T]
-  : D extends keyof DefaultSchema["CompositeTypes"] ? DefaultSchema["CompositeTypes"][D] : never
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
 
 export const Constants = {
   public: {
@@ -768,8 +916,12 @@ export const Constants = {
       note_priority: ["normal", "high_accessibility"],
       schedule_status: ["pending", "approved", "rejected"],
       shift_type: ["full", "day", "night"],
-      station_unit: ["Station 1 - Downtown HQ", "Station 2 - West Side", "Station 3 - Industrial"],
-      student_status: ["pending", "certified", "expired", "archived"],
+      station_unit: [
+        "Station 1 - Downtown HQ",
+        "Station 2 - West Side",
+        "Station 3 - Industrial",
+      ],
+      student_status: ["pending", "certified", "expired"],
     },
   },
 } as const

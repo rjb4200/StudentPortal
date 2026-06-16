@@ -1,8 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
+import { QuizHeader } from './quiz-header';
+import { QuizPhotoCard } from './quiz-photo-card';
+import { FeedbackPanel } from './quiz-feedback-panel';
+import type { CompliancePhoto, ComplianceRule, FeedbackCategory } from './quiz-feedback-panel';
+
+type Mode = 'rule' | 'question' | 'feedback' | 'success' | 'complete';
 
 interface KnowledgeGateProps {
   studentId: string;
@@ -11,32 +17,17 @@ interface KnowledgeGateProps {
   helpEmail?: string;
 }
 
-interface CompliancePhoto {
-  id: string;
-  label: string;
-  imageUrl: string;
-  nonCompliant: boolean;
-  reason: string;
-}
-
-interface ComplianceRule {
-  id: string;
-  title: string;
-  rule: string;
-  instruction: string;
-  photos: CompliancePhoto[];
-}
-
 export function KnowledgeGate({ studentId, onComplete, onBack, helpEmail }: KnowledgeGateProps) {
   const [rules, setRules] = useState<ComplianceRule[]>([]);
   const [loadingRules, setLoadingRules] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [ruleIndex, setRuleIndex] = useState(0);
-  const [mode, setMode] = useState<'rule' | 'question' | 'complete'>('rule');
+  const [mode, setMode] = useState<Mode>('rule');
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [feedback, setFeedback] = useState<string | null>(null);
-  const [attempts, setAttempts] = useState(0);
+  const [ruleAttempts, setRuleAttempts] = useState(0);
   const [certifying, setCertifying] = useState(false);
+  const [transitioning, setTransitioning] = useState(false);
+  const [slideDir, setSlideDir] = useState<'left' | 'right' | 'up'>('right');
 
   useEffect(() => {
     async function loadRules() {
@@ -99,6 +90,7 @@ export function KnowledgeGate({ studentId, onComplete, onBack, helpEmail }: Know
       setRuleIndex(0);
       setMode('rule');
       setSelected(new Set());
+      setRuleAttempts(0);
       setLoadingRules(false);
     }
 
@@ -106,10 +98,18 @@ export function KnowledgeGate({ studentId, onComplete, onBack, helpEmail }: Know
   }, []);
 
   const currentRule = rules[ruleIndex];
-  const progressStep = mode === 'complete' ? rules.length : Math.min(ruleIndex + 1, rules.length);
+  const progressStep = mode === 'complete' ? rules.length : ruleIndex + 1;
+
+  const changeMode = useCallback((newMode: Mode, dir: 'left' | 'right' | 'up' = 'right') => {
+    setSlideDir(dir);
+    setTransitioning(true);
+    setTimeout(() => {
+      setMode(newMode);
+      setTransitioning(false);
+    }, 150);
+  }, []);
 
   const togglePhoto = (photoId: string) => {
-    if (feedback) return;
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(photoId)) {
@@ -134,24 +134,32 @@ export function KnowledgeGate({ studentId, onComplete, onBack, helpEmail }: Know
       correctIds.every((id, index) => id === selectedIds[index]);
 
     if (!passed) {
-      setAttempts((value) => value + 1);
-      setFeedback('Not quite. Review the rule again, then retry this question.');
-      window.setTimeout(() => {
-        setSelected(new Set());
-        setFeedback(null);
-        setMode('rule');
-      }, 1800);
+      setRuleAttempts((value) => value + 1);
+      changeMode('feedback', 'up');
       return;
     }
 
+    const attempts = ruleAttempts;
     setSelected(new Set());
-    setFeedback(null);
-    if (ruleIndex === rules.length - 1) {
-      setMode('complete');
-    } else {
-      setRuleIndex((value) => value + 1);
-      setMode('rule');
+
+    if (attempts >= 3) {
+      fetch('/api/quiz/flag', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studentId, ruleId: currentRule.id }),
+      }).catch(() => {});
     }
+
+    setMode('success');
+    setTimeout(() => {
+      if (ruleIndex === rules.length - 1) {
+        setMode('complete');
+      } else {
+        setRuleIndex((value) => value + 1);
+        setRuleAttempts(0);
+        changeMode('rule', 'right');
+      }
+    }, 1500);
   };
 
   const handleComplete = async () => {
@@ -174,11 +182,32 @@ export function KnowledgeGate({ studentId, onComplete, onBack, helpEmail }: Know
     onComplete(password, email);
   };
 
+  const getFeedbackCategories = (): FeedbackCategory => {
+    if (!currentRule) return { missed: [], correct: [], incorrect: [] };
+
+    const nonCompliantIds = currentRule.photos
+      .filter((p) => p.nonCompliant)
+      .map((p) => p.id);
+
+    const correct = nonCompliantIds.filter((id) => selected.has(id));
+    const missed = nonCompliantIds.filter((id) => !selected.has(id));
+    const incorrect = Array.from(selected).filter((id) => !nonCompliantIds.includes(id));
+
+    return { missed, correct, incorrect };
+  };
+
+  const slideClasses = transitioning
+    ? 'opacity-0 ' + (slideDir === 'left' ? '-translate-x-4' : slideDir === 'right' ? 'translate-x-4' : 'translate-y-4')
+    : 'opacity-100 translate-x-0 translate-y-0';
+
   if (loadingRules) {
     return (
       <div className="rounded-xl border border-gray-200 bg-gray-50 p-5 text-center">
         <h2 className="mb-2 text-xl font-bold text-wfd-charcoal pb-2 border-b-2 border-wfd-crimson">Policy and Protocol Review</h2>
-        <p className="text-sm text-gray-600 mt-2">Loading onboarding quiz...</p>
+        <div className="flex items-center justify-center gap-2 mt-4">
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-wfd-crimson" />
+          <p className="text-sm text-gray-600">Loading onboarding quiz...</p>
+        </div>
       </div>
     );
   }
@@ -205,14 +234,16 @@ export function KnowledgeGate({ studentId, onComplete, onBack, helpEmail }: Know
 
   if (mode === 'complete') {
     return (
-      <div>
-        <Header progressStep={progressStep} attempts={attempts} totalRules={rules.length} />
+      <div className={slideClasses + ' transition-all duration-300'}>
+        <QuizHeader progressStep={progressStep} attempts={ruleAttempts} totalRules={rules.length} ruleTitle={currentRule.title} mode="complete" />
         <div className="text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-2xl font-bold text-green-700">
-            OK
+          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-wfd-crimson/10">
+            <svg className="h-10 w-10 text-wfd-crimson" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
           </div>
-          <h3 className="mb-2 text-xl font-bold text-wfd-crimson">Policy and Protocol Review Complete</h3>
-          <p className="mb-6 text-gray-600">
+          <h3 className="mb-2 text-2xl font-bold text-wfd-charcoal">Policy and Protocol Review Complete</h3>
+          <p className="mb-6 text-gray-600 max-w-md mx-auto">
             You have passed each compliance rule. An administrator will review your onboarding
             record and grant portal access after approval.
           </p>
@@ -233,10 +264,25 @@ export function KnowledgeGate({ studentId, onComplete, onBack, helpEmail }: Know
     );
   }
 
+  if (mode === 'success') {
+    return (
+      <div className={slideClasses + ' transition-all duration-300 text-center py-8'}>
+        <QuizHeader progressStep={progressStep} attempts={ruleAttempts} totalRules={rules.length} ruleTitle={currentRule.title} mode="success" />
+        <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-wfd-sage/10 animate-bounce">
+          <svg className="h-10 w-10 text-wfd-sage" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <h3 className="text-xl font-bold text-wfd-sage mb-2">Correct!</h3>
+        <p className="text-gray-500 text-sm">All non-compliant photos identified.</p>
+      </div>
+    );
+  }
+
   if (mode === 'rule') {
     return (
-      <div>
-        <Header progressStep={progressStep} attempts={attempts} totalRules={rules.length} />
+      <div className={slideClasses + ' transition-all duration-300'}>
+        <QuizHeader progressStep={progressStep} attempts={ruleAttempts} totalRules={rules.length} ruleTitle={currentRule.title} mode="rule" />
         <div className="rounded-xl border border-gray-200 bg-gray-50 p-5">
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-wfd-crimson">
             Rule {ruleIndex + 1} of {rules.length}
@@ -250,7 +296,7 @@ export function KnowledgeGate({ studentId, onComplete, onBack, helpEmail }: Know
               Previous Step
             </Button>
           )}
-          <Button onClick={() => setMode('question')} className="flex-1">
+          <Button onClick={() => changeMode('question', 'left')} className="flex-1">
             Next Question
           </Button>
         </div>
@@ -267,59 +313,65 @@ export function KnowledgeGate({ studentId, onComplete, onBack, helpEmail }: Know
     );
   }
 
+  if (mode === 'feedback') {
+    return (
+      <div className={slideClasses + ' transition-all duration-300'}>
+        <QuizHeader progressStep={progressStep} attempts={ruleAttempts} totalRules={rules.length} ruleTitle={currentRule.title} mode="feedback" />
+        <FeedbackPanel
+          photos={currentRule.photos}
+          categories={getFeedbackCategories()}
+          attempts={ruleAttempts}
+          onReviewRule={() => {
+            setSelected(new Set());
+            changeMode('rule', 'right');
+          }}
+          onRetry={() => {
+            setSelected(new Set());
+            setMode('question');
+          }}
+        />
+
+        <div className="mt-6 pt-4 border-t border-gray-100">
+          <p className="text-xs text-gray-400">
+            Need help? Contact your instructor or email{' '}
+            <a href={`mailto:${helpEmail ?? 'jbrown@winchesterky.com'}`} className="text-wfd-crimson hover:underline">
+              {helpEmail ?? 'jbrown@winchesterky.com'}
+            </a>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div>
-      <Header progressStep={progressStep} attempts={attempts} totalRules={rules.length} />
+    <div className={slideClasses + ' transition-all duration-300'}>
+      <QuizHeader progressStep={progressStep} attempts={ruleAttempts} totalRules={rules.length} ruleTitle={currentRule.title} mode="question" />
       <div className="mb-5">
         <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-wfd-crimson">
           {currentRule.title}
         </p>
         <h3 className="text-lg font-bold text-wfd-charcoal">{currentRule.instruction}</h3>
         <p className="mt-1 text-sm text-gray-500">
-          Tap every non-compliant photo. Leave compliant photos unselected.
+          Visually inspect each photo. Tap every photo that shows a policy violation.
         </p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {currentRule.photos.map((photo) => {
-          const isSelected = selected.has(photo.id);
-          return (
-            <button
-              key={photo.id}
-              type="button"
-              onClick={() => togglePhoto(photo.id)}
-              className={`overflow-hidden rounded-xl border-2 bg-white text-left shadow-sm transition-all ${
-                isSelected
-                  ? 'border-wfd-crimson ring-2 ring-wfd-crimson/20'
-                  : 'border-gray-200 hover:border-gray-300'
-              }`}
-            >
-              <img src={photo.imageUrl} alt={photo.label} className="h-36 w-full object-cover" />
-              <div className="p-3">
-                <div className="flex items-start justify-between gap-2">
-                  <p className="text-sm font-semibold text-wfd-charcoal">{photo.label}</p>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-bold ${
-                      isSelected ? 'bg-wfd-crimson text-white' : 'bg-gray-100 text-gray-500'
-                    }`}
-                  >
-                    {isSelected ? 'Selected' : 'Tap'}
-                  </span>
-                </div>
-              </div>
-            </button>
-          );
-        })}
+        {currentRule.photos.map((photo) => (
+          <QuizPhotoCard
+            key={photo.id}
+            imageUrl={photo.imageUrl}
+            label={photo.label}
+            reason={photo.reason}
+            isSelected={selected.has(photo.id)}
+            mode="selection"
+            onToggle={() => togglePhoto(photo.id)}
+          />
+        ))}
       </div>
 
-      {feedback && (
-        <div className="mt-5 rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-800">
-          {feedback}
-        </div>
-      )}
-
-      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-        <Button variant="secondary" onClick={() => setMode('rule')} className="flex-1">
+      <div className="sticky bottom-0 mt-6 flex flex-col gap-3 sm:flex-row bg-white/90 backdrop-blur-sm -mx-1 px-1 py-3 sm:static sm:bg-transparent sm:backdrop-blur-none sm:-mx-0 sm:px-0 sm:py-0">
+        <Button variant="secondary" onClick={() => changeMode('rule', 'right')} className="flex-1">
           Review Rule
         </Button>
         <Button onClick={submitAnswer} className="flex-1">
@@ -327,43 +379,13 @@ export function KnowledgeGate({ studentId, onComplete, onBack, helpEmail }: Know
         </Button>
       </div>
 
-      <div className="mt-6 pt-4 border-t border-gray-100">
+      <div className="mt-6 pt-4 border-t border-gray-100 hidden sm:block">
         <p className="text-xs text-gray-400">
           Need help? Contact your instructor or email{' '}
           <a href="mailto:jbrown@winchesterky.com" className="text-wfd-crimson hover:underline">
             jbrown@winchesterky.com
           </a>
         </p>
-      </div>
-    </div>
-  );
-}
-
-function Header({
-  progressStep,
-  attempts,
-  totalRules,
-}: {
-  progressStep: number;
-  attempts: number;
-  totalRules: number;
-}) {
-  return (
-    <div className="mb-6">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="text-xl font-bold text-wfd-charcoal pb-2 border-b-2 border-wfd-crimson">Policy and Protocol Review</h2>
-        <div className="text-right text-sm text-gray-500 shrink-0">
-          <div>
-            Rule {progressStep} of {totalRules}
-          </div>
-          <div className="text-xs">Attempts: {attempts}</div>
-        </div>
-      </div>
-      <div className="h-2 w-full rounded-full bg-gray-200">
-        <div
-          className="h-2 rounded-full bg-wfd-crimson transition-all duration-300"
-          style={{ width: `${(progressStep / totalRules) * 100}%` }}
-        />
       </div>
     </div>
   );

@@ -41,6 +41,8 @@ export function DailyOps() {
   const [broadcasting, setBroadcasting] = useState(false);
   const [showBroadcast, setShowBroadcast] = useState(false);
   const [welcomePreview, setWelcomePreview] = useState<{ title: string; body: string; is_active: boolean } | null>(null);
+  const [quizFlags, setQuizFlags] = useState<any[]>([]);
+  const [acknowledgingFlag, setAcknowledgingFlag] = useState<string | null>(null);
 
   const supabase = createClient();
 
@@ -55,12 +57,14 @@ export function DailyOps() {
       { data: allSchedules },
       { data: recentEvals },
       { data: welcomeMsg },
+      { data: quizFlagsData },
     ] = await Promise.all([
       supabase.from('students').select('*').eq('status', 'pending').order('created_at', { ascending: false }),
       supabase.from('students').select('*').order('created_at', { ascending: false }),
       supabase.from('schedules').select('*, students!inner(full_name, email)').order('created_at', { ascending: false }),
       supabase.from('evaluations').select('*, students!inner(full_name), preceptors!inner(full_name)').order('created_at', { ascending: false }).limit(10),
       supabase.from('message_templates').select('*').eq('template_type', 'welcome').limit(1),
+      supabase.from('quiz_flags').select('*').eq('acknowledged', false).order('created_at', { ascending: false }),
     ]);
 
     setPendingStudents(pending ?? []);
@@ -76,6 +80,7 @@ export function DailyOps() {
     if (welcomeMsg?.[0]) {
       setWelcomePreview({ title: welcomeMsg[0].title, body: welcomeMsg[0].body, is_active: welcomeMsg[0].is_active });
     }
+    setQuizFlags(quizFlagsData ?? []);
   };
 
   const handleApprove = async (student: any) => {
@@ -197,6 +202,23 @@ export function DailyOps() {
     setMessages(data ?? []);
   };
 
+  const handleAcknowledgeFlag = async (flagId: string) => {
+    setAcknowledgingFlag(flagId);
+    try {
+      await fetch('/api/admin/acknowledge-quiz-flag', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ flagId }),
+      });
+      setQuizFlags((prev) => prev.filter((f) => f.id !== flagId));
+      setTickerEvents((prev) => [
+        { type: 'flag', text: `Quiz flag acknowledged`, time: new Date().toISOString() },
+        ...prev,
+      ]);
+    } catch {}
+    setAcknowledgingFlag(null);
+  };
+
   const filteredSchedules = schedules.filter((s: any) => s.status === 'pending');
 
   return (
@@ -251,6 +273,43 @@ export function DailyOps() {
                     Reject
                   </Button>
                 </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      {/* Quiz Flags */}
+      <Card className="p-4">
+        <h3 className="font-bold text-wfd-charcoal mb-3">
+          Quiz Flags
+          {quizFlags.length > 0 && (
+            <span className="ml-2 text-xs bg-wfd-crimson text-white rounded-full px-2 py-0.5">
+              {quizFlags.length}
+            </span>
+          )}
+        </h3>
+        {quizFlags.length === 0 ? (
+          <p className="text-gray-400 text-sm">No quiz flags.</p>
+        ) : (
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {quizFlags.map((f) => (
+              <div key={f.id} className="flex items-center justify-between p-2 bg-amber-50 rounded-lg border border-amber-200">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium truncate">{f.student_name}</p>
+                  <p className="text-xs text-gray-500">
+                    {f.rule_title} — {f.attempt_count} attempts — {new Date(f.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => handleAcknowledgeFlag(f.id)}
+                  loading={acknowledgingFlag === f.id}
+                  className="ml-3 flex-shrink-0"
+                >
+                  Acknowledge
+                </Button>
               </div>
             ))}
           </div>
@@ -393,7 +452,7 @@ export function DailyOps() {
           {tickerEvents.map((evt, i) => (
             <div key={i} className="text-sm text-gray-600 flex items-center gap-2">
               <span className={`w-1.5 h-1.5 rounded-full ${
-                evt.type === 'approval' ? 'bg-wfd-sage' : 'bg-wfd-charcoal/40'
+                evt.type === 'approval' ? 'bg-wfd-sage' : evt.type === 'flag' ? 'bg-amber-500' : 'bg-wfd-charcoal/40'
               }`} />
               {evt.text}
               <span className="text-xs text-gray-400">
