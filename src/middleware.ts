@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { canAccessAdmin } from './lib/roles';
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -33,8 +34,7 @@ export async function middleware(request: NextRequest) {
     if (!user) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
-    const role = user.user_metadata?.role;
-    if (role !== 'admin' && role !== 'preceptor') {
+    if (!canAccessAdmin(user)) {
       return new NextResponse('Forbidden', { status: 403 });
     }
   }

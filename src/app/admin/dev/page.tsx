@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { canAccessAdmin } from '@/lib/roles';
 import Link from 'next/link';
 
 const pageLinks: { href: string; label: string; note?: string }[] = [
@@ -26,7 +27,7 @@ export default function DevPage() {
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => {
-      if (data?.user?.user_metadata?.role !== 'admin') {
+      if (!canAccessAdmin(data?.user)) {
         window.location.href = '/login';
       }
       setLoading(false);

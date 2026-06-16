@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { canAccessAdmin } from '@/lib/roles';
 import Link from 'next/link';
 
 type Tab = 'admins' | 'preceptors' | 'students';
@@ -31,7 +32,16 @@ function AccountsPageInner() {
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    loadAll();
+    const checkAccessAndLoad = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (!canAccessAdmin(data?.user)) {
+        window.location.href = '/login';
+        return;
+      }
+      await loadAll();
+    };
+
+    checkAccessAndLoad();
   }, []);
 
   useEffect(() => {

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { canAccessPreceptor } from '@/lib/roles';
 
 export default function PreceptorPage() {
   const [loading, setLoading] = useState(true);
@@ -9,8 +10,7 @@ export default function PreceptorPage() {
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => {
-      const role = data?.user?.user_metadata?.role;
-      if (role !== 'preceptor' && role !== 'admin') {
+      if (!canAccessPreceptor(data?.user)) {
         window.location.href = '/login';
       }
       setLoading(false);

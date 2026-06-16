@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { DailyOps } from '@/components/admin/daily-ops';
 import { PreceptorAnalytics } from '@/components/admin/preceptor-analytics';
 import { MaintenanceArchive } from '@/components/admin/maintenance-archive';
+import { canAccessAdmin } from '@/lib/roles';
 import Link from 'next/link';
 
 type Tab = 'daily' | 'analytics' | 'maintenance';
@@ -18,7 +19,7 @@ export default function AdminPage() {
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => {
-      if (data?.user?.user_metadata?.role !== 'admin') {
+      if (!canAccessAdmin(data?.user)) {
         window.location.href = '/login';
       }
       setLoading(false);

@@ -9,6 +9,7 @@ import { ResourceLibraryConfig } from '@/components/admin/resource-library-confi
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { canAccessAdmin } from '@/lib/roles';
 import Link from 'next/link';
 
 export default function SetupPage() {
@@ -28,7 +29,7 @@ export default function SetupPage() {
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => {
-      if (data?.user?.user_metadata?.role !== 'admin') {
+      if (!canAccessAdmin(data?.user)) {
         window.location.href = '/login';
       }
       setLoading(false);

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
+import { canAccessAdmin } from '@/lib/roles';
 
 export async function DELETE(request: NextRequest) {
   const cookieHeader = request.headers.get('cookie') || '';
@@ -12,7 +13,7 @@ export async function DELETE(request: NextRequest) {
   );
 
   const { data: { user } } = await authClient.auth.getUser();
-  if (!user || user.user_metadata?.role !== 'admin') {
+  if (!canAccessAdmin(user)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 

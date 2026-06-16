@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { canAccessAdmin, canAccessPreceptor } from '@/lib/roles';
 
 export default function LoginPage() {
   const [mode, setMode] = useState<'student' | 'admin'>('student');
@@ -91,11 +92,14 @@ export default function LoginPage() {
       return;
     }
 
-    const role = data?.user?.user_metadata?.role;
-    if (role === 'preceptor') {
+    if (canAccessAdmin(data?.user)) {
+      window.location.href = '/admin';
+    } else if (canAccessPreceptor(data?.user)) {
       window.location.href = '/preceptor';
     } else {
-      window.location.href = '/admin';
+      await supabase.auth.signOut();
+      setMessage({ type: 'error', text: 'This login area is only for admin and preceptor accounts.' });
+      setLoading(false);
     }
   };
 
