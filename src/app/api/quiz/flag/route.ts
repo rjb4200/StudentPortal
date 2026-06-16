@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,10 +9,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'studentId and ruleId required' }, { status: 400 });
     }
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    const supabase = createAdminClient();
 
     const [studentRes, ruleRes] = await Promise.all([
       supabase.from('students').select('full_name, email').eq('id', studentId).single(),

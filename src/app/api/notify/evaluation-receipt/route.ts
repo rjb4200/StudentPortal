@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { serverEnv } from '@/lib/env.server';
 
 export async function POST(request: NextRequest) {
   try {
     const { studentId } = await request.json();
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    const supabase = createAdminClient();
 
     const { data: student } = await supabase
       .from('students')
@@ -16,11 +14,11 @@ export async function POST(request: NextRequest) {
       .eq('id', studentId)
       .single();
 
-    if (student && process.env.RESEND_API_KEY) {
+    if (student && serverEnv.RESEND_API_KEY) {
       await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+          Authorization: `Bearer ${serverEnv.RESEND_API_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({

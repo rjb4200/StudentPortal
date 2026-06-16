@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { sendPushoverAlert } from '@/lib/pushover';
 
 export const dynamic = 'force-dynamic';
@@ -8,10 +8,7 @@ export async function GET() {
   const startTime = Date.now();
 
   try {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    const supabase = createAdminClient();
 
     const timeoutPromise = new Promise<never>((_, reject) =>
       setTimeout(() => reject(new Error('DB_TIMEOUT')), 5000)

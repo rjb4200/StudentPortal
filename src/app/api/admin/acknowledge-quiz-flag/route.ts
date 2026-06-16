@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
-import { createClient } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { canAccessAdmin } from '@/lib/roles';
+import { publicEnv } from '@/lib/env';
 
 export async function POST(request: NextRequest) {
   const cookieHeader = request.headers.get('cookie') || '';
 
   const authClient = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    publicEnv.SUPABASE_URL,
+    publicEnv.SUPABASE_ANON_KEY,
     {
       cookies: {
         getAll: () =>
@@ -33,11 +34,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'flagId required' }, { status: 400 });
   }
 
-  const adminClient = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  );
+  const adminClient = createAdminClient();
 
   const { error } = await adminClient
     .from('quiz_flags')

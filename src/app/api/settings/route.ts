@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient as createSupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@/lib/supabase/database.types';
+import { createClient } from '@/lib/supabase/client';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,10 +10,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Missing key parameter' }, { status: 400 });
   }
 
-  const supabase = createSupabaseClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  const supabase = createClient();
 
   const { data } = await supabase
     .from('portal_settings')
