@@ -251,7 +251,7 @@ export function KnowledgeGate({ studentId, onComplete, onBack, helpEmail }: Know
             </Button>
           )}
           <Button onClick={() => setMode('question')} className="flex-1">
-            Continue to Photo Question
+            Next Question
           </Button>
         </div>
 
