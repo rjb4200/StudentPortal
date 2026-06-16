@@ -10,11 +10,12 @@ interface LegalWaiverProps {
   studentId: string;
   onComplete: () => void;
   onBack?: () => void;
+  helpEmail?: string;
 }
 
 type LegalDoc = Tables<'legal_documents'>;
 
-export function LegalWaiver({ studentId, onComplete, onBack }: LegalWaiverProps) {
+export function LegalWaiver({ studentId, onComplete, onBack, helpEmail }: LegalWaiverProps) {
   const [docs, setDocs] = useState<LegalDoc[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(true);
   const [fullName, setFullName] = useState('');
@@ -160,8 +161,8 @@ export function LegalWaiver({ studentId, onComplete, onBack }: LegalWaiverProps)
       <div className="mt-6 pt-4 border-t border-gray-100">
         <p className="text-xs text-gray-400">
           Need help? Contact your instructor or email{' '}
-          <a href="mailto:jbrown@winchesterky.com" className="text-wfd-crimson hover:underline">
-            jbrown@winchesterky.com
+          <a href={`mailto:${helpEmail ?? 'jbrown@winchesterky.com'}`} className="text-wfd-crimson hover:underline">
+            {helpEmail ?? 'jbrown@winchesterky.com'}
           </a>
         </p>
       </div>

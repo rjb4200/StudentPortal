@@ -8,6 +8,7 @@ interface KnowledgeGateProps {
   studentId: string;
   onComplete: (password: string | null, email: string) => void;
   onBack?: () => void;
+  helpEmail?: string;
 }
 
 interface CompliancePhoto {
@@ -26,7 +27,7 @@ interface ComplianceRule {
   photos: CompliancePhoto[];
 }
 
-export function KnowledgeGate({ studentId, onComplete, onBack }: KnowledgeGateProps) {
+export function KnowledgeGate({ studentId, onComplete, onBack, helpEmail }: KnowledgeGateProps) {
   const [rules, setRules] = useState<ComplianceRule[]>([]);
   const [loadingRules, setLoadingRules] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -223,8 +224,8 @@ export function KnowledgeGate({ studentId, onComplete, onBack }: KnowledgeGatePr
         <div className="mt-6 pt-4 border-t border-gray-100">
           <p className="text-xs text-gray-400">
             Need help? Contact your instructor or email{' '}
-            <a href="mailto:jbrown@winchesterky.com" className="text-wfd-crimson hover:underline">
-              jbrown@winchesterky.com
+            <a href={`mailto:${helpEmail ?? 'jbrown@winchesterky.com'}`} className="text-wfd-crimson hover:underline">
+              {helpEmail ?? 'jbrown@winchesterky.com'}
             </a>
           </p>
         </div>
@@ -257,8 +258,8 @@ export function KnowledgeGate({ studentId, onComplete, onBack }: KnowledgeGatePr
         <div className="mt-6 pt-4 border-t border-gray-100">
           <p className="text-xs text-gray-400">
             Need help? Contact your instructor or email{' '}
-            <a href="mailto:jbrown@winchesterky.com" className="text-wfd-crimson hover:underline">
-              jbrown@winchesterky.com
+            <a href={`mailto:${helpEmail ?? 'jbrown@winchesterky.com'}`} className="text-wfd-crimson hover:underline">
+              {helpEmail ?? 'jbrown@winchesterky.com'}
             </a>
           </p>
         </div>

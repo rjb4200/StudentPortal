@@ -9,11 +9,12 @@ import type { Tables } from '@/lib/supabase/database.types';
 interface RegistrationFormProps {
   onComplete: (studentId: string) => void;
   onBack?: () => void;
+  helpEmail?: string;
 }
 
 type RegField = Tables<'registration_fields'>;
 
-export function RegistrationForm({ onComplete, onBack }: RegistrationFormProps) {
+export function RegistrationForm({ onComplete, onBack, helpEmail }: RegistrationFormProps) {
   const [loading, setLoading] = useState(false);
   const [loadingFields, setLoadingFields] = useState(true);
   const [error, setError] = useState('');
@@ -191,8 +192,8 @@ export function RegistrationForm({ onComplete, onBack }: RegistrationFormProps) 
       <div className="mt-6 pt-4 border-t border-gray-100">
         <p className="text-xs text-gray-400">
           Need help? Contact your instructor or email{' '}
-          <a href="mailto:jbrown@winchesterky.com" className="text-wfd-crimson hover:underline">
-            jbrown@winchesterky.com
+          <a href={`mailto:${helpEmail ?? 'jbrown@winchesterky.com'}`} className="text-wfd-crimson hover:underline">
+            {helpEmail ?? 'jbrown@winchesterky.com'}
           </a>
         </p>
       </div>

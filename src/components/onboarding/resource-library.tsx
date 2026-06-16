@@ -8,12 +8,13 @@ import type { Tables } from '@/lib/supabase/database.types';
 interface ResourceLibraryProps {
   onComplete: () => void;
   onBack?: () => void;
+  helpEmail?: string;
 }
 
 type ResCategory = Tables<'resource_categories'>;
 type ResDoc = Tables<'resource_documents'>;
 
-export function ResourceLibrary({ onComplete, onBack }: ResourceLibraryProps) {
+export function ResourceLibrary({ onComplete, onBack, helpEmail }: ResourceLibraryProps) {
   const [categories, setCategories] = useState<ResCategory[]>([]);
   const [documents, setDocuments] = useState<ResDoc[]>([]);
   const [loading, setLoading] = useState(true);
@@ -143,8 +144,8 @@ export function ResourceLibrary({ onComplete, onBack }: ResourceLibraryProps) {
       <div className="mt-6 pt-4 border-t border-gray-100">
         <p className="text-xs text-gray-400">
           Need help? Contact your instructor or email{' '}
-          <a href="mailto:jbrown@winchesterky.com" className="text-wfd-crimson hover:underline">
-            jbrown@winchesterky.com
+          <a href={`mailto:${helpEmail ?? 'jbrown@winchesterky.com'}`} className="text-wfd-crimson hover:underline">
+            {helpEmail ?? 'jbrown@winchesterky.com'}
           </a>
         </p>
       </div>

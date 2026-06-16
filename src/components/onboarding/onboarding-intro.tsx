@@ -2,9 +2,10 @@
 
 interface OnboardingIntroProps {
   onBegin: () => void;
+  helpEmail?: string;
 }
 
-export function OnboardingIntro({ onBegin }: OnboardingIntroProps) {
+export function OnboardingIntro({ onBegin, helpEmail }: OnboardingIntroProps) {
   return (
     <div className="bg-wfd-crimson rounded-xl shadow-lg overflow-hidden mb-8">
       <div className="px-6 py-10 md:px-10 md:py-14 text-center">
@@ -34,8 +35,8 @@ export function OnboardingIntro({ onBegin }: OnboardingIntroProps) {
       <div className="bg-wfd-charcoal px-6 py-4 text-center">
         <p className="text-gray-400 text-xs">
           Need help? Contact your instructor or email{' '}
-          <a href="mailto:jbrown@winchesterky.com" className="text-wfd-gold hover:underline">
-            jbrown@winchesterky.com
+          <a href={`mailto:${helpEmail ?? 'jbrown@winchesterky.com'}`} className="text-wfd-gold hover:underline">
+            {helpEmail ?? 'jbrown@winchesterky.com'}
           </a>
         </p>
       </div>

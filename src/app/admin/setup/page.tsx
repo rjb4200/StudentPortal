@@ -25,6 +25,8 @@ export default function SetupPage() {
   const [completionBody, setCompletionBody] = useState('');
   const [completionActive, setCompletionActive] = useState(false);
   const [savingCompletion, setSavingCompletion] = useState(false);
+  const [helpEmail, setHelpEmail] = useState('');
+  const [savingHelpEmail, setSavingHelpEmail] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -35,7 +37,36 @@ export default function SetupPage() {
       setLoading(false);
     });
     loadWelcome();
+    loadHelpEmail();
   }, []);
+
+  async function loadHelpEmail() {
+    const { data } = await supabase
+      .from('portal_settings')
+      .select('value')
+      .eq('key', 'help_email')
+      .single();
+    if (data?.value) setHelpEmail(data.value);
+  }
+
+  async function handleSaveHelpEmail() {
+    setSavingHelpEmail(true);
+    const { data: existing } = await supabase
+      .from('portal_settings')
+      .select('key')
+      .eq('key', 'help_email')
+      .single();
+    if (existing) {
+      await supabase.from('portal_settings').update({
+        value: helpEmail, updated_at: new Date().toISOString(),
+      }).eq('key', 'help_email');
+    } else {
+      await supabase.from('portal_settings').insert({
+        key: 'help_email', value: helpEmail,
+      });
+    }
+    setSavingHelpEmail(false);
+  }
 
   async function loadWelcome() {
     const { data } = await supabase
@@ -138,6 +169,15 @@ export default function SetupPage() {
             <input type="checkbox" checked={completionActive} onChange={(e) => setCompletionActive(e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-wfd-crimson" /> Active
           </label>
           <Button type="button" onClick={handleSaveCompletion} loading={savingCompletion}>Save Completion Message</Button>
+        </div>
+      </Card>
+
+      <Card className="p-4">
+        <h3 className="font-bold text-wfd-charcoal mb-3">Help Email</h3>
+        <p className="text-sm text-gray-500 mb-3">Contact email shown on every onboarding step for student assistance.</p>
+        <div className="flex gap-3">
+          <Input label="Email address" type="email" value={helpEmail} onChange={(e) => setHelpEmail(e.target.value)} className="flex-1" />
+          <Button type="button" onClick={handleSaveHelpEmail} loading={savingHelpEmail} className="self-end">Save</Button>
         </div>
       </Card>
     </div>

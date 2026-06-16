@@ -27,9 +27,10 @@ interface OnboardingCompleteProps {
   password: string | null;
   email: string;
   onBack?: () => void;
+  helpEmail?: string;
 }
 
-export function OnboardingComplete({ studentId, password, email, onBack }: OnboardingCompleteProps) {
+export function OnboardingComplete({ studentId, password, email, onBack, helpEmail }: OnboardingCompleteProps) {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [loading, setLoading] = useState(true);

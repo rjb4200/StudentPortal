@@ -60,6 +60,7 @@ export default function OnboardingPage() {
   const [showResume, setShowResume] = useState(false);
   const [pendingSession, setPendingSession] = useState<SavedSession | null>(null);
   const [initialized, setInitialized] = useState(false);
+  const [helpEmail, setHelpEmail] = useState('jbrown@winchesterky.com');
 
   const advanceStep = useCallback((step: Step, id: string | null, email: string) => {
     setCurrentStep(step);
@@ -88,6 +89,15 @@ export default function OnboardingPage() {
       setShowIntro(false);
     }
     setInitialized(true);
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/settings?key=help_email')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.value) setHelpEmail(data.value);
+      })
+      .catch(() => {});
   }, []);
 
   const handleBegin = useCallback(() => {
@@ -157,7 +167,7 @@ export default function OnboardingPage() {
   if (showIntro) {
     return (
       <div className="max-w-3xl mx-auto">
-        <OnboardingIntro onBegin={handleBegin} />
+        <OnboardingIntro onBegin={handleBegin} helpEmail={helpEmail} />
       </div>
     );
   }
@@ -168,18 +178,18 @@ export default function OnboardingPage() {
       <OnboardingStepperMobile currentStep={currentStep} />
 
       <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 md:p-8">
-        {currentStep === 1 && <RegistrationForm onComplete={handleRegistrationComplete} />}
+        {currentStep === 1 && <RegistrationForm onComplete={handleRegistrationComplete} helpEmail={helpEmail} />}
         {currentStep === 2 && studentId && (
-          <LegalWaiver studentId={studentId} onComplete={handleLegalComplete} onBack={goBack} />
+          <LegalWaiver studentId={studentId} onComplete={handleLegalComplete} onBack={goBack} helpEmail={helpEmail} />
         )}
         {currentStep === 3 && (
-          <ResourceLibrary onComplete={handleResourcesComplete} onBack={goBack} />
+          <ResourceLibrary onComplete={handleResourcesComplete} onBack={goBack} helpEmail={helpEmail} />
         )}
         {currentStep === 4 && studentId && (
-          <KnowledgeGate studentId={studentId} onComplete={handleQuizComplete} onBack={goBack} />
+          <KnowledgeGate studentId={studentId} onComplete={handleQuizComplete} onBack={goBack} helpEmail={helpEmail} />
         )}
         {currentStep === 5 && studentId && (
-          <OnboardingComplete studentId={studentId} password={studentPassword} email={studentEmail} />
+          <OnboardingComplete studentId={studentId} password={studentPassword} email={studentEmail} helpEmail={helpEmail} />
         )}
       </div>
     </div>
