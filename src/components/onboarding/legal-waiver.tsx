@@ -9,11 +9,12 @@ import type { Tables } from '@/lib/supabase/database.types';
 interface LegalWaiverProps {
   studentId: string;
   onComplete: () => void;
+  onBack?: () => void;
 }
 
 type LegalDoc = Tables<'legal_documents'>;
 
-export function LegalWaiver({ studentId, onComplete }: LegalWaiverProps) {
+export function LegalWaiver({ studentId, onComplete, onBack }: LegalWaiverProps) {
   const [docs, setDocs] = useState<LegalDoc[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(true);
   const [fullName, setFullName] = useState('');
@@ -82,16 +83,16 @@ export function LegalWaiver({ studentId, onComplete }: LegalWaiverProps) {
   if (loadingDocs) {
     return (
       <div>
-        <h2 className="text-xl font-bold text-wfd-charcoal mb-2">Legal Agreements</h2>
-        <p className="text-sm text-gray-600">Loading legal documents...</p>
+      <h2 className="text-xl font-bold text-wfd-charcoal mb-1 pb-2 border-b-2 border-wfd-crimson">Legal Agreements</h2>
+      <p className="text-sm text-gray-600 mt-2">Loading legal documents...</p>
       </div>
     );
   }
 
   return (
     <div>
-      <h2 className="text-xl font-bold text-wfd-charcoal mb-2">Legal Agreements</h2>
-      <p className="text-gray-500 mb-6">
+      <h2 className="text-xl font-bold text-wfd-charcoal mb-1 pb-2 border-b-2 border-wfd-crimson">Legal Agreements</h2>
+      <p className="text-gray-500 mb-6 mt-2">
         Please review and sign the documents below to continue.
       </p>
 
@@ -144,10 +145,26 @@ export function LegalWaiver({ studentId, onComplete }: LegalWaiverProps) {
           </div>
         )}
 
-        <Button type="submit" loading={loading} className="w-full">
-          Sign and Continue
-        </Button>
+        <div className="flex gap-3">
+          {onBack && (
+            <Button type="button" variant="secondary" onClick={onBack} className="flex-1">
+              Previous Step
+            </Button>
+          )}
+          <Button type="submit" loading={loading} className="flex-1">
+            Sign and Continue
+          </Button>
+        </div>
       </form>
+
+      <div className="mt-6 pt-4 border-t border-gray-100">
+        <p className="text-xs text-gray-400">
+          Need help? Contact your instructor or email{' '}
+          <a href="mailto:training@winchesterfire.org" className="text-wfd-crimson hover:underline">
+            training@winchesterfire.org
+          </a>
+        </p>
+      </div>
     </div>
   );
 }

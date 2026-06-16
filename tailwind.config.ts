@@ -10,9 +10,10 @@ export default {
     extend: {
       colors: {
         wfd: {
-          crimson: '#B61C20',
+          crimson: '#A40104',
           charcoal: '#1C1C1E',
           gold: '#D4AF37',
+          sage: '#6A994E',
         },
       },
       fontFamily: {

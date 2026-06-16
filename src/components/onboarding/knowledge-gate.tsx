@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 interface KnowledgeGateProps {
   studentId: string;
   onComplete: (password: string | null, email: string) => void;
+  onBack?: () => void;
 }
 
 interface CompliancePhoto {
@@ -25,7 +26,7 @@ interface ComplianceRule {
   photos: CompliancePhoto[];
 }
 
-export function KnowledgeGate({ studentId, onComplete }: KnowledgeGateProps) {
+export function KnowledgeGate({ studentId, onComplete, onBack }: KnowledgeGateProps) {
   const [rules, setRules] = useState<ComplianceRule[]>([]);
   const [loadingRules, setLoadingRules] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -175,8 +176,8 @@ export function KnowledgeGate({ studentId, onComplete }: KnowledgeGateProps) {
   if (loadingRules) {
     return (
       <div className="rounded-xl border border-gray-200 bg-gray-50 p-5 text-center">
-        <h2 className="mb-2 text-xl font-bold text-wfd-charcoal">Policy and Protocol Review</h2>
-        <p className="text-sm text-gray-600">Loading onboarding quiz...</p>
+        <h2 className="mb-2 text-xl font-bold text-wfd-charcoal pb-2 border-b-2 border-wfd-crimson">Policy and Protocol Review</h2>
+        <p className="text-sm text-gray-600 mt-2">Loading onboarding quiz...</p>
       </div>
     );
   }
@@ -184,7 +185,7 @@ export function KnowledgeGate({ studentId, onComplete }: KnowledgeGateProps) {
   if (loadError) {
     return (
       <div className="rounded-xl border border-red-200 bg-red-50 p-5">
-        <h2 className="mb-2 text-xl font-bold text-red-800">Policy and Protocol Review Unavailable</h2>
+        <h2 className="mb-2 text-xl font-bold text-red-800 pb-2 border-b-2 border-red-300">Policy and Protocol Review Unavailable</h2>
         <p className="text-sm text-red-700">{loadError}</p>
       </div>
     );
@@ -193,7 +194,7 @@ export function KnowledgeGate({ studentId, onComplete }: KnowledgeGateProps) {
   if (rules.length === 0 || !currentRule) {
     return (
       <div className="rounded-xl border border-orange-200 bg-orange-50 p-5">
-        <h2 className="mb-2 text-xl font-bold text-orange-800">Policy and Protocol Review Not Configured</h2>
+        <h2 className="mb-2 text-xl font-bold text-orange-800 pb-2 border-b-2 border-orange-300">Policy and Protocol Review Not Configured</h2>
         <p className="text-sm text-orange-700">
           No active onboarding quiz rules are available. Please contact EMS administration.
         </p>
@@ -218,6 +219,15 @@ export function KnowledgeGate({ studentId, onComplete }: KnowledgeGateProps) {
             Finish Onboarding
           </Button>
         </div>
+
+        <div className="mt-6 pt-4 border-t border-gray-100">
+          <p className="text-xs text-gray-400">
+            Need help? Contact your instructor or email{' '}
+            <a href="mailto:training@winchesterfire.org" className="text-wfd-crimson hover:underline">
+              training@winchesterfire.org
+            </a>
+          </p>
+        </div>
       </div>
     );
   }
@@ -233,9 +243,25 @@ export function KnowledgeGate({ studentId, onComplete }: KnowledgeGateProps) {
           <h3 className="mb-3 text-xl font-bold text-wfd-charcoal">{currentRule.title}</h3>
           <p className="leading-relaxed text-gray-700">{currentRule.rule}</p>
         </div>
-        <Button onClick={() => setMode('question')} className="mt-6 w-full">
-          Continue to Photo Question
-        </Button>
+        <div className="flex gap-3 mt-6">
+          {onBack && (
+            <Button type="button" variant="secondary" onClick={onBack} className="flex-1">
+              Previous Step
+            </Button>
+          )}
+          <Button onClick={() => setMode('question')} className="flex-1">
+            Continue to Photo Question
+          </Button>
+        </div>
+
+        <div className="mt-6 pt-4 border-t border-gray-100">
+          <p className="text-xs text-gray-400">
+            Need help? Contact your instructor or email{' '}
+            <a href="mailto:training@winchesterfire.org" className="text-wfd-crimson hover:underline">
+              training@winchesterfire.org
+            </a>
+          </p>
+        </div>
       </div>
     );
   }
@@ -299,6 +325,15 @@ export function KnowledgeGate({ studentId, onComplete }: KnowledgeGateProps) {
           Submit Selection
         </Button>
       </div>
+
+      <div className="mt-6 pt-4 border-t border-gray-100">
+        <p className="text-xs text-gray-400">
+          Need help? Contact your instructor or email{' '}
+          <a href="mailto:training@winchesterfire.org" className="text-wfd-crimson hover:underline">
+            training@winchesterfire.org
+          </a>
+        </p>
+      </div>
     </div>
   );
 }
@@ -315,8 +350,8 @@ function Header({
   return (
     <div className="mb-6">
       <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="text-xl font-bold text-wfd-charcoal">Policy and Protocol Review</h2>
-        <div className="text-right text-sm text-gray-500">
+        <h2 className="text-xl font-bold text-wfd-charcoal pb-2 border-b-2 border-wfd-crimson">Policy and Protocol Review</h2>
+        <div className="text-right text-sm text-gray-500 shrink-0">
           <div>
             Rule {progressStep} of {totalRules}
           </div>

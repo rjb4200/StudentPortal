@@ -8,11 +8,12 @@ import type { Tables } from '@/lib/supabase/database.types';
 
 interface RegistrationFormProps {
   onComplete: (studentId: string) => void;
+  onBack?: () => void;
 }
 
 type RegField = Tables<'registration_fields'>;
 
-export function RegistrationForm({ onComplete }: RegistrationFormProps) {
+export function RegistrationForm({ onComplete, onBack }: RegistrationFormProps) {
   const [loading, setLoading] = useState(false);
   const [loadingFields, setLoadingFields] = useState(true);
   const [error, setError] = useState('');
@@ -109,8 +110,8 @@ export function RegistrationForm({ onComplete }: RegistrationFormProps) {
   if (loadingFields) {
     return (
       <div>
-        <h2 className="text-xl font-bold text-wfd-charcoal mb-2">Student Registration</h2>
-        <p className="text-sm text-gray-600">Loading registration form...</p>
+      <h2 className="text-xl font-bold text-wfd-charcoal mb-1 pb-2 border-b-2 border-wfd-crimson">Student Registration</h2>
+      <p className="text-sm text-gray-600 mt-2">Loading registration form...</p>
       </div>
     );
   }
@@ -168,8 +169,8 @@ export function RegistrationForm({ onComplete }: RegistrationFormProps) {
 
   return (
     <div>
-      <h2 className="text-xl font-bold text-wfd-charcoal mb-2">Student Registration</h2>
-      <p className="text-gray-500 mb-6">Enter your information to begin onboarding.</p>
+      <h2 className="text-xl font-bold text-wfd-charcoal mb-1 pb-2 border-b-2 border-wfd-crimson">Student Registration</h2>
+      <p className="text-gray-500 mb-6 mt-2">Enter your information to begin onboarding.</p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -186,6 +187,15 @@ export function RegistrationForm({ onComplete }: RegistrationFormProps) {
           Continue to Legal Agreements
         </Button>
       </form>
+
+      <div className="mt-6 pt-4 border-t border-gray-100">
+        <p className="text-xs text-gray-400">
+          Need help? Contact your instructor or email{' '}
+          <a href="mailto:training@winchesterfire.org" className="text-wfd-crimson hover:underline">
+            training@winchesterfire.org
+          </a>
+        </p>
+      </div>
     </div>
   );
 }

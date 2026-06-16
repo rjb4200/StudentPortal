@@ -26,9 +26,10 @@ interface OnboardingCompleteProps {
   studentId: string;
   password: string | null;
   email: string;
+  onBack?: () => void;
 }
 
-export function OnboardingComplete({ studentId, password, email }: OnboardingCompleteProps) {
+export function OnboardingComplete({ studentId, password, email, onBack }: OnboardingCompleteProps) {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [loading, setLoading] = useState(true);
@@ -73,7 +74,7 @@ export function OnboardingComplete({ studentId, password, email }: OnboardingCom
       <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-2xl">
         ✓
       </div>
-      <h2 className="mb-2 text-xl font-bold text-wfd-crimson">{title}</h2>
+      <h2 className="mb-4 text-xl font-bold text-wfd-crimson pb-2 border-b-2 border-wfd-crimson inline-block">{title}</h2>
       <div className="text-gray-700 whitespace-pre-line leading-relaxed mb-4">{body}</div>
 
       <div className="inline-block p-4 bg-amber-50 border border-amber-200 rounded-lg text-left">

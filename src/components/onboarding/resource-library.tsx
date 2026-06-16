@@ -7,12 +7,13 @@ import type { Tables } from '@/lib/supabase/database.types';
 
 interface ResourceLibraryProps {
   onComplete: () => void;
+  onBack?: () => void;
 }
 
 type ResCategory = Tables<'resource_categories'>;
 type ResDoc = Tables<'resource_documents'>;
 
-export function ResourceLibrary({ onComplete }: ResourceLibraryProps) {
+export function ResourceLibrary({ onComplete, onBack }: ResourceLibraryProps) {
   const [categories, setCategories] = useState<ResCategory[]>([]);
   const [documents, setDocuments] = useState<ResDoc[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,8 +44,8 @@ export function ResourceLibrary({ onComplete }: ResourceLibraryProps) {
   if (loading) {
     return (
       <div>
-        <h2 className="text-xl font-bold text-wfd-charcoal mb-2">Resource Library</h2>
-        <p className="text-sm text-gray-600">Loading resources...</p>
+      <h2 className="text-xl font-bold text-wfd-charcoal mb-1 pb-2 border-b-2 border-wfd-crimson">Resource Library</h2>
+      <p className="text-sm text-gray-600 mt-2">Loading resources...</p>
       </div>
     );
   }
@@ -67,8 +68,8 @@ export function ResourceLibrary({ onComplete }: ResourceLibraryProps) {
 
   return (
     <div>
-      <h2 className="text-xl font-bold text-wfd-charcoal mb-2">Resource Library</h2>
-      <p className="text-gray-500 mb-6">
+      <h2 className="text-xl font-bold text-wfd-charcoal mb-1 pb-2 border-b-2 border-wfd-crimson">Resource Library</h2>
+      <p className="text-gray-500 mb-6 mt-2">
         Download and review these essential documents before your rotation. You&apos;ll be tested on
         this material in the Policy and Protocol Review.
       </p>
@@ -128,9 +129,25 @@ export function ResourceLibrary({ onComplete }: ResourceLibraryProps) {
         </p>
       </div>
 
-      <Button onClick={onComplete} className="w-full">
-        I&apos;ve Reviewed All Documents — Take the Policy and Protocol Review
-      </Button>
+      <div className="flex gap-3">
+        {onBack && (
+          <Button type="button" variant="secondary" onClick={onBack} className="flex-1">
+            Previous Step
+          </Button>
+        )}
+        <Button onClick={onComplete} className="flex-1">
+          I&apos;ve Reviewed All Documents — Take the Policy and Protocol Review
+        </Button>
+      </div>
+
+      <div className="mt-6 pt-4 border-t border-gray-100">
+        <p className="text-xs text-gray-400">
+          Need help? Contact your instructor or email{' '}
+          <a href="mailto:training@winchesterfire.org" className="text-wfd-crimson hover:underline">
+            training@winchesterfire.org
+          </a>
+        </p>
+      </div>
     </div>
   );
 }
