@@ -88,7 +88,7 @@ export function Messages({ studentId }: MessagesProps) {
               {msg.message_text}
               <div
                 className={`text-[10px] mt-1 ${
-                  msg.sender === 'student' ? 'text-red-200' : 'text-gray-400'
+                  msg.sender === 'student' ? 'text-wfd-crimson/20' : 'text-gray-400'
                 }`}
               >
                 {new Date(msg.created_at).toLocaleString()}

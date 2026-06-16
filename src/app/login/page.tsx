@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { canAccessAdmin, canAccessPreceptor } from '@/lib/roles';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 export default function LoginPage() {
   const [mode, setMode] = useState<'student' | 'admin'>('student');
@@ -118,7 +120,7 @@ export default function LoginPage() {
               className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
                 mode === 'student'
                   ? 'bg-wfd-crimson text-white shadow'
-                  : 'text-gray-600 hover:text-gray-900'
+                  : 'text-gray-600 hover:text-wfd-charcoal'
               }`}
             >
               Student
@@ -128,7 +130,7 @@ export default function LoginPage() {
               className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
                 mode === 'admin'
                   ? 'bg-wfd-charcoal text-white shadow'
-                  : 'text-gray-600 hover:text-gray-900'
+                  : 'text-gray-600 hover:text-wfd-charcoal'
               }`}
             >
               Admin
@@ -137,26 +139,13 @@ export default function LoginPage() {
 
           {mode === 'student' ? (
             <form onSubmit={handleStudentLogin}>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <input
-                type="email" required value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@school.edu"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wfd-crimson outline-none text-gray-900"
-              />
-              <label className="block text-sm font-medium text-gray-700 mb-1 mt-4">Password</label>
-              <input
-                type="password" required value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wfd-crimson outline-none text-gray-900"
-              />
-              <button
-                type="submit" disabled={loading}
-                className="w-full mt-4 bg-wfd-crimson text-white py-2.5 rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
-              >
-                {loading ? 'Signing in...' : 'Sign In'}
-              </button>
+              <Input label="Email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@school.edu" />
+              <div className="mt-4">
+                <Input label="Password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
+              </div>
+              <Button type="submit" loading={loading} className="w-full mt-4">
+                Sign In
+              </Button>
               <button
                 type="button" onClick={handleForgotPassword}
                 className="w-full mt-2 text-xs text-gray-400 hover:text-wfd-crimson"
@@ -166,26 +155,13 @@ export default function LoginPage() {
             </form>
           ) : (
             <form onSubmit={handleAdminLogin}>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <input
-                type="email" required value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@wfd.gov"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wfd-charcoal outline-none text-gray-900 mb-4"
-              />
-              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-              <input
-                type="password" required value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wfd-charcoal outline-none text-gray-900"
-              />
-              <button
-                type="submit" disabled={loading}
-                className="w-full mt-4 bg-wfd-charcoal text-white py-2.5 rounded-lg font-semibold hover:bg-gray-800 transition-colors disabled:opacity-50"
-              >
-                {loading ? 'Signing in...' : 'Sign In'}
-              </button>
+              <Input label="Email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@wfd.gov" />
+              <div className="mt-4">
+                <Input label="Password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
+              </div>
+              <Button type="submit" variant="secondary" loading={loading} className="w-full mt-4">
+                Sign In
+              </Button>
               <button
                 type="button" onClick={handleForgotPassword}
                 className="w-full mt-2 text-xs text-gray-400 hover:text-wfd-crimson"
@@ -199,8 +175,8 @@ export default function LoginPage() {
             <div
               className={`mt-4 p-3 rounded-lg text-sm ${
                 message.type === 'success'
-                  ? 'bg-green-50 text-green-800 border border-green-200'
-                  : 'bg-red-50 text-red-800 border border-red-200'
+                  ? 'bg-wfd-sage/10 text-wfd-sage border border-wfd-sage/30'
+                  : 'bg-wfd-crimson/10 text-wfd-crimson border border-wfd-crimson/30'
               }`}
             >
               {message.text}

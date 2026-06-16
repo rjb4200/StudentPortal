@@ -17,7 +17,8 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['Roboto Condensed', 'system-ui', 'sans-serif'],
+        serif: ['EB Garamond', 'Georgia', 'serif'],
       },
     },
   },

@@ -74,22 +74,22 @@ export function MaintenanceArchive() {
           Download Master Export
         </Button>
         {exported && (
-          <p className="text-sm text-green-600 mt-2">Export downloaded successfully.</p>
+          <p className="text-sm text-wfd-sage mt-2">Export downloaded successfully.</p>
         )}
       </Card>
 
       <Card className="p-4">
-        <h3 className="font-bold text-red-700 mb-4">Purge Data</h3>
+        <h3 className="font-bold text-wfd-crimson mb-4">Purge Data</h3>
         <p className="text-sm text-gray-500 mb-4">
           Delete all student data (students, schedules, evaluations, messages, notes).
           Preceptors and audit logs will be preserved. You must download the master export first.
         </p>
         {!exported ? (
-          <p className="text-sm text-orange-600 font-medium">
+          <p className="text-sm text-wfd-gold font-medium">
             Download the master export above to enable data purge.
           </p>
         ) : purgeDone ? (
-          <p className="text-sm text-green-600 font-medium">Data successfully purged.</p>
+          <p className="text-sm text-wfd-sage font-medium">Data successfully purged.</p>
         ) : (
           <Button variant="danger" onClick={handlePurge} loading={purging}>
             Purge All Student Data

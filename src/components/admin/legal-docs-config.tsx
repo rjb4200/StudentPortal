@@ -81,7 +81,7 @@ export function LegalDocsConfig() {
       </div>
 
       {(message || error) && (
-        <div className={`mb-4 rounded-lg border p-3 text-sm font-medium ${error ? 'border-red-200 bg-red-50 text-red-800' : 'border-green-200 bg-green-50 text-green-800'}`}>
+        <div className={`mb-4 rounded-lg border p-3 text-sm font-medium ${error ? 'border-wfd-crimson/30 bg-wfd-crimson/10 text-wfd-crimson' : 'border-wfd-sage/30 bg-wfd-sage/10 text-wfd-sage'}`}>
           {error ?? message}
         </div>
       )}
@@ -99,7 +99,7 @@ export function LegalDocsConfig() {
                     <p className="text-xs text-gray-500">Order {doc.sort_order} | {doc.require_checkbox ? 'Checkbox required' : 'No checkbox'}</p>
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${doc.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${doc.is_active ? 'bg-wfd-sage/15 text-wfd-sage' : 'bg-gray-100 text-gray-500'}`}>
                       {doc.is_active ? 'Active' : 'Inactive'}
                     </span>
                     <Button type="button" size="sm" variant="secondary" onClick={() => startEdit(doc)}>Edit</Button>

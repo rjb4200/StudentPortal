@@ -347,7 +347,7 @@ export function QuizConfig() {
                   onClick={() => setSelectedRuleId(rule.id)}
                   className={`w-full rounded-lg border p-3 text-left transition-colors ${
                     selectedRuleId === rule.id
-                      ? 'border-wfd-crimson bg-red-50'
+                      ? 'border-wfd-crimson bg-wfd-crimson/5'
                       : 'border-gray-200 bg-white hover:border-gray-300'
                   }`}
                 >
@@ -360,7 +360,7 @@ export function QuizConfig() {
                     </div>
                     <span
                       className={`rounded-full px-2 py-0.5 text-xs font-bold ${
-                        rule.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                        rule.is_active ? 'bg-wfd-sage/15 text-wfd-sage' : 'bg-gray-100 text-gray-500'
                       }`}
                     >
                       {rule.is_active ? 'Active' : 'Inactive'}
@@ -376,7 +376,7 @@ export function QuizConfig() {
             {(message || error) && (
               <div
                 className={`rounded-lg border p-3 text-sm font-medium ${
-                  error ? 'border-red-200 bg-red-50 text-red-800' : 'border-green-200 bg-green-50 text-green-800'
+                  error ? 'border-wfd-crimson/30 bg-wfd-crimson/10 text-wfd-crimson' : 'border-wfd-sage/30 bg-wfd-sage/10 text-wfd-sage'
                 }`}
               >
                 {error ?? message}
@@ -480,7 +480,7 @@ export function QuizConfig() {
                         </div>
                         <span
                           className={`rounded-full px-2 py-0.5 text-xs font-bold ${
-                            photo.is_non_compliant ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
+                            photo.is_non_compliant ? 'bg-wfd-crimson/15 text-wfd-crimson' : 'bg-wfd-sage/15 text-wfd-sage'
                           }`}
                         >
                           {photo.is_non_compliant ? 'Non-compliant' : 'Compliant'}

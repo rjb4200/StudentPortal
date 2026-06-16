@@ -17,11 +17,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         <input
           ref={ref}
           className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-wfd-crimson focus:border-transparent outline-none text-gray-900 ${
-            error ? 'border-red-500' : 'border-gray-300'
+            error ? 'border-wfd-crimson' : 'border-gray-300'
           } ${className}`}
           {...props}
         />
-        {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+        {error && <p className="mt-1 text-sm text-wfd-crimson">{error}</p>}
       </div>
     );
   }

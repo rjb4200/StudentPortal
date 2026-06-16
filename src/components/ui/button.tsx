@@ -2,12 +2,13 @@
 
 import { type ButtonHTMLAttributes } from 'react';
 
-type ButtonVariant = 'primary' | 'secondary' | 'danger';
+type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'sage';
 
 const variantStyles: Record<ButtonVariant, string> = {
-  primary: 'bg-wfd-crimson text-white hover:bg-red-700 focus:ring-wfd-crimson',
-  secondary: 'bg-wfd-charcoal text-white hover:bg-gray-800 focus:ring-wfd-charcoal',
-  danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-600',
+  primary: 'bg-wfd-crimson text-white hover:brightness-90 focus:ring-wfd-crimson',
+  secondary: 'bg-wfd-charcoal text-white hover:brightness-125 focus:ring-wfd-charcoal',
+  danger: 'bg-wfd-crimson text-white hover:brightness-90 focus:ring-wfd-crimson',
+  sage: 'bg-wfd-sage text-white hover:brightness-90 focus:ring-wfd-sage',
 };
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -33,7 +34,7 @@ export function Button({
   return (
     <button
       disabled={disabled || loading}
-      className={`${sizeStyles[size]} rounded-lg font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${variantStyles[variant]} ${className}`}
+      className={`${sizeStyles[size]} rounded-lg font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${variantStyles[variant]} ${className}`}
       {...props}
     >
       {loading ? (

@@ -46,7 +46,7 @@ export function CalendarGrid({ schedules, onDateClick }: CalendarGridProps) {
     if (!schedule) return '';
     switch (schedule.status) {
       case 'pending':
-        return 'bg-yellow-100 border-yellow-400 text-yellow-800';
+        return 'bg-wfd-gold/15 border-wfd-gold/30 text-wfd-gold';
       case 'approved':
         return 'bg-wfd-crimson text-white font-semibold';
       case 'rejected':
@@ -119,7 +119,7 @@ export function CalendarGrid({ schedules, onDateClick }: CalendarGridProps) {
 
       <div className="flex items-center gap-4 mt-4 text-xs text-gray-500">
         <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded bg-yellow-100 border border-yellow-400" /> Pending
+          <span className="w-3 h-3 rounded bg-wfd-gold/15 border border-wfd-gold/30" /> Pending
         </span>
         <span className="flex items-center gap-1">
           <span className="w-3 h-3 rounded bg-wfd-crimson" /> Approved

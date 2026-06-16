@@ -109,10 +109,10 @@ export default function DashboardPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setActiveTab('calendar')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               activeTab === 'calendar'
                 ? 'bg-wfd-crimson text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                : 'bg-wfd-charcoal/10 text-wfd-charcoal hover:bg-wfd-charcoal/20'
             }`}
           >
             Calendar
@@ -142,12 +142,12 @@ export default function DashboardPage() {
 
       {student?.status === 'pending' ? (
         <div className="space-y-6">
-          <Card className="p-6 bg-amber-50 border-amber-200">
-            <h2 className="text-lg font-bold text-amber-900 mb-3">Account Pending Approval</h2>
-            <p className="text-sm text-amber-800 leading-relaxed mb-4">
+          <Card className="p-6 bg-wfd-gold/10 border-wfd-gold/30">
+            <h2 className="text-lg font-bold text-wfd-gold mb-3">Account Pending Approval</h2>
+            <p className="text-sm text-wfd-charcoal/70 leading-relaxed mb-4">
               Your onboarding has been received and is awaiting administrative review. Once approved, you&apos;ll be able to request shifts, view preceptor profiles, and message administrators.
             </p>
-            <p className="text-sm text-amber-700">
+            <p className="text-sm text-wfd-charcoal/60">
               You&apos;ll receive an email when your account has been approved.
             </p>
           </Card>
@@ -176,15 +176,15 @@ export default function DashboardPage() {
       ) : (
         <div>
         {welcomeMsg && !welcomeDismissed && (
-        <Card className="p-4 bg-blue-50 border-blue-200">
+        <Card className="p-4 bg-wfd-sage/10 border-wfd-sage/30">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h3 className="font-bold text-blue-900 mb-1">{welcomeMsg.title}</h3>
-              <p className="text-sm text-blue-800 whitespace-pre-line">{welcomeMsg.body}</p>
+              <h3 className="font-bold text-wfd-sage mb-1">{welcomeMsg.title}</h3>
+              <p className="text-sm text-wfd-charcoal/70 whitespace-pre-line">{welcomeMsg.body}</p>
             </div>
             <button
               onClick={() => setWelcomeDismissed(true)}
-              className="text-blue-400 hover:text-blue-600 text-lg leading-none shrink-0"
+              className="text-wfd-sage/60 hover:text-wfd-sage text-lg leading-none shrink-0"
             >
               ×
             </button>
@@ -274,14 +274,14 @@ function PasswordChangePrompt({ studentId, onChanged }: { studentId: string; onC
   };
 
   return (
-    <Card className="p-4 bg-amber-50 border-amber-200">
-      <h3 className="font-bold text-amber-900 mb-1">Change Your Password</h3>
-      <p className="text-sm text-amber-800 mb-3">Your account uses a temporary password. Please set a new one.</p>
+    <Card className="p-4 bg-wfd-gold/10 border-wfd-gold/30">
+      <h3 className="font-bold text-wfd-gold mb-1">Change Your Password</h3>
+      <p className="text-sm text-wfd-charcoal/70 mb-3">Your account uses a temporary password. Please set a new one.</p>
       <div className="grid gap-2 sm:grid-cols-2">
-        <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="New password" className="px-3 py-1.5 border border-amber-300 rounded-lg text-sm" />
-        <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Confirm password" className="px-3 py-1.5 border border-amber-300 rounded-lg text-sm" />
+        <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="New password" className="px-3 py-1.5 border border-wfd-gold/30 rounded-lg text-sm" />
+        <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Confirm password" className="px-3 py-1.5 border border-wfd-gold/30 rounded-lg text-sm" />
       </div>
-      {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
+      {error && <p className="text-xs text-wfd-crimson mt-1">{error}</p>}
       <Button onClick={handleChange} loading={changing} size="sm" className="mt-2">Update Password</Button>
     </Card>
   );

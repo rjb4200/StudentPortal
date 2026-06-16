@@ -100,7 +100,7 @@ export function EvaluationForm({ studentId }: EvaluationFormProps) {
     return (
       <Card className="p-6 text-center">
         <div className="text-3xl mb-2">&#10003;</div>
-        <h3 className="text-lg font-bold text-green-700 mb-1">Evaluation Submitted</h3>
+        <h3 className="text-lg font-bold text-wfd-sage mb-1">Evaluation Submitted</h3>
         <p className="text-sm text-gray-500">Thank you for your feedback.</p>
       </Card>
     );
@@ -162,7 +162,7 @@ export function EvaluationForm({ studentId }: EvaluationFormProps) {
         </div>
 
         {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800">
+          <div className="p-3 bg-wfd-crimson/10 border border-wfd-crimson/30 rounded-lg text-sm text-wfd-crimson">
             {error}
           </div>
         )}

@@ -3,11 +3,11 @@ type BadgeVariant = 'crimson' | 'charcoal' | 'gold' | 'green' | 'red' | 'blue' |
 const variantStyles: Record<BadgeVariant, string> = {
   crimson: 'bg-wfd-crimson text-white',
   charcoal: 'bg-wfd-charcoal text-white',
-  gold: 'bg-yellow-500 text-wfd-charcoal',
-  green: 'bg-green-100 text-green-800',
-  red: 'bg-red-100 text-red-800',
-  blue: 'bg-blue-100 text-blue-800',
-  orange: 'bg-orange-100 text-orange-800',
+  gold: 'bg-wfd-gold text-wfd-charcoal',
+  green: 'bg-wfd-sage/15 text-wfd-sage',
+  red: 'bg-wfd-crimson/15 text-wfd-crimson',
+  blue: 'bg-wfd-charcoal/10 text-wfd-charcoal',
+  orange: 'bg-wfd-gold/15 text-wfd-gold',
   gray: 'bg-gray-100 text-gray-800',
 };
 

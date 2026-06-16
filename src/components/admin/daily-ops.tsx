@@ -365,15 +365,15 @@ export function DailyOps() {
                         onClick={() => handleKillSwitch(s)}
                         className={`px-3 py-1 rounded text-xs font-medium ${
                           s.is_blacklisted
-                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                            : 'bg-red-100 text-red-700 hover:bg-red-200'
+                            ? 'bg-wfd-sage/15 text-wfd-sage hover:bg-wfd-sage/25'
+                            : 'bg-wfd-crimson/15 text-wfd-crimson hover:bg-wfd-crimson/25'
                         }`}
                       >
                         {s.is_blacklisted ? 'Reactivate' : 'Blacklist'}
                       </button>
                       <button
                         onClick={() => handleDeleteStudent(s)}
-                        className="px-3 py-1 rounded text-xs font-medium bg-red-600 text-white hover:bg-red-700 ml-1"
+                        className="px-3 py-1 rounded text-xs font-medium bg-wfd-crimson text-white hover:brightness-90 ml-1"
                       >
                         Delete
                       </button>
@@ -393,7 +393,7 @@ export function DailyOps() {
           {tickerEvents.map((evt, i) => (
             <div key={i} className="text-sm text-gray-600 flex items-center gap-2">
               <span className={`w-1.5 h-1.5 rounded-full ${
-                evt.type === 'approval' ? 'bg-green-500' : 'bg-blue-500'
+                evt.type === 'approval' ? 'bg-wfd-sage' : 'bg-wfd-charcoal/40'
               }`} />
               {evt.text}
               <span className="text-xs text-gray-400">
@@ -413,7 +413,7 @@ export function DailyOps() {
               <div className="mt-1">
                 <p className="text-sm font-medium truncate">{welcomePreview.title}</p>
                 <p className="text-xs text-gray-500 truncate">{welcomePreview.body.substring(0, 100)}{welcomePreview.body.length > 100 ? '...' : ''}</p>
-                {!welcomePreview.is_active && <span className="text-xs text-orange-600 font-medium">(inactive)</span>}
+                {!welcomePreview.is_active && <span className="text-xs text-wfd-gold font-medium">(inactive)</span>}
               </div>
             ) : (
               <p className="text-xs text-gray-400 mt-1">No welcome message configured.</p>

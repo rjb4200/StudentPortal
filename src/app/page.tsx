@@ -22,13 +22,13 @@ export default function Home() {
         <div className="space-y-3">
           <Link
             href="/onboarding"
-            className="block w-full bg-wfd-crimson text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors"
+            className="block w-full bg-wfd-crimson text-white py-3 rounded-lg font-semibold hover:brightness-90 transition-all"
           >
             Begin Student Onboarding
           </Link>
           <Link
             href="/login"
-            className="block w-full bg-wfd-charcoal text-white py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors"
+            className="block w-full bg-wfd-charcoal text-white py-3 rounded-lg font-semibold hover:brightness-125 transition-all"
           >
             Sign In
           </Link>

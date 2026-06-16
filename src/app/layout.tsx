@@ -1,23 +1,32 @@
+'use client';
+
+import { usePathname } from 'next/navigation';
 import type { Metadata } from "next";
 import "./globals.css";
 
-export const metadata: Metadata = {
-  title: "WFD EMS Student Portal",
-  description: "Winchester Fire Department — Division of EMS — Student Training & Rotation Portal",
-};
+const PUBLIC_PATHS = ['/', '/onboarding', '/login', '/expired', '/blacklisted', '/reset-password'];
+
+function isPublicPath(pathname: string) {
+  return PUBLIC_PATHS.some(
+    (p) => pathname === p || pathname.startsWith(p + '?')
+  );
+}
 
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+  const publicPage = isPublicPath(pathname);
+
   return (
-      <html lang="en">
+    <html lang="en">
       <head>
         <link rel="icon" type="image/jpeg" href="https://ejjsahtohaydoogtilgp.supabase.co/storage/v1/object/public/branding/wfd-logo-1848.jpg" />
       </head>
-      <body className="bg-white text-wfd-charcoal min-h-screen font-sans">
-        <header className="bg-wfd-charcoal text-white py-4 shadow-md">
+      <body className="bg-[#f9f9f9] text-wfd-charcoal min-h-screen font-sans">
+        <header className={`${publicPage ? 'bg-wfd-crimson' : 'bg-wfd-charcoal'} text-white py-4 shadow-md transition-colors`}>
           <div className="max-w-7xl mx-auto px-4 flex items-center gap-4">
             <img
               src="https://ejjsahtohaydoogtilgp.supabase.co/storage/v1/object/public/branding/wfd-logo-1848.jpg"
@@ -25,10 +34,11 @@ export default function RootLayout({
               className="h-14 w-auto rounded"
             />
             <div>
-              <h1 className="text-wfd-crimson text-xl font-bold leading-tight">
+              <h1 className={`${publicPage ? 'text-white' : 'text-wfd-crimson'} text-xl font-bold leading-tight`}
+                  style={publicPage ? { textShadow: '1px 1px 2px rgba(0,0,0,0.7)' } : undefined}>
                 Winchester Fire Department
               </h1>
-              <p className="text-gray-400 text-sm">Division of EMS — Student Portal</p>
+              <p className={`text-sm ${publicPage ? 'text-wfd-gold italic' : 'text-gray-400'}`}>Division of EMS — Student Portal</p>
             </div>
           </div>
         </header>

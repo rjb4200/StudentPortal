@@ -55,7 +55,7 @@ export default function AdminPage() {
         <div className="relative" ref={menuRef}>
           <button
             onClick={() => setMenuOpen(!menuOpen)}
-            className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-100 text-gray-600 text-lg leading-none transition-colors"
+            className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 hover:bg-wfd-charcoal/10 text-gray-600 text-lg leading-none transition-colors"
             aria-label="Menu"
           >
             ≡
@@ -64,14 +64,14 @@ export default function AdminPage() {
             <div className="absolute right-0 top-10 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
               <Link
                 href="/admin/setup"
-                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                className="block px-4 py-2 text-sm text-gray-700 hover:bg-wfd-charcoal/5"
                 onClick={() => setMenuOpen(false)}
               >
                 Onboarding Setup
               </Link>
               <Link
                 href="/admin/accounts"
-                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                className="block px-4 py-2 text-sm text-gray-700 hover:bg-wfd-charcoal/5"
                 onClick={() => setMenuOpen(false)}
               >
                 Account Management
@@ -96,7 +96,7 @@ export default function AdminPage() {
             className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
               activeTab === tab.key
                 ? 'border-wfd-crimson text-wfd-crimson'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                : 'border-transparent text-gray-500 hover:text-wfd-charcoal'
             }`}
           >
             {tab.label}

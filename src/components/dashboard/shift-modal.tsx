@@ -33,7 +33,7 @@ export function ShiftModal({ open, onClose, date, onSubmit }: ShiftModalProps) {
             key={opt.value}
             className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
               selected === opt.value
-                ? 'border-wfd-crimson bg-red-50'
+                ? 'border-wfd-crimson bg-wfd-crimson/5'
                 : 'border-gray-200 hover:border-gray-300'
             }`}
           >
