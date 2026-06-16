@@ -220,21 +220,32 @@ export function DailyOps() {
   };
 
   const filteredSchedules = schedules.filter((s: any) => s.status === 'pending');
+  const totalActions = pendingStudents.length + filteredSchedules.length + quizFlags.length;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Student Approval Queue */}
-      <Card className="p-4">
-        <h3 className="font-bold text-wfd-charcoal mb-3">Student Approval Queue</h3>
-        {pendingStudents.length === 0 ? (
-          <p className="text-gray-400 text-sm">No pending students.</p>
+      {/* Action Required */}
+      <Card className="p-4 lg:col-span-2">
+        <h3 className="font-bold text-wfd-charcoal mb-3">
+          Action Required
+          {totalActions > 0 && (
+            <span className="ml-2 text-xs bg-wfd-crimson text-white rounded-full px-2 py-0.5">
+              {totalActions}
+            </span>
+          )}
+        </h3>
+        {totalActions === 0 ? (
+          <p className="text-gray-400 text-sm">Nothing requires your attention.</p>
         ) : (
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {pendingStudents.map((s) => (
-              <div key={s.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium truncate">{s.full_name}</p>
-                  <p className="text-xs text-gray-500">{s.school_name} — {s.instructor_name}</p>
+              <div key={`approval-${s.id}`} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <span className="shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full bg-wfd-sage/10 text-wfd-sage">Approval</span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{s.full_name}</p>
+                    <p className="text-xs text-gray-500">{s.school_name} — {s.instructor_name}</p>
+                  </div>
                 </div>
                 <Button
                   size="sm"
@@ -246,60 +257,29 @@ export function DailyOps() {
                 </Button>
               </div>
             ))}
-          </div>
-        )}
-      </Card>
-
-      {/* Schedule Request Management */}
-      <Card className="p-4">
-        <h3 className="font-bold text-wfd-charcoal mb-3">Schedule Requests</h3>
-        {filteredSchedules.length === 0 ? (
-          <p className="text-gray-400 text-sm">No pending shift requests.</p>
-        ) : (
-          <div className="space-y-2 max-h-64 overflow-y-auto">
             {filteredSchedules.map((s: any) => (
-              <div key={s.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="text-sm font-medium">{s.students?.full_name}</p>
-                  <p className="text-xs text-gray-500">
-                    {s.date} — {s.shift_type}
-                  </p>
+              <div key={`schedule-${s.id}`} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <span className="shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">Schedule</span>
+                  <div>
+                    <p className="text-sm font-medium">{s.students?.full_name}</p>
+                    <p className="text-xs text-gray-500">{s.date} — {s.shift_type}</p>
+                  </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button size="sm" onClick={() => handleScheduleAction(s.id, 'approved')}>
-                    Approve
-                  </Button>
-                  <Button variant="danger" size="sm" onClick={() => handleScheduleAction(s.id, 'rejected')}>
-                    Reject
-                  </Button>
+                  <Button size="sm" onClick={() => handleScheduleAction(s.id, 'approved')}>Approve</Button>
+                  <Button variant="danger" size="sm" onClick={() => handleScheduleAction(s.id, 'rejected')}>Reject</Button>
                 </div>
               </div>
             ))}
-          </div>
-        )}
-      </Card>
-
-      {/* Quiz Flags */}
-      <Card className="p-4">
-        <h3 className="font-bold text-wfd-charcoal mb-3">
-          Quiz Flags
-          {quizFlags.length > 0 && (
-            <span className="ml-2 text-xs bg-wfd-crimson text-white rounded-full px-2 py-0.5">
-              {quizFlags.length}
-            </span>
-          )}
-        </h3>
-        {quizFlags.length === 0 ? (
-          <p className="text-gray-400 text-sm">No quiz flags.</p>
-        ) : (
-          <div className="space-y-2 max-h-64 overflow-y-auto">
             {quizFlags.map((f) => (
-              <div key={f.id} className="flex items-center justify-between p-2 bg-amber-50 rounded-lg border border-amber-200">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium truncate">{f.student_name}</p>
-                  <p className="text-xs text-gray-500">
-                    {f.rule_title} — {f.attempt_count} attempts — {new Date(f.created_at).toLocaleDateString()}
-                  </p>
+              <div key={`flag-${f.id}`} className="flex items-center justify-between p-2 bg-amber-50 rounded-lg border border-amber-200">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <span className="shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Flag</span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{f.student_name}</p>
+                    <p className="text-xs text-gray-500">{f.rule_title} — {f.attempt_count} attempts — {new Date(f.created_at).toLocaleDateString()}</p>
+                  </div>
                 </div>
                 <Button
                   size="sm"
