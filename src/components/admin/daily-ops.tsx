@@ -59,7 +59,7 @@ export function DailyOps() {
       { data: welcomeMsg },
       { data: quizFlagsData },
     ] = await Promise.all([
-      supabase.from('students').select('*').eq('status', 'pending').order('created_at', { ascending: false }),
+      supabase.from('students').select('*').eq('status', 'pending').not('auth_user_id', 'is', null).order('created_at', { ascending: false }),
       supabase.from('students').select('*').order('created_at', { ascending: false }),
       supabase.from('schedules').select('*, students!inner(full_name, email)').order('created_at', { ascending: false }),
       supabase.from('evaluations').select('*, students!inner(full_name), preceptors!inner(full_name)').order('created_at', { ascending: false }).limit(10),
