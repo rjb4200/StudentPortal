@@ -56,6 +56,7 @@ export default function OnboardingPage() {
   const [studentId, setStudentId] = useState<string | null>(null);
   const [studentPassword, setStudentPassword] = useState<string | null>(null);
   const [studentEmail, setStudentEmail] = useState('');
+  const [isNewAccount, setIsNewAccount] = useState(false);
   const [showIntro, setShowIntro] = useState(true);
   const [showResume, setShowResume] = useState(false);
   const [pendingSession, setPendingSession] = useState<SavedSession | null>(null);
@@ -139,9 +140,10 @@ export default function OnboardingPage() {
     advanceStep(next, studentId, studentEmail);
   }, [advanceStep, studentId, studentEmail]);
 
-  const handleQuizComplete = useCallback((password: string | null, email: string) => {
+  const handleQuizComplete = useCallback((password: string | null, email: string, isNew: boolean) => {
     setStudentPassword(password);
     setStudentEmail(email);
+    setIsNewAccount(isNew);
     const next = 5 as Step;
     advanceStep(next, studentId, email);
   }, [advanceStep, studentId]);
@@ -189,7 +191,7 @@ export default function OnboardingPage() {
           <KnowledgeGate studentId={studentId} onComplete={handleQuizComplete} onBack={goBack} helpEmail={helpEmail} />
         )}
         {currentStep === 5 && studentId && (
-          <OnboardingComplete studentId={studentId} password={studentPassword} email={studentEmail} helpEmail={helpEmail} />
+          <OnboardingComplete studentId={studentId} password={studentPassword} email={studentEmail} isNewAccount={isNewAccount} helpEmail={helpEmail} />
         )}
       </div>
     </div>

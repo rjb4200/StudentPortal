@@ -21,6 +21,7 @@ export async function POST(request: NextRequest) {
     }
 
     let tempPassword: string | null = null;
+    let isNewAccount = false;
 
     try {
       const { data: existing } = await supabase.auth.admin.listUsers();
@@ -37,6 +38,7 @@ export async function POST(request: NextRequest) {
 
         if (createError) throw createError;
         authMatch = created.user;
+        isNewAccount = true;
       }
 
       if (authMatch && student.auth_user_id !== authMatch.id) {
@@ -149,7 +151,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return NextResponse.json({ success: true, password: tempPassword, email: student.email });
+    return NextResponse.json({ success: true, password: tempPassword, email: student.email, isNewAccount });
   } catch {
     return NextResponse.json({ success: false }, { status: 500 });
   }

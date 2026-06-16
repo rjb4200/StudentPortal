@@ -12,7 +12,7 @@ type Mode = 'rule' | 'question' | 'feedback' | 'success' | 'complete';
 
 interface KnowledgeGateProps {
   studentId: string;
-  onComplete: (password: string | null, email: string) => void;
+  onComplete: (password: string | null, email: string, isNewAccount: boolean) => void;
   onBack?: () => void;
   helpEmail?: string;
 }
@@ -167,6 +167,7 @@ export function KnowledgeGate({ studentId, onComplete, onBack, helpEmail }: Know
 
     let password: string | null = null;
     let email = '';
+    let isNew = false;
     try {
       const res = await fetch('/api/notify/onboarding-complete', {
         method: 'POST',
@@ -176,10 +177,11 @@ export function KnowledgeGate({ studentId, onComplete, onBack, helpEmail }: Know
       const data = await res.json();
       password = data.password ?? null;
       email = data.email ?? '';
+      isNew = data.isNewAccount ?? false;
     } catch {}
 
     setCertifying(false);
-    onComplete(password, email);
+    onComplete(password, email, isNew);
   };
 
   const getFeedbackCategories = (): FeedbackCategory => {
