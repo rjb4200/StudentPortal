@@ -48,8 +48,10 @@ export async function POST(request: NextRequest) {
         if (linkError) throw linkError;
       }
     } catch (e) {
-      console.error('Auth error:', e);
+      console.error('Auth error during onboarding-complete:', e);
     }
+
+    console.log('Onboarding complete auth result:', { isNewAccount, tempPassword: tempPassword ? '***' : null, email: student.email });
 
     const pushoverMsg = `New student completed onboarding: ${student.full_name} (${student.email}) from ${student.school_name}`;
 
@@ -93,6 +95,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (serverEnv.RESEND_API_KEY) {
+      console.log('Sending student credential email to:', student.email, 'isNewAccount:', isNewAccount, 'hasPassword:', !!tempPassword);
       const loginUrl = `${request.nextUrl.origin}/login`;
       const passwordDisplay = `<div style="margin:20px 0;padding:16px 18px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;">
             <p style="margin:0 0 8px 0;color:#1C1C1E;font-size:14px;font-weight:700;">Your Login Credentials</p>
