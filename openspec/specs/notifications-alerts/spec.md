@@ -1,15 +1,11 @@
 ## ADDED Requirements
 
 ### Requirement: Resend transactional emails
-The system SHALL send transactional emails via the Resend API for onboarding confirmations, schedule approvals, schedule rejections, and preceptor evaluation receipts. (Magic link emails for student authentication are handled by Supabase Auth directly, not Resend.)
+The system SHALL send transactional emails via the Resend API for onboarding confirmations, schedule approvals, schedule rejections, and preceptor evaluation receipts.
 
 #### Scenario: Onboarding completion email
 - **WHEN** a student completes the knowledge gate
 - **THEN** Resend sends an email to the Training Major with the student's name, school, instructor, and an action link to the admin approval queue
-
-#### Scenario: Account approval and magic link email
-- **WHEN** an admin approves a student
-- **THEN** a Supabase Auth user is created and a magic link email is sent to the student's registered email for passwordless login
 
 #### Scenario: Schedule approval email
 - **WHEN** an admin approves a student's shift request

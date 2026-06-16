@@ -1,9 +1,5 @@
-# onboarding-completion-flow
+## MODIFIED Requirements
 
-## Purpose
-
-End-to-end onboarding completion experience including auth user creation with temp password on quiz finish, admin-configurable completion screen, pending-approval dashboard, and login email validation.
-## Requirements
 ### Requirement: Quiz completion creates auth user with temp password
 The system SHALL create or reuse a Supabase Auth user with a random 6-digit temporary password when the onboarding quiz is completed. Completion SHALL link the auth user to the student enrollment through `students.auth_user_id` and SHALL NOT change `students.id`.
 
@@ -71,4 +67,3 @@ The system SHALL validate the entered email against eligible students table rows
 #### Scenario: Expired archived or blacklisted student on login
 - **WHEN** a student with status `expired`, status `archived`, or `is_blacklisted = true` enters their email on the login page
 - **THEN** the user is redirected to the onboarding page with the appropriate status query parameter
-

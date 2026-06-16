@@ -26,11 +26,6 @@ export async function approveStudent(studentId: string, email: string) {
         .select()
         .single();
 
-      await supabase.auth.signInWithOtp({
-        email,
-        options: { shouldCreateUser: false },
-      });
-
       return student;
     }
     throw createError;
@@ -46,11 +41,6 @@ export async function approveStudent(studentId: string, email: string) {
     .eq('id', studentId)
     .select()
     .single();
-
-  await supabase.auth.signInWithOtp({
-    email,
-    options: { shouldCreateUser: false },
-  });
 
   return student;
 }
