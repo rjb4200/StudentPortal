@@ -1,7 +1,5 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
-
 interface OnboardingIntroProps {
   onBegin: () => void;
 }
@@ -26,9 +24,12 @@ export function OnboardingIntro({ onBegin }: OnboardingIntroProps) {
         <p className="text-gray-400 text-sm mb-8">
           Estimated time: ~10 minutes
         </p>
-        <Button onClick={onBegin} className="bg-white text-wfd-crimson hover:bg-gray-100 focus:ring-white px-10 py-3 text-base">
+        <button
+          onClick={onBegin}
+          className="inline-block bg-white text-wfd-crimson font-semibold rounded-lg px-10 py-3 text-base hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-wfd-crimson transition-colors"
+        >
           Begin Registration
-        </Button>
+        </button>
       </div>
       <div className="bg-wfd-charcoal px-6 py-4 text-center">
         <p className="text-gray-400 text-xs">
