@@ -1,3 +1,7 @@
+## Purpose
+
+Add help email configuration to the onboarding setup page so administrators can change the contact email shown during student onboarding without a code deploy.
+
 ## ADDED Requirements
 
 ### Requirement: Help email configuration on setup page

@@ -31,7 +31,7 @@ The system SHALL present a dynamically-configured registration form on the first
 - **WHEN** a student submits the public onboarding registration form
 - **THEN** the created record has `is_test_record = false`
 
-### Requirement: Legal waiver and agreement signing
+### Requirement: Legal waiver and HIPAA NDA signing
 The system SHALL display active legal documents from the `legal_documents` table in scrollable containers. The student SHALL check required agreement checkboxes and enter their full legal name as signature. Upon submission, the system SHALL capture the student's IP address and timestamp as their legal signature.
 
 #### Scenario: Complete legal signing
