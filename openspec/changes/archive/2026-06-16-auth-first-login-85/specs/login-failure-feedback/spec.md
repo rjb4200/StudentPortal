@@ -32,8 +32,3 @@ The login page SHALL display an inline contextual message when a post-authentica
 - **THEN** the login page displays an inline warning message: "Your access has expired. Please re-register to continue."
 - **AND** the message includes an action button labeled "Re-register" that links to `/onboarding`
 
-## REMOVED Requirements
-
-### Requirement: Anonymous pre-auth email lookup
-**Reason**: The pre-auth lookup of `students` by email using the anonymous client is blocked by RLS policies, which have no SELECT grants for unauthenticated users. All students, including valid test records, received false "not-registered" failures.
-**Migration**: Authentication occurs first via `signInWithPassword`. Student status is then checked by querying `students` by `auth_user_id` with the authenticated session, which passes RLS policies correctly.
