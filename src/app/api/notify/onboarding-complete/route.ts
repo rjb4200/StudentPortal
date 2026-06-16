@@ -20,35 +20,40 @@ export async function POST(request: NextRequest) {
 
     let tempPassword: string | null = null;
     let isNewAccount = false;
+    let authUserId: string | null = null;
 
-    try {
-      const { data: existing } = await supabase.auth.admin.listUsers();
-      let authMatch = existing?.users?.find((u) => u.email?.toLowerCase() === student.email.toLowerCase());
+    const { data: existing } = await supabase.auth.admin.listUsers();
+    let authMatch = existing?.users?.find((u) => u.email?.toLowerCase() === student.email.toLowerCase());
 
-      if (!authMatch) {
-        tempPassword = String(Math.floor(100000 + Math.random() * 900000));
-        const { data: created, error: createError } = await supabase.auth.admin.createUser({
-          email: student.email,
-          password: tempPassword,
-          email_confirm: true,
-          user_metadata: { role: 'student' },
-        });
+    if (!authMatch) {
+      tempPassword = String(Math.floor(100000 + Math.random() * 900000));
+      const { data: created, error: createError } = await supabase.auth.admin.createUser({
+        email: student.email,
+        password: tempPassword,
+        email_confirm: true,
+        user_metadata: { role: 'student' },
+      });
 
-        if (createError) throw createError;
-        authMatch = created.user;
-        isNewAccount = true;
+      if (createError || !created?.user) {
+        console.error('Auth user creation failed:', createError);
+        return NextResponse.json({ success: false, error: 'Failed to create auth user' }, { status: 500 });
       }
+      authMatch = created.user;
+      isNewAccount = true;
+    }
 
-      if (authMatch && student.auth_user_id !== authMatch.id) {
-        const { error: linkError } = await supabase
-          .from('students')
-          .update({ auth_user_id: authMatch.id })
-          .eq('id', studentId);
+    authUserId = authMatch.id;
 
-        if (linkError) throw linkError;
+    if (student.auth_user_id !== authUserId) {
+      const { error: linkError } = await supabase
+        .from('students')
+        .update({ auth_user_id: authUserId })
+        .eq('id', studentId);
+
+      if (linkError) {
+        console.error('Failed to link auth_user_id:', linkError);
+        return NextResponse.json({ success: false, error: 'Failed to link student to auth user' }, { status: 500 });
       }
-    } catch (e) {
-      console.error('Auth error during onboarding-complete:', e);
     }
 
     console.log('Onboarding complete auth result:', { isNewAccount, tempPassword: tempPassword ? '***' : null, email: student.email });

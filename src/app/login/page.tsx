@@ -82,9 +82,11 @@ export default function LoginPage() {
 
     const { data: student, error: studentError } = await supabase
       .from('students')
-      .select('status, is_blacklisted')
+      .select('status, is_blacklisted, auth_user_id')
       .eq('auth_user_id', data.user.id)
       .single();
+
+    console.log('Login student query:', { userId: data.user.id, student: student ? { status: student.status, is_blacklisted: student.is_blacklisted, auth_user_id: student.auth_user_id } : null, error: studentError?.message });
 
     if (studentError || !student) {
       setMessage(REASON_MESSAGES['account-no-link']);
