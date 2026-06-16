@@ -137,7 +137,7 @@ export function ResourceLibrary({ onComplete, onBack, helpEmail }: ResourceLibra
           </Button>
         )}
         <Button onClick={onComplete} className="flex-1">
-          I&apos;ve Reviewed All Documents — Take the Policy and Protocol Review
+          I&apos;ve Reviewed All Documents
         </Button>
       </div>
 
