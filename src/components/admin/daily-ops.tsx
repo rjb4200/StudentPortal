@@ -102,8 +102,12 @@ export function DailyOps() {
     setApproving(null);
   };
 
-  const handleScheduleAction = async (scheduleId: string, status: 'approved' | 'rejected') => {
-    await supabase.from('schedules').update({ status }).eq('id', scheduleId);
+  const handleScheduleAction = async (scheduleId: string, action: 'approved' | 'rejected') => {
+    await fetch('/api/admin/schedule-action', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scheduleId, action }),
+    });
     await loadAll();
   };
 
