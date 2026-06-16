@@ -1,5 +1,7 @@
-## ADDED Requirements
+## Purpose
 
+Define the student dashboard experience including calendar scheduling, preceptor gallery, clinical evaluations, iCal feeds, and access control.
+## Requirements
 ### Requirement: Calendar shift scheduling
 The system SHALL display a calendar grid where students can click a date cell and select a shift type (Full Shift, Day, Night) from a modal. Submitted requests SHALL immediately show as "Pending" with yellow/striped styling. Approved shifts SHALL display solid crimson red.
 
@@ -49,16 +51,21 @@ The system SHALL generate a unique iCal subscription URL for each student that d
 - **THEN** the student's iCal feed reflects the change on the next calendar client refresh, showing the day as approved
 
 ### Requirement: Dashboard access control
-The system SHALL redirect students to `/onboarding` if they are not certified, if their access has expired, or if they have been blacklisted or terminated by an admin.
+The system SHALL redirect students to `/login` with a `reason` query parameter indicating the specific access-denial cause if they are not certified, if their access has expired, or if they have been blacklisted or terminated by an admin.
 
 #### Scenario: Uncertified student redirected
 - **WHEN** a student who has not completed the knowledge gate navigates to `/dashboard`
-- **THEN** the system redirects them to `/onboarding`
+- **THEN** the system redirects them to `/login?reason=not-registered`
 
 #### Scenario: Expired student redirected
 - **WHEN** a student whose `access_until` timestamp has passed navigates to `/dashboard`
-- **THEN** the system redirects them to `/onboarding` with an expired access message
+- **THEN** the system redirects them to `/login?reason=expired`
 
 #### Scenario: Blacklisted or terminated student redirected
 - **WHEN** a student flagged as blacklisted or terminated navigates to `/dashboard`
-- **THEN** the system redirects them to `/onboarding` with an access revoked message
+- **THEN** the system redirects them to `/login?reason=blacklisted`
+
+#### Scenario: Archived student redirected
+- **WHEN** a student with status `archived` navigates to `/dashboard`
+- **THEN** the system redirects them to `/login?reason=archived`
+
