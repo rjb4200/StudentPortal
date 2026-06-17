@@ -78,7 +78,11 @@ export async function POST(request: NextRequest) {
 
   const { error: updateError } = await adminClient
     .from('schedules')
-    .update({ status: action, ...(action === 'cancelled' && note ? { cancel_note: note } : {}) })
+    .update({
+      status: action,
+      ...(action === 'cancelled' ? { cancelled_by: 'admin' } : {}),
+      ...(action === 'cancelled' && note ? { cancel_note: note } : {}),
+    })
     .eq('id', scheduleId);
 
   if (updateError) {

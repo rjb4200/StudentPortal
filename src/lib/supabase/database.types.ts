@@ -625,6 +625,7 @@ export type Database = {
           id: string
           shift_type: Database["public"]["Enums"]["shift_type"]
           cancel_note?: string | null
+          cancelled_by?: string | null
           start_time?: string | null
           end_time?: string | null
           status: Database["public"]["Enums"]["schedule_status"]
@@ -632,6 +633,7 @@ export type Database = {
         }
         Insert: {
           cancel_note?: string | null
+          cancelled_by?: string | null
           created_at?: string
           date: string
           id?: string
@@ -643,6 +645,7 @@ export type Database = {
         }
         Update: {
           cancel_note?: string | null
+          cancelled_by?: string | null
           created_at?: string
           date?: string
           id?: string

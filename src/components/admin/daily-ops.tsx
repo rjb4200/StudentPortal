@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { to24Hour } from '@/lib/time-formats';
+import { ShiftManagement } from '@/components/admin/shift-management';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -35,13 +36,11 @@ export function DailyOps() {
   const [activeStudentId, setActiveStudentId] = useState<string | null>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [replyText, setReplyText] = useState('');
-  const [tickerEvents, setTickerEvents] = useState<any[]>([]);
   const [approving, setApproving] = useState<string | null>(null);
   const [broadcastTitle, setBroadcastTitle] = useState('');
   const [broadcastBody, setBroadcastBody] = useState('');
   const [broadcasting, setBroadcasting] = useState(false);
   const [showBroadcast, setShowBroadcast] = useState(false);
-  const [welcomePreview, setWelcomePreview] = useState<{ title: string; body: string; is_active: boolean } | null>(null);
   const [quizFlags, setQuizFlags] = useState<any[]>([]);
   const [acknowledgingFlag, setAcknowledgingFlag] = useState<string | null>(null);
 
@@ -56,31 +55,17 @@ export function DailyOps() {
       { data: pending },
       { data: allStudents },
       { data: allSchedules },
-      { data: recentEvals },
-      { data: welcomeMsg },
       { data: quizFlagsData },
     ] = await Promise.all([
       supabase.from('students').select('*').eq('status', 'pending').not('auth_user_id', 'is', null).order('created_at', { ascending: false }),
       supabase.from('students').select('*').order('created_at', { ascending: false }),
       supabase.from('schedules').select('*, students!inner(full_name, email)').order('created_at', { ascending: false }),
-      supabase.from('evaluations').select('*, students!inner(full_name), preceptors!inner(full_name)').order('created_at', { ascending: false }).limit(10),
-      supabase.from('message_templates').select('*').eq('template_type', 'welcome').limit(1),
       supabase.from('quiz_flags').select('*').eq('acknowledged', false).order('created_at', { ascending: false }),
     ]);
 
     setPendingStudents(pending ?? []);
     setStudents(allStudents ?? []);
     setSchedules(allSchedules ?? []);
-    setTickerEvents(
-      (recentEvals ?? []).map((e: any) => ({
-        type: 'evaluation',
-        text: `${e.students?.full_name} evaluated ${e.preceptors?.full_name} (${e.overall_rating}/5)`,
-        time: e.created_at,
-      }))
-    );
-    if (welcomeMsg?.[0]) {
-      setWelcomePreview({ title: welcomeMsg[0].title, body: welcomeMsg[0].body, is_active: welcomeMsg[0].is_active });
-    }
     setQuizFlags(quizFlagsData ?? []);
   };
 
@@ -93,10 +78,6 @@ export function DailyOps() {
         body: JSON.stringify({ studentId: student.id }),
       });
       await loadAll();
-      setTickerEvents((prev) => [
-        { type: 'approval', text: `Approved: ${student.full_name}`, time: new Date().toISOString() },
-        ...prev,
-      ]);
     } catch (e) {
       console.error('Approval failed:', e);
     }
@@ -216,16 +197,13 @@ export function DailyOps() {
         body: JSON.stringify({ flagId }),
       });
       setQuizFlags((prev) => prev.filter((f) => f.id !== flagId));
-      setTickerEvents((prev) => [
-        { type: 'flag', text: `Quiz flag acknowledged`, time: new Date().toISOString() },
-        ...prev,
-      ]);
     } catch {}
     setAcknowledgingFlag(null);
   };
 
-  const filteredSchedules = schedules.filter((s: any) => s.status === 'pending' || s.status === 'approved');
-  const totalActions = pendingStudents.length + filteredSchedules.length + quizFlags.length;
+  const pendingSchedules = schedules.filter((s: any) => s.status === 'pending');
+  const cancelRequests = schedules.filter((s: any) => s.status === 'cancelled' && s.cancelled_by === 'student');
+  const totalActions = pendingStudents.length + pendingSchedules.length + cancelRequests.length + quizFlags.length;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -262,10 +240,10 @@ export function DailyOps() {
                 </Button>
               </div>
             ))}
-            {filteredSchedules.map((s: any) => (
+            {pendingSchedules.map((s: any) => (
               <div key={`schedule-${s.id}`} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
                 <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <span className={`shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full ${s.status === 'approved' ? 'bg-wfd-crimson/10 text-wfd-crimson' : 'bg-blue-100 text-blue-700'}`}>Schedule</span>
+                  <span className="shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">Schedule</span>
                   <div>
                     <p className="text-sm font-medium">{s.students?.full_name}</p>
                     <p className="text-xs text-gray-500">
@@ -277,14 +255,36 @@ export function DailyOps() {
                   </div>
                 </div>
                 <div className="flex gap-2 items-center">
-                  {s.status === 'pending' && (
-                    <>
-                      <Button size="sm" onClick={() => handleScheduleAction(s.id, 'approved')}>Approve</Button>
-                      <Button variant="danger" size="sm" onClick={() => handleScheduleAction(s.id, 'rejected')}>Reject</Button>
-                    </>
-                  )}
+                  <Button size="sm" onClick={() => handleScheduleAction(s.id, 'approved')}>Approve</Button>
+                  <Button variant="danger" size="sm" onClick={() => handleScheduleAction(s.id, 'rejected')}>Reject</Button>
                   <ScheduleCancelButton scheduleId={s.id} onCancel={handleScheduleAction} />
                 </div>
+              </div>
+            ))}
+            {cancelRequests.map((s: any) => (
+              <div key={`cancel-${s.id}`} className="flex items-center justify-between p-2 bg-amber-50 rounded-lg border border-amber-200">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <span className="shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Cancel Req</span>
+                  <div>
+                    <p className="text-sm font-medium">{s.students?.full_name}</p>
+                    <p className="text-xs text-gray-500">
+                      {s.date}
+                      {s.start_time && s.end_time
+                        ? ` — ${to24Hour(s.start_time)}–${to24Hour(s.end_time)}`
+                        : ` — ${s.shift_type}`}
+                    </p>
+                    {s.cancel_note && (
+                      <p className="text-xs text-gray-400 italic mt-0.5">"{s.cancel_note}"</p>
+                    )}
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => handleScheduleAction(s.id, 'cancelled')}
+                  className="ml-3 flex-shrink-0 bg-amber-500 hover:bg-amber-600 text-white"
+                >
+                  Cancel Shift
+                </Button>
               </div>
             ))}
             {quizFlags.map((f) => (
@@ -440,44 +440,8 @@ export function DailyOps() {
         </div>
       </Card>
 
-      {/* Recent Activity */}
-      <Card className="p-4 lg:col-span-2">
-        <h3 className="font-bold text-wfd-charcoal mb-3">Recent Activity</h3>
-        <div className="space-y-1 max-h-32 overflow-y-auto">
-          {tickerEvents.map((evt, i) => (
-            <div key={i} className="text-sm text-gray-600 flex items-center gap-2">
-              <span className={`w-1.5 h-1.5 rounded-full ${
-                evt.type === 'approval' ? 'bg-wfd-sage' : evt.type === 'flag' ? 'bg-amber-500' : 'bg-wfd-charcoal/40'
-              }`} />
-              {evt.text}
-              <span className="text-xs text-gray-400">
-                {new Date(evt.time).toLocaleString()}
-              </span>
-            </div>
-          ))}
-        </div>
-      </Card>
-
-      {/* Welcome Message Preview */}
-      <Card className="p-4 lg:col-span-2">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-wfd-charcoal text-sm">Welcome Message</h3>
-            {welcomePreview ? (
-              <div className="mt-1">
-                <p className="text-sm font-medium truncate">{welcomePreview.title}</p>
-                <p className="text-xs text-gray-500 truncate">{welcomePreview.body.substring(0, 100)}{welcomePreview.body.length > 100 ? '...' : ''}</p>
-                {!welcomePreview.is_active && <span className="text-xs text-wfd-gold font-medium">(inactive)</span>}
-              </div>
-            ) : (
-              <p className="text-xs text-gray-400 mt-1">No welcome message configured.</p>
-            )}
-          </div>
-          <a href="/admin/setup" className="text-xs text-wfd-crimson hover:underline whitespace-nowrap shrink-0">
-            Edit in Onboarding Setup →
-          </a>
-        </div>
-      </Card>
+      {/* Shift Management */}
+      <ShiftManagement schedules={schedules} students={students} onCancel={handleScheduleAction} />
 
       {/* Broadcast Modal */}
       {showBroadcast && (

@@ -89,9 +89,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, message: 'Already in terminal state' });
   }
 
+  const wasApproved = schedule.status === 'approved';
+
   const { error: updateError } = await adminClient
     .from('schedules')
-    .update({ status: 'cancelled', cancel_note: note || null })
+    .update({
+      status: 'cancelled',
+      cancel_note: note || null,
+      ...(wasApproved ? { cancelled_by: 'student' } : {}),
+    })
     .eq('id', scheduleId);
 
   if (updateError) {
