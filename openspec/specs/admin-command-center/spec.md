@@ -11,20 +11,12 @@ The system SHALL present an admin interface with three tabs: Daily Operations, P
 - **WHEN** an authenticated admin clicks "Preceptor Analytics" tab
 - **THEN** the preceptor analytics content renders and the other tab content is hidden
 
-### Requirement: New student approval queue
-The admin daily operations tab SHALL display pending student approvals within a unified "Action Required" card alongside schedule requests and quiz flags. Each entry SHALL show a type badge ("Approval"), the student's name, school, instructor, and an Approve button. Approvals SHALL appear first in the list, sorted newest first.
+### Requirement: Unified action required card with visual differentiation
+The admin daily operations tab SHALL display actionable items within a unified "Action Required" card. The card SHALL contain four item types, each visually differentiated by badge color and button style: Approvals (sage green badge, crimson Approve button), Schedule Requests (blue badge, crimson Approve and red Reject buttons), Cancel Requests (amber/orange badge, amber Cancel Shift button), and Quiz Flags (amber badge, secondary Acknowledge button). Items SHALL be ordered: approvals first, then schedule requests, then cancel requests, then quiz flags. Each category SHALL be sorted newest first within itself.
 
 #### Scenario: Approve a new student
 - **WHEN** the Training Major clicks "Approve" on a pending student in the unified Action Required list
 - **THEN** the system sets `status` to `certified`, sets `access_until` to 120 days from now, and sends a welcome email to the student
-
-#### Scenario: Approval appears first in unified list
-- **WHEN** both pending approvals and schedule requests exist
-- **THEN** approval items appear before schedule request items
-- **AND** each item displays a type badge identifying it as Approval, Schedule, or Flag
-
-### Requirement: Schedule request management
-The admin daily operations tab SHALL display pending schedule requests within the unified "Action Required" card. Each entry SHALL show a type badge ("Schedule"), the student's name, date, shift type, and Approve/Reject buttons. Schedule requests SHALL appear after approvals and before quiz flags.
 
 #### Scenario: Approve a schedule request
 - **WHEN** an admin clicks "Approve" on a schedule request in the unified list
@@ -33,6 +25,26 @@ The admin daily operations tab SHALL display pending schedule requests within th
 #### Scenario: Reject a schedule request
 - **WHEN** an admin clicks "Reject" on a schedule request in the unified list
 - **THEN** the schedule status changes to `rejected`
+
+#### Scenario: Visual differentiation of item types
+- **WHEN** an admin views the Action Required card and multiple item types are present
+- **THEN** each item type displays a distinct badge color and button style so the admin can immediately identify what kind of action is needed
+
+#### Scenario: Cancel request appears in unified list
+- **WHEN** a student cancels an approved shift
+- **THEN** a Cancel Request item appears in the Action Required card with an amber badge labeled "Cancel Request", the student name, date, time, any student note, and an amber-colored "Cancel Shift" button
+
+#### Scenario: Approved shifts not in action required
+- **WHEN** an admin views the Action Required card
+- **THEN** approved schedules do not appear — they are managed exclusively in the Shift Management section
+
+#### Scenario: Acknowledge a quiz flag
+- **WHEN** an admin clicks "Acknowledge" on a quiz flag in the unified list
+- **THEN** the flag is marked as acknowledged and removed from the active list
+
+#### Scenario: Empty unified list
+- **WHEN** no pending approvals, schedule requests, cancel requests, or quiz flags exist
+- **THEN** the Action Required card displays "Nothing requires your attention"
 
 ### Requirement: Threaded messaging
 The admin daily operations tab SHALL include a messaging window that supports threaded conversations between admin and individual students. Messages SHALL be scoped by `student_id` and include a sender role (`student` or `admin`).
@@ -126,14 +138,4 @@ The maintenance tab SHALL provide a "Master Export" button that downloads all da
 - **WHEN** an admin clicks "Purge Data" and confirms
 - **THEN** all student, schedule, evaluation, message, and note records are deleted
 
-### Requirement: Quiz flag acknowledgment
-The admin daily operations tab SHALL display unacknowledged quiz flags within the unified "Action Required" card. Each entry SHALL show a type badge ("Flag"), the student's name, rule title, attempt count, date, and an Acknowledge button. Quiz flags SHALL appear after schedule requests.
-
-#### Scenario: Acknowledge a quiz flag
-- **WHEN** an admin clicks "Acknowledge" on a quiz flag in the unified list
-- **THEN** the flag is marked as acknowledged and removed from the active list
-
-#### Scenario: Empty unified list
-- **WHEN** no pending approvals, schedule requests, or quiz flags exist
-- **THEN** the Action Required card displays "Nothing requires your attention"
 
