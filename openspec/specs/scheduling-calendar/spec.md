@@ -37,15 +37,15 @@ Clicking a future date cell SHALL open a minimal modal with shift type selection
 - **THEN** no schedule record is created and the date cell remains unchanged
 
 ### Requirement: Admin approval workflow
-The admin command center SHALL display pending schedule requests with Approve and Reject actions. The admin SHALL act on each request individually.
+The admin daily-ops "Action Required" panel SHALL display all non-cancelled, non-rejected schedules — both pending and approved — with Cancel buttons alongside the existing Approve/Reject buttons for pending shifts. Approved shifts SHALL show only a Cancel button.
 
-#### Scenario: Admin approves a schedule request
-- **WHEN** an admin clicks "Approve" on a pending request
-- **THEN** the schedule record's `status` changes to `approved`, the student's calendar cell updates to crimson red, the student's iCal feed regenerates, and a confirmation email is sent
+#### Scenario: Approved shift shows cancel option
+- **WHEN** an admin views the daily-ops panel
+- **THEN** approved shifts are displayed with a "Cancel" button
 
-#### Scenario: Admin rejects a schedule request
-- **WHEN** an admin clicks "Reject" on a pending request
-- **THEN** the schedule record's `status` changes to `rejected`, the student's calendar reflects the rejection, and a notification email is sent
+#### Scenario: Cancelling an approved shift
+- **WHEN** an admin clicks "Cancel" on an approved shift and confirms
+- **THEN** the shift status changes to `'cancelled'` and the student receives a cancellation email
 
 ### Requirement: iCal feed regeneration on state change
 Any change to a schedule record's status SHALL trigger regeneration of the affected student's iCal feed and the aggregate feed.
@@ -94,4 +94,19 @@ The system SHALL include the shift time range in iCal event summaries and descri
 #### Scenario: Calendar feed updates on approval
 - **WHEN** an admin approves a pending schedule request
 - **THEN** the student's iCal feed reflects the change on the next calendar client refresh, showing the day as approved with the time range
+
+### Requirement: Cancel modal on existing shift click
+When a student clicks a calendar date that already has a pending or approved shift, the system SHALL open a cancel confirmation modal instead of ignoring the click. The modal SHALL display the date, time range, current status, and a "Cancel Shift" button.
+
+#### Scenario: Click on pending shift opens cancel modal
+- **WHEN** a student clicks a date with a pending shift
+- **THEN** a modal opens showing "Cancel Shift Request" with the date, time range, and a "Cancel Shift" button
+
+#### Scenario: Click on approved shift opens cancel modal
+- **WHEN** a student clicks a date with an approved shift
+- **THEN** a modal opens showing "Cancel Shift" with the date, time range, and a "Cancel Shift" button
+
+#### Scenario: Cancelled and rejected dates show no cancel option
+- **WHEN** a student clicks a date with a cancelled or rejected shift
+- **THEN** nothing happens (the date is already in a terminal state)
 
