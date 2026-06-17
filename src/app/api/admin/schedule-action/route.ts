@@ -72,24 +72,34 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Schedule not found' }, { status: 404 });
   }
 
-  if (schedule.status === 'cancelled' || schedule.status === 'rejected') {
-    return NextResponse.json({ success: true, message: 'Already in terminal state' });
+  const isProcessingStudentCancellation = schedule.status === 'cancelled' && action === 'cancelled';
+
+  if (schedule.status === 'rejected') {
+    return NextResponse.json({ success: true, message: 'Already rejected' });
+  }
+
+  if (schedule.status === 'cancelled' && !isProcessingStudentCancellation) {
+    return NextResponse.json({ success: true, message: 'Already cancelled' });
+  }
+
+  const updatePayload = isProcessingStudentCancellation
+    ? { cancelled_by: 'admin' as const }
+    : { status: action, ...(action === 'cancelled' ? { cancelled_by: 'admin' as const } : {}) };
+
+  if (action === 'cancelled' && note) {
+    (updatePayload as any).cancel_note = note;
   }
 
   const { error: updateError } = await adminClient
     .from('schedules')
-    .update({
-      status: action,
-      ...(action === 'cancelled' ? { cancelled_by: 'admin' } : {}),
-      ...(action === 'cancelled' && note ? { cancel_note: note } : {}),
-    })
+    .update(updatePayload as any)
     .eq('id', scheduleId);
 
   if (updateError) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
   }
 
-  if (serverEnv.RESEND_API_KEY) {
+  if (serverEnv.RESEND_API_KEY && !isProcessingStudentCancellation) {
     const { data: student } = await adminClient
       .from('students')
       .select('email, full_name')

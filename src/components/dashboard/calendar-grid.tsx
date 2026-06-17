@@ -134,6 +134,9 @@ export function CalendarGrid({ schedules, onDateClick }: CalendarGridProps) {
           <span className="w-3 h-3 rounded bg-wfd-crimson" /> Approved
         </span>
         <span className="flex items-center gap-1">
+          <span className="w-3 h-3 rounded bg-amber-100" /> Cancelled
+        </span>
+        <span className="flex items-center gap-1">
           <span className="w-3 h-3 rounded bg-gray-100" /> Rejected
         </span>
       </div>
