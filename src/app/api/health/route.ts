@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { sendPushoverAlert } from '@/lib/pushover';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,12 +26,6 @@ export async function GET() {
     });
   } catch (err: any) {
     const latency = Date.now() - startTime;
-
-    await sendPushoverAlert(
-      'WFD EMS Portal: Health Check FAILED',
-      `Health check failed after ${latency}ms. Error: ${err?.message || 'Unknown'}`,
-      { priority: 2, retry: 30, expire: 3600 }
-    );
 
     return NextResponse.json(
       { status: 'unhealthy', latency_ms: latency, error: err?.message },

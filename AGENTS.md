@@ -19,8 +19,6 @@ NEXT_PUBLIC_SUPABASE_URL          # Supabase project URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY     # public anon key
 SUPABASE_SERVICE_ROLE_KEY         # secret — server-only, used by admin client
 RESEND_API_KEY                    # email (Resend)
-PUSHOVER_APP_TOKEN                # push notifications
-PUSHOVER_USER_KEY                 # push notifications
 ```
 
 ## Supabase MCP

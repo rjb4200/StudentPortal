@@ -4,19 +4,19 @@
 TBD - created by archiving change validate-env-vars. Update Purpose after archive.
 ## Requirements
 ### Requirement: Central environment variable module
-The system SHALL provide a central environment variable configuration module at `src/lib/env.ts` that exports validated, typed accessors for all required environment variables. The module SHALL separate public client-safe variables from server-only secrets.
+The system SHALL provide central environment variable configuration modules that export validated, typed accessors for all required environment variables. The modules SHALL separate public client-safe variables from server-only secrets.
 
 #### Scenario: Module exports public env values
 - **WHEN** any module imports `publicEnv` from `src/lib/env.ts`
 - **THEN** it receives validated values for `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` without needing to access `process.env` directly
 
 #### Scenario: Module exports server-only env values
-- **WHEN** a server-side module imports `serverEnv` from `src/lib/env.ts`
-- **THEN** it receives validated values for `SUPABASE_SERVICE_ROLE_KEY` plus optional values for `RESEND_API_KEY`, `PUSHOVER_APP_TOKEN`, and `PUSHOVER_USER_KEY`
+- **WHEN** a server-side module imports `serverEnv` from `src/lib/env.server.ts`
+- **THEN** it receives a validated value for `SUPABASE_SERVICE_ROLE_KEY` plus the optional value for `RESEND_API_KEY`
 
 #### Scenario: Client code blocked from importing server secrets
-- **WHEN** a client component attempts to import `serverEnv` from `src/lib/env.ts`
-- **THEN** the build fails because `server-only` is imported in the server section of the module
+- **WHEN** a client component attempts to import `serverEnv` from `src/lib/env.server.ts`
+- **THEN** the build fails because `server-only` is imported by the server environment module
 
 ### Requirement: Clear validation errors for missing variables
 The system SHALL validate all required environment variables at module import time. If a required variable is missing or empty, the system SHALL throw an Error with a message that names the specific missing variable and instructs the developer where to set it.
@@ -62,4 +62,3 @@ All API route files that create Supabase clients SHALL import from the shared cl
 #### Scenario: No API route accesses process.env for Supabase vars
 - **WHEN** any API route file is inspected
 - **THEN** it contains zero direct accesses to `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, or `SUPABASE_SERVICE_ROLE_KEY` via `process.env`
-

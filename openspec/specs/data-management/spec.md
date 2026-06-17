@@ -56,19 +56,19 @@ A scheduled function SHALL run daily to identify students whose `access_until` t
 - **THEN** no status updates are performed and the sweep completes without changes
 
 ### Requirement: System health heartbeat
-A health check endpoint SHALL perform a database read and write query. If the database times out or exceeds 90% capacity, the system SHALL trigger a Pushover emergency notification.
+A health check endpoint SHALL perform a database read query. If the database query times out or fails, the system SHALL return an unhealthy response without attempting push notification delivery.
 
 #### Scenario: Healthy database response
 - **WHEN** the health endpoint is called and the database responds within the timeout
 - **THEN** a 200 OK response is returned with database status
 
-#### Scenario: Database timeout triggers emergency alert
+#### Scenario: Database timeout returns unhealthy response
 - **WHEN** the health endpoint is called and the database query times out
-- **THEN** a Pushover Emergency/High priority notification is sent to configured admin devices
+- **THEN** the endpoint returns a 500 response with unhealthy database status
 
-#### Scenario: Database capacity warning triggers alert
-- **WHEN** the health endpoint detects database capacity over 90%
-- **THEN** a Pushover Emergency/High priority notification is sent to configured admin devices
+#### Scenario: Database failure returns unhealthy response
+- **WHEN** the health endpoint is called and the database query fails
+- **THEN** the endpoint returns a 500 response with the failure details
 
 ### Requirement: CSV and PDF export
 The admin analytics and maintenance sections SHALL support exporting evaluation data and full system data as CSV and PDF files. The "Master Export" on the maintenance tab SHALL export all data across all tables.
@@ -98,4 +98,3 @@ All significant actions SHALL be logged to the `audit_log` table with an action 
 #### Scenario: Action is logged
 - **WHEN** an admin approves a student or terminates access
 - **THEN** a row is inserted into `audit_log` with the action description, performer identifier, and current timestamp
-

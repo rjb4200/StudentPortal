@@ -66,21 +66,7 @@ export async function POST(request: NextRequest) {
 
     console.log('Onboarding complete auth result:', { isNewAccount, tempPassword: tempPassword ? '***' : null, email: student.email, authUserId });
 
-    const pushoverMsg = `New student completed onboarding: ${student.full_name} (${student.email}) from ${student.school_name}`;
-
-    if (serverEnv.PUSHOVER_APP_TOKEN && serverEnv.PUSHOVER_USER_KEY) {
-      await fetch('https://api.pushover.net/1/messages.json', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          token: serverEnv.PUSHOVER_APP_TOKEN,
-          user: serverEnv.PUSHOVER_USER_KEY,
-          title: 'WFD EMS: Onboarding Complete',
-          message: pushoverMsg,
-          priority: 1,
-        }),
-      });
-    }
+    const adminMessage = `New student completed onboarding: ${student.full_name} (${student.email}) from ${student.school_name}`;
 
     const { data: admins } = await supabase
       .from('admin_accounts')
@@ -99,7 +85,7 @@ export async function POST(request: NextRequest) {
           from: 'WFD EMS Portal <onboarding@winchesterfireems.com>',
           to: admins.map((a: any) => a.email),
           subject: 'New Student Onboarding Complete',
-          html: `<p>${pushoverMsg}</p><p>Review and approve in the admin portal.</p>`,
+          html: `<p>${adminMessage}</p><p>Review and approve in the admin portal.</p>`,
         }),
       });
       if (!res.ok) {

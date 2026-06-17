@@ -15,20 +15,6 @@ export async function POST(request: NextRequest) {
 
     const msg = `Student ${student?.full_name || studentId} submitted a low evaluation (${overallRating}/5) for preceptor ${preceptor?.full_name || preceptorId}. Review in the admin portal.`;
 
-    if (serverEnv.PUSHOVER_APP_TOKEN && serverEnv.PUSHOVER_USER_KEY) {
-      await fetch('https://api.pushover.net/1/messages.json', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          token: serverEnv.PUSHOVER_APP_TOKEN,
-          user: serverEnv.PUSHOVER_USER_KEY,
-          title: 'WFD EMS: Flagged Evaluation',
-          message: msg,
-          priority: 1,
-        }),
-      });
-    }
-
     const { data: admins } = await supabase
       .from('admin_accounts')
       .select('email')
