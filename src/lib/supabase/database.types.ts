@@ -624,12 +624,14 @@ export type Database = {
           date: string
           id: string
           shift_type: Database["public"]["Enums"]["shift_type"]
+          cancel_note?: string | null
           start_time?: string | null
           end_time?: string | null
           status: Database["public"]["Enums"]["schedule_status"]
           student_id: string
         }
         Insert: {
+          cancel_note?: string | null
           created_at?: string
           date: string
           id?: string
@@ -640,6 +642,7 @@ export type Database = {
           student_id: string
         }
         Update: {
+          cancel_note?: string | null
           created_at?: string
           date?: string
           id?: string
@@ -784,7 +787,7 @@ export type Database = {
     Enums: {
       message_sender: "student" | "admin"
       note_priority: "normal" | "high_accessibility"
-      schedule_status: "pending" | "approved" | "rejected"
+      schedule_status: "pending" | "approved" | "rejected" | "cancelled"
       shift_type: "full" | "day" | "night" | "custom"
       station_unit:
         | "Station 1 - Downtown HQ"
@@ -920,7 +923,7 @@ export const Constants = {
     Enums: {
       message_sender: ["student", "admin"],
       note_priority: ["normal", "high_accessibility"],
-      schedule_status: ["pending", "approved", "rejected"],
+      schedule_status: ["pending", "approved", "rejected", "cancelled"],
       shift_type: ["full", "day", "night", "custom"],
       station_unit: [
         "Station 1 - Downtown HQ",

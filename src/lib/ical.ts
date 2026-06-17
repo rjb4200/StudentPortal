@@ -2,7 +2,7 @@ interface ScheduleRecord {
   id: string;
   date: string;
   shift_type: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled';
   start_time?: string | null;
   end_time?: string | null;
   student_name?: string;
@@ -23,6 +23,7 @@ export function generateICalFeed(schedules: ScheduleRecord[], calendarName: stri
     pending: '#D4AF37',
     approved: '#B61C20',
     rejected: '#9CA3AF',
+    cancelled: '#D97706',
   };
 
   for (const s of schedules) {

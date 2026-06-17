@@ -103,11 +103,11 @@ export function DailyOps() {
     setApproving(null);
   };
 
-  const handleScheduleAction = async (scheduleId: string, action: 'approved' | 'rejected') => {
+  const handleScheduleAction = async (scheduleId: string, action: 'approved' | 'rejected' | 'cancelled', note?: string) => {
     await fetch('/api/admin/schedule-action', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ scheduleId, action }),
+      body: JSON.stringify({ scheduleId, action, note: note || undefined }),
     });
     await loadAll();
   };
@@ -224,7 +224,7 @@ export function DailyOps() {
     setAcknowledgingFlag(null);
   };
 
-  const filteredSchedules = schedules.filter((s: any) => s.status === 'pending');
+  const filteredSchedules = schedules.filter((s: any) => s.status === 'pending' || s.status === 'approved');
   const totalActions = pendingStudents.length + filteredSchedules.length + quizFlags.length;
 
   return (
@@ -265,7 +265,7 @@ export function DailyOps() {
             {filteredSchedules.map((s: any) => (
               <div key={`schedule-${s.id}`} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
                 <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <span className="shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">Schedule</span>
+                  <span className={`shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full ${s.status === 'approved' ? 'bg-wfd-crimson/10 text-wfd-crimson' : 'bg-blue-100 text-blue-700'}`}>Schedule</span>
                   <div>
                     <p className="text-sm font-medium">{s.students?.full_name}</p>
                     <p className="text-xs text-gray-500">
@@ -276,9 +276,14 @@ export function DailyOps() {
                     </p>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={() => handleScheduleAction(s.id, 'approved')}>Approve</Button>
-                  <Button variant="danger" size="sm" onClick={() => handleScheduleAction(s.id, 'rejected')}>Reject</Button>
+                <div className="flex gap-2 items-center">
+                  {s.status === 'pending' && (
+                    <>
+                      <Button size="sm" onClick={() => handleScheduleAction(s.id, 'approved')}>Approve</Button>
+                      <Button variant="danger" size="sm" onClick={() => handleScheduleAction(s.id, 'rejected')}>Reject</Button>
+                    </>
+                  )}
+                  <ScheduleCancelButton scheduleId={s.id} onCancel={handleScheduleAction} />
                 </div>
               </div>
             ))}
@@ -495,6 +500,35 @@ export function DailyOps() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function ScheduleCancelButton({ scheduleId, onCancel }: { scheduleId: string; onCancel: (scheduleId: string, action: 'cancelled', note?: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [note, setNote] = useState('');
+
+  const handleConfirm = () => {
+    onCancel(scheduleId, 'cancelled', note.trim() || undefined);
+    setNote('');
+    setOpen(false);
+  };
+
+  if (!open) {
+    return <button onClick={() => setOpen(true)} className="text-xs text-gray-400 hover:text-wfd-crimson shrink-0">Cancel</button>;
+  }
+
+  return (
+    <div className="flex items-center gap-1 shrink-0">
+      <input
+        type="text"
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        placeholder="Note (student will see)"
+        className="w-32 rounded border border-gray-200 px-2 py-0.5 text-xs focus:border-wfd-crimson focus:ring-1 focus:ring-wfd-crimson"
+      />
+      <button onClick={handleConfirm} className="text-xs px-2 py-0.5 rounded bg-wfd-crimson text-white hover:brightness-90">Cancel</button>
+      <button onClick={() => { setOpen(false); setNote(''); }} className="text-xs text-gray-400 hover:text-gray-600">✕</button>
     </div>
   );
 }

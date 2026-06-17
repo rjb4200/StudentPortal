@@ -20,7 +20,7 @@ interface Schedule {
   id: string;
   date: string;
   shift_type: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled';
   start_time?: string | null;
   end_time?: string | null;
 }
@@ -52,6 +52,8 @@ export function CalendarGrid({ schedules, onDateClick }: CalendarGridProps) {
         return 'bg-wfd-gold/15 border-wfd-gold/30 text-wfd-gold';
       case 'approved':
         return 'bg-wfd-crimson text-white font-semibold';
+      case 'cancelled':
+        return 'bg-amber-100 text-amber-800';
       case 'rejected':
         return 'bg-gray-100 text-gray-400 line-through';
       default:

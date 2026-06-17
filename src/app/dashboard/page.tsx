@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { CalendarGrid } from '@/components/dashboard/calendar-grid';
 import { ShiftModal } from '@/components/dashboard/shift-modal';
+import { CancelShiftModal } from '@/components/dashboard/cancel-shift-modal';
 import { PreceptorGallery } from '@/components/dashboard/preceptor-gallery';
 import { EvaluationForm } from '@/components/dashboard/evaluation-form';
 import { Messages } from '@/components/dashboard/messages';
@@ -16,6 +17,8 @@ export default function DashboardPage() {
   const [schedules, setSchedules] = useState<any[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showShiftModal, setShowShiftModal] = useState(false);
+  const [cancelTarget, setCancelTarget] = useState<any>(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'calendar' | 'preceptors' | 'messages'>('calendar');
   const [loading, setLoading] = useState(true);
   const [welcomeMsg, setWelcomeMsg] = useState<{ title: string; body: string } | null>(null);
@@ -53,6 +56,11 @@ export default function DashboardPage() {
 
   const handleDateClick = (date: string) => {
     const existing = schedules.find((s) => s.date === date);
+    if (existing && existing.status !== 'cancelled' && existing.status !== 'rejected') {
+      setCancelTarget(existing);
+      setShowCancelModal(true);
+      return;
+    }
     if (existing) return;
     const today = new Date().toISOString().split('T')[0];
     if (date < today) return;
@@ -81,6 +89,18 @@ export default function DashboardPage() {
     }
     setShowShiftModal(false);
     setSelectedDate(null);
+  };
+
+  const handleCancelShift = async (note: string) => {
+    if (!cancelTarget) return;
+    await fetch('/api/schedule/cancel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scheduleId: cancelTarget.id, note: note || undefined }),
+    });
+    setSchedules((prev) => prev.map((s) => s.id === cancelTarget.id ? { ...s, status: 'cancelled' } : s));
+    setShowCancelModal(false);
+    setCancelTarget(null);
   };
 
   if (loading) {
@@ -249,6 +269,19 @@ export default function DashboardPage() {
         date={selectedDate}
         onSubmit={handleShiftSubmit}
       />
+
+      {cancelTarget && (
+        <CancelShiftModal
+          open={showCancelModal}
+          onClose={() => { setShowCancelModal(false); setCancelTarget(null); }}
+          date={cancelTarget.date}
+          shiftType={cancelTarget.shift_type}
+          startTime={cancelTarget.start_time}
+          endTime={cancelTarget.end_time}
+          status={cancelTarget.status}
+          onConfirm={handleCancelShift}
+        />
+      )}
     </div>
       )}
     </div>
