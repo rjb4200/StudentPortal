@@ -61,6 +61,16 @@ export function CalendarGrid({ schedules, onDateClick }: CalendarGridProps) {
     }
   };
 
+  const getStatusLabel = (schedule: Schedule) => {
+    switch (schedule.status) {
+      case 'pending': return { icon: '\u231B', text: 'Pending' };
+      case 'approved': return { icon: '\u2713', text: 'Approved' };
+      case 'cancelled': return { icon: '\u2014', text: 'Cancelled' };
+      case 'rejected': return { icon: '\u2715', text: 'Rejected' };
+      default: return null;
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg shadow border border-gray-200 p-4">
       <div className="flex items-center justify-between mb-4">
@@ -100,6 +110,7 @@ export function CalendarGrid({ schedules, onDateClick }: CalendarGridProps) {
               key={dateStr}
               onClick={() => onDateClick(dateStr)}
               disabled={past}
+              title={past && !schedule ? 'Past dates are unavailable for scheduling' : undefined}
               className={`aspect-square flex flex-col items-center justify-center rounded-lg text-sm transition-colors
                 ${!inMonth ? 'text-gray-300' : ''}
                 ${past ? 'text-gray-300 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-100'}
@@ -121,12 +132,15 @@ export function CalendarGrid({ schedules, onDateClick }: CalendarGridProps) {
                     : 'Night'}
                 </span>
               )}
+              {schedule && getStatusLabel(schedule) && (
+                <span className="text-[9px] leading-tight">{getStatusLabel(schedule)!.icon} {getStatusLabel(schedule)!.text}</span>
+              )}
             </button>
           );
         })}
       </div>
 
-      <div className="flex items-center gap-4 mt-4 text-xs text-gray-500">
+      <div className="flex items-center gap-4 mt-4 text-xs text-gray-500 flex-wrap">
         <span className="flex items-center gap-1">
           <span className="w-3 h-3 rounded bg-wfd-gold/15 border border-wfd-gold/30" /> Pending
         </span>
@@ -138,6 +152,9 @@ export function CalendarGrid({ schedules, onDateClick }: CalendarGridProps) {
         </span>
         <span className="flex items-center gap-1">
           <span className="w-3 h-3 rounded bg-gray-100" /> Rejected
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-3 h-3 rounded bg-white border border-gray-200" /> Unavailable
         </span>
       </div>
     </div>

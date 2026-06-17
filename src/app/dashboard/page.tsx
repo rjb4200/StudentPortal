@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { CalendarGrid } from '@/components/dashboard/calendar-grid';
+import { ShiftList } from '@/components/dashboard/shift-list';
+import { DayDetailModal } from '@/components/dashboard/day-detail';
 import { ShiftModal } from '@/components/dashboard/shift-modal';
 import { CancelShiftModal } from '@/components/dashboard/cancel-shift-modal';
 import { PreceptorGallery } from '@/components/dashboard/preceptor-gallery';
@@ -20,6 +22,9 @@ export default function DashboardPage() {
   const [cancelTarget, setCancelTarget] = useState<any>(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'calendar' | 'preceptors' | 'messages'>('calendar');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [detailTarget, setDetailTarget] = useState<any>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [welcomeMsg, setWelcomeMsg] = useState<{ title: string; body: string } | null>(null);
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
@@ -57,15 +62,26 @@ export default function DashboardPage() {
   const handleDateClick = (date: string) => {
     const existing = schedules.find((s) => s.date === date);
     if (existing && existing.status !== 'cancelled' && existing.status !== 'rejected') {
-      setCancelTarget(existing);
-      setShowCancelModal(true);
+      setDetailTarget(existing);
+      setShowDetailModal(true);
       return;
     }
-    if (existing) return;
+    if (existing) {
+      setDetailTarget(existing);
+      setShowDetailModal(true);
+      return;
+    }
     const today = new Date().toISOString().split('T')[0];
     if (date < today) return;
     setSelectedDate(date);
     setShowShiftModal(true);
+  };
+
+  const handleDetailCancel = () => {
+    if (!detailTarget) return;
+    setShowDetailModal(false);
+    setCancelTarget(detailTarget);
+    setShowCancelModal(true);
   };
 
   const handleShiftSubmit = async (shiftType: 'full' | 'day' | 'custom', startTime: string, endTime: string) => {
@@ -98,7 +114,11 @@ export default function DashboardPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ scheduleId: cancelTarget.id, note: note || undefined }),
     });
-    setSchedules((prev) => prev.map((s) => s.id === cancelTarget.id ? { ...s, status: 'cancelled' } : s));
+    if (cancelTarget.status === 'pending') {
+      setSchedules((prev) => prev.filter((s) => s.id !== cancelTarget.id));
+    } else {
+      setSchedules((prev) => prev.map((s) => s.id === cancelTarget.id ? { ...s, status: 'cancelled' } : s));
+    }
     setShowCancelModal(false);
     setCancelTarget(null);
   };
@@ -219,34 +239,79 @@ export default function DashboardPage() {
       )}
 
       {activeTab === 'calendar' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <CalendarGrid
-              schedules={schedules}
-              onDateClick={handleDateClick}
-            />
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                viewMode === 'grid' ? 'bg-wfd-crimson text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              Grid
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                viewMode === 'list' ? 'bg-wfd-crimson text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              List
+            </button>
+            <div className="flex-1" />
+            <Button size="sm" onClick={() => {
+              const today = new Date().toISOString().split('T')[0];
+              setSelectedDate(today);
+              setShowShiftModal(true);
+            }}>
+              + Request Shift
+            </Button>
           </div>
-          <div>
-            <Card className="p-4">
-              <h3 className="font-semibold text-wfd-charcoal mb-3">iCal Feed</h3>
-              <p className="text-sm text-gray-500 mb-2">
-                Subscribe in Google Calendar or Apple Calendar to see your shifts.
-              </p>
-              <div className="flex items-center gap-2">
-                <code className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600 truncate">
-                  /api/calendar/{student?.id}.ics
-                </code>
-                <button
-                  onClick={() => {
-                    const url = `${window.location.origin}/api/calendar/${student?.id}.ics`;
-                    navigator.clipboard.writeText(url);
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              {viewMode === 'grid' ? (
+                <CalendarGrid
+                  schedules={schedules}
+                  onDateClick={handleDateClick}
+                />
+              ) : (
+                <ShiftList
+                  schedules={schedules}
+                  onDateClick={handleDateClick}
+                  onCancel={(s) => {
+                    if (s.status === 'approved') {
+                      setDetailTarget(s);
+                      setShowDetailModal(true);
+                    } else {
+                      setCancelTarget(s);
+                      setShowCancelModal(true);
+                    }
                   }}
-                  className="text-xs text-wfd-crimson hover:underline whitespace-nowrap"
-                >
-                  Copy
-                </button>
-              </div>
-            </Card>
+                />
+              )}
+            </div>
+            <div>
+              <Card className="p-4">
+                <h3 className="font-semibold text-wfd-charcoal mb-3">iCal Feed</h3>
+                <p className="text-sm text-gray-500 mb-2">
+                  Subscribe in Google Calendar or Apple Calendar to see your shifts.
+                </p>
+                <div className="flex items-center gap-2">
+                  <code className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600 truncate">
+                    /api/calendar/{student?.id}.ics
+                  </code>
+                  <button
+                    onClick={() => {
+                      const url = `${window.location.origin}/api/calendar/${student?.id}.ics`;
+                      navigator.clipboard.writeText(url);
+                    }}
+                    className="text-xs text-wfd-crimson hover:underline whitespace-nowrap"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </Card>
+            </div>
           </div>
         </div>
       )}
@@ -259,6 +324,13 @@ export default function DashboardPage() {
       )}
 
       {activeTab === 'messages' && <Messages studentId={student?.id} />}
+
+      <DayDetailModal
+        open={showDetailModal}
+        onClose={() => { setShowDetailModal(false); setDetailTarget(null); }}
+        onCancel={handleDetailCancel}
+        schedule={detailTarget}
+      />
 
       <ShiftModal
         open={showShiftModal}
