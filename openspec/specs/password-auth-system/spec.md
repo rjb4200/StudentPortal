@@ -41,17 +41,6 @@ The system SHALL accept email and password on the login page Student tab and val
 - **WHEN** a user clicks "Forgot password?" and enters their email
 - **THEN** a password reset email is sent and they are directed to the /reset-password page
 
-### Requirement: First-login password change
-The system SHALL prompt students with `password_changed = false` to set a new password on their first dashboard visit.
-
-#### Scenario: First login password prompt
-- **WHEN** a student with a temporary password logs in for the first time
-- **THEN** the dashboard shows a "Change Your Password" prompt
-
-#### Scenario: Password successfully changed
-- **WHEN** a student sets a new password on the dashboard
-- **THEN** `password_changed` is set to true and the prompt is hidden on subsequent visits
-
 ### Requirement: Admin approval no longer sends magic link
 The admin approval API route SHALL update the student's status and access expiry without sending an email, since the student already has credentials.
 

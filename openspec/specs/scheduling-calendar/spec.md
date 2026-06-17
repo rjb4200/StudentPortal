@@ -92,6 +92,23 @@ The system SHALL display a calendar grid where students can click a date cell an
 - **WHEN** a student views the calendar and an admin has rejected a previously requested shift
 - **THEN** the date cell displays the rejected state with appropriate styling
 
+### Requirement: Discoverable shift scheduling action
+The dashboard SHALL make shift scheduling discoverable through a prominent primary action for certified students in addition to calendar date selection. Students SHALL NOT need to know in advance that clicking a calendar date is the only way to request a shift.
+
+#### Scenario: Primary schedule action is visible
+- **WHEN** a certified student opens the dashboard
+- **THEN** a prominent "Schedule a Shift" action is visible before or alongside the schedule section
+- **AND** the action leads the student into the existing shift request flow
+
+#### Scenario: Calendar date selection remains available
+- **WHEN** a certified student clicks an eligible future date on the calendar
+- **THEN** the existing shift request flow remains available for that date
+
+#### Scenario: Pending student cannot schedule shifts
+- **WHEN** a pending student views the dashboard
+- **THEN** schedule request actions are not presented as available
+- **AND** the dashboard explains that scheduling unlocks after approval
+
 ### Requirement: iCal feed includes time ranges
 The system SHALL include the shift time range in iCal event summaries and descriptions when `start_time` and `end_time` are present on the schedule record.
 
@@ -117,4 +134,3 @@ When a student clicks a calendar date that already has a pending or approved shi
 #### Scenario: Cancelled and rejected dates show no cancel option
 - **WHEN** a student clicks a date with a cancelled or rejected shift
 - **THEN** nothing happens (the date is already in a terminal state)
-

@@ -49,19 +49,21 @@ The system SHALL display an onboarding completion screen after the quiz that ren
 - **THEN** future students see the updated text on the completion screen regardless of account type
 
 ### Requirement: Pending student dashboard access
-The system SHALL allow students with `status = 'pending'` who have an auth account linked by `students.auth_user_id` to access the dashboard, displaying a pending-approval message with calendar link instructions.
+The system SHALL allow students with `status = 'pending'` who have an auth account linked by `students.auth_user_id` to access the dashboard. The dashboard SHALL display a status-first pending-review command state with clear next steps, approval expectations, and valid actions only.
 
-#### Scenario: Pending student logs in
+#### Scenario: Pending dashboard after login
 - **WHEN** a pending student logs in with email and password
-- **THEN** the dashboard resolves the student row by `auth_user_id` and displays the pending-approval message with the iCal feed link
+- **THEN** the dashboard resolves the student row by `auth_user_id` and displays a pending-review status header
+- **AND** the dashboard explains that scheduling, preceptor profiles, and evaluations unlock after administrator approval
 
-#### Scenario: Pending dashboard limits
+#### Scenario: Pending dashboard valid actions
 - **WHEN** a pending student views the dashboard
-- **THEN** they see the pending message and calendar link but cannot access schedule requests, evaluation forms, or preceptor profiles
+- **THEN** they see valid actions such as messaging training staff or copying their calendar feed
+- **AND** they do not see schedule request, evaluation submission, or preceptor profile actions as available
 
-#### Scenario: Pending student approved
+#### Scenario: Dashboard upgrades after approval
 - **WHEN** an admin approves a pending student
-- **THEN** the student's dashboard upgrades to the full certified view on next login
+- **THEN** the student's dashboard upgrades to the full certified command page on next login or refresh
 
 ### Requirement: Login email validation
 The system SHALL validate the entered email against eligible students table rows before allowing password-based sign-in on the login page.
@@ -77,4 +79,3 @@ The system SHALL validate the entered email against eligible students table rows
 #### Scenario: Expired archived or blacklisted student on login
 - **WHEN** a student with status `expired`, status `archived`, or `is_blacklisted = true` enters their email on the login page
 - **THEN** the user is redirected to the onboarding page with the appropriate status query parameter
-

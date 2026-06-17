@@ -14,16 +14,46 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
+type DashboardSection = 'schedule' | 'preceptors' | 'messages' | 'feed';
+
+interface Schedule {
+  id: string;
+  date: string;
+  shift_type: string;
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled';
+  start_time?: string | null;
+  end_time?: string | null;
+}
+
+function formatDate(date: string) {
+  return new Date(`${date}T00:00:00`).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
+function formatShiftTime(schedule?: Schedule | null) {
+  if (!schedule) return 'No shift scheduled';
+  if (schedule.start_time && schedule.end_time) {
+    return `${schedule.start_time} - ${schedule.end_time}`;
+  }
+  return schedule.shift_type === 'custom'
+    ? 'Custom shift'
+    : `${schedule.shift_type.charAt(0).toUpperCase()}${schedule.shift_type.slice(1)} shift`;
+}
+
 export default function DashboardPage() {
   const [student, setStudent] = useState<any>(null);
-  const [schedules, setSchedules] = useState<any[]>([]);
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [messageCount, setMessageCount] = useState(0);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showShiftModal, setShowShiftModal] = useState(false);
-  const [cancelTarget, setCancelTarget] = useState<any>(null);
+  const [cancelTarget, setCancelTarget] = useState<Schedule | null>(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<'calendar' | 'preceptors' | 'messages'>('calendar');
+  const [activeSection, setActiveSection] = useState<DashboardSection>('schedule');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [detailTarget, setDetailTarget] = useState<any>(null);
+  const [detailTarget, setDetailTarget] = useState<Schedule | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [welcomeMsg, setWelcomeMsg] = useState<{ title: string; body: string } | null>(null);
@@ -48,30 +78,112 @@ export default function DashboardPage() {
     if (student) {
       setStudent(student);
 
-      const [{ data: schedules }, { data: welcome }] = await Promise.all([
+      const [{ data: schedules }, { data: welcome }, { count }] = await Promise.all([
         supabase.from('schedules').select('*').eq('student_id', student.id).order('date', { ascending: true }),
         supabase.from('message_templates').select('title, body').eq('template_type', 'welcome').eq('is_active', true).limit(1),
+        supabase.from('messages').select('id', { count: 'exact', head: true }).eq('student_id', student.id),
       ]);
 
-      setSchedules(schedules ?? []);
+      setSchedules((schedules ?? []) as Schedule[]);
+      setMessageCount(count ?? 0);
       if (welcome?.[0]) setWelcomeMsg(welcome[0]);
+      if (student.status === 'pending') setActiveSection('messages');
     }
     setLoading(false);
   };
 
-  const handleDateClick = (date: string) => {
-    const existing = schedules.find((s) => s.date === date);
-    if (existing && existing.status !== 'cancelled' && existing.status !== 'rejected') {
-      setDetailTarget(existing);
-      setShowDetailModal(true);
-      return;
+  const isPending = student?.status === 'pending';
+  const isCertified = student?.status === 'certified';
+  const today = new Date().toISOString().split('T')[0];
+  const activeSchedules = schedules.filter((s) => s.status !== 'cancelled' && s.status !== 'rejected');
+  const pendingSchedules = schedules.filter((s) => s.status === 'pending');
+  const futureApproved = schedules
+    .filter((s) => s.status === 'approved' && s.date >= today)
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const nextShift = futureApproved[0] ?? null;
+
+  const openScheduleRequest = () => {
+    setActiveSection('schedule');
+    setSelectedDate(today);
+    setShowShiftModal(true);
+  };
+
+  const showScheduleSection = () => {
+    setActiveSection('schedule');
+  };
+
+  const showMessagesSection = () => {
+    setActiveSection('messages');
+  };
+
+  const showFeedSection = () => {
+    setActiveSection('feed');
+  };
+
+  const viewNextShift = () => {
+    if (!nextShift) return;
+    setActiveSection('schedule');
+    setDetailTarget(nextShift);
+    setShowDetailModal(true);
+  };
+
+  const commandState = (() => {
+    if (isPending) {
+      return {
+        eyebrow: 'Account Review',
+        title: 'Account Pending Approval',
+        body: 'Your onboarding is complete and is waiting for administrator review. Scheduling unlocks after approval.',
+        badge: <Badge variant="gold">Pending Approval</Badge>,
+        primaryLabel: 'Message Training Staff',
+        onPrimary: showMessagesSection,
+        secondaryLabel: 'Copy Calendar Feed',
+        onSecondary: showFeedSection,
+      };
     }
+    if (pendingSchedules.length > 0) {
+      return {
+        eyebrow: 'Awaiting Approval',
+        title: `${pendingSchedules.length} shift request${pendingSchedules.length === 1 ? '' : 's'} pending`,
+        body: 'Your request is in the approval queue. You can review pending dates or schedule another shift.',
+        badge: <Badge variant="orange">Pending Requests</Badge>,
+        primaryLabel: 'View Pending Requests',
+        onPrimary: showScheduleSection,
+        secondaryLabel: 'Schedule Another Shift',
+        onSecondary: openScheduleRequest,
+      };
+    }
+    if (nextShift) {
+      return {
+        eyebrow: 'Next Shift Scheduled',
+        title: `${formatDate(nextShift.date)} is your next approved shift`,
+        body: `${formatShiftTime(nextShift)}. Review the details before reporting for your clinical rotation.`,
+        badge: <Badge variant="green">Certified</Badge>,
+        primaryLabel: 'View Shift Details',
+        onPrimary: viewNextShift,
+        secondaryLabel: 'Schedule Another Shift',
+        onSecondary: openScheduleRequest,
+      };
+    }
+    return {
+      eyebrow: 'Ready for Rotations',
+      title: 'Schedule your first shift',
+      body: 'You are approved for clinical rotations. Start by scheduling a shift date and time.',
+      badge: <Badge variant="green">Certified</Badge>,
+      primaryLabel: 'Schedule a Shift',
+      onPrimary: openScheduleRequest,
+      secondaryLabel: 'View Schedule',
+      onSecondary: showScheduleSection,
+    };
+  })();
+
+  const handleDateClick = (date: string) => {
+    if (!isCertified) return;
+    const existing = schedules.find((s) => s.date === date);
     if (existing) {
       setDetailTarget(existing);
       setShowDetailModal(true);
       return;
     }
-    const today = new Date().toISOString().split('T')[0];
     if (date < today) return;
     setSelectedDate(date);
     setShowShiftModal(true);
@@ -85,7 +197,7 @@ export default function DashboardPage() {
   };
 
   const handleShiftSubmit = async (shiftType: 'full' | 'day' | 'custom', startTime: string, endTime: string) => {
-    if (!selectedDate || !student) return;
+    if (!selectedDate || !student || !isCertified) return;
 
     const { data: schedule } = await supabase
       .from('schedules')
@@ -101,7 +213,7 @@ export default function DashboardPage() {
       .single();
 
     if (schedule) {
-      setSchedules((prev) => [...prev, schedule]);
+      setSchedules((prev) => [...prev, schedule as Schedule]);
     }
     setShowShiftModal(false);
     setSelectedDate(null);
@@ -123,6 +235,18 @@ export default function DashboardPage() {
     setCancelTarget(null);
   };
 
+  const copyCalendarFeed = () => {
+    if (!student?.id) return;
+    navigator.clipboard.writeText(`${window.location.origin}/api/calendar/${student.id}.ics`);
+  };
+
+  const sections: { key: DashboardSection; label: string; description: string; locked?: boolean }[] = [
+    { key: 'schedule', label: 'Schedule', description: 'Request and manage shifts', locked: isPending },
+    { key: 'preceptors', label: 'Preceptors & Evaluations', description: 'Review crews and submit feedback', locked: isPending },
+    { key: 'messages', label: 'Messages', description: 'Contact training staff' },
+    { key: 'feed', label: 'Calendar Feed', description: 'Copy your subscription link' },
+  ];
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -132,101 +256,67 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-wfd-charcoal">
-            Welcome, {student?.full_name}
-          </h1>
-          <p className="text-gray-500">
-            {student?.school_name}
-            {student?.status === 'certified' && (
-              <Badge variant="green" className="ml-2">Certified</Badge>
-            )}
-            {student?.status === 'pending' && (
-              <Badge variant="gold" className="ml-2">Pending Approval</Badge>
-            )}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setActiveTab('calendar')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'calendar'
-                ? 'bg-wfd-crimson text-white'
-                : 'bg-wfd-charcoal/10 text-wfd-charcoal hover:bg-wfd-charcoal/20'
-            }`}
-          >
-            Calendar
-          </button>
-          <button
-            onClick={() => setActiveTab('preceptors')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              activeTab === 'preceptors'
-                ? 'bg-wfd-crimson text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            Preceptors
-          </button>
-          <button
-            onClick={() => setActiveTab('messages')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              activeTab === 'messages'
-                ? 'bg-wfd-crimson text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            Messages
-          </button>
-        </div>
-      </div>
-
-      {student?.status === 'pending' ? (
-        <div className="space-y-6">
-          <Card className="p-6 bg-wfd-gold/10 border-wfd-gold/30">
-            <h2 className="text-lg font-bold text-wfd-gold mb-3">Account Pending Approval</h2>
-            <p className="text-sm text-wfd-charcoal/70 leading-relaxed mb-4">
-              Your onboarding has been received and is awaiting administrative review. Once approved, you&apos;ll be able to request shifts, view preceptor profiles, and message administrators.
-            </p>
-            <p className="text-sm text-wfd-charcoal/60">
-              You&apos;ll receive an email when your account has been approved.
-            </p>
-          </Card>
-
-          <Card className="p-4">
-            <h3 className="font-semibold text-wfd-charcoal mb-3">Calendar Feed</h3>
-            <p className="text-sm text-gray-500 mb-2">
-              Subscribe to your personal calendar to see scheduled shifts once approved.
-            </p>
-            <div className="flex items-center gap-2">
-              <code className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600 truncate">
-                /api/calendar/{student?.id}.ics
-              </code>
+    <div className="space-y-7">
+      <section className="overflow-hidden rounded-2xl border border-wfd-charcoal/15 bg-white shadow-lg">
+        <div className="border-b-4 border-wfd-sage bg-wfd-crimson px-5 py-5 text-white sm:px-7">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="max-w-3xl">
+              <p className="text-xs font-bold uppercase tracking-[0.22em] text-white/80">{commandState.eyebrow}</p>
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                <h1 className="text-2xl font-black leading-tight sm:text-4xl">{commandState.title}</h1>
+                {commandState.badge}
+              </div>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-white/90 sm:text-base">{commandState.body}</p>
+              <p className="mt-2 text-sm text-white/75">{student?.full_name} • {student?.school_name}</p>
+            </div>
+            <div className="flex w-full flex-col gap-3 sm:w-auto sm:min-w-56">
+              <Button onClick={commandState.onPrimary} className="w-full bg-white px-5 py-3 text-base text-wfd-crimson hover:bg-white/90 focus:ring-white">
+                {commandState.primaryLabel}
+              </Button>
               <button
-                onClick={() => {
-                  const url = `${window.location.origin}/api/calendar/${student?.id}.ics`;
-                  navigator.clipboard.writeText(url);
-                }}
-                className="text-xs text-wfd-crimson hover:underline whitespace-nowrap"
+                onClick={commandState.onSecondary}
+                className="rounded-lg border border-white/35 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-white/10"
               >
-                Copy
+                {commandState.secondaryLabel}
               </button>
             </div>
-          </Card>
+          </div>
         </div>
-      ) : (
-        <div>
-        {welcomeMsg && !welcomeDismissed && (
-        <Card className="p-4 bg-wfd-sage/10 border-wfd-sage/30">
+        <div className="grid gap-4 bg-wfd-charcoal px-5 py-4 text-white sm:grid-cols-2 lg:grid-cols-4 lg:px-7">
+          <SummaryCard
+            label="Account Status"
+            value={isPending ? 'Pending Review' : 'Certified'}
+            detail={isPending ? 'Scheduling unlocks after approval' : 'Approved for clinical rotations'}
+          />
+          <SummaryCard
+            label="Next Shift"
+            value={nextShift ? formatDate(nextShift.date) : 'Not Scheduled'}
+            detail={nextShift ? formatShiftTime(nextShift) : isCertified ? 'Schedule a shift to get started' : 'Available after approval'}
+          />
+          <SummaryCard
+            label="Pending Requests"
+            value={String(pendingSchedules.length)}
+            detail={pendingSchedules.length === 1 ? '1 shift awaiting review' : `${pendingSchedules.length} shifts awaiting review`}
+          />
+          <SummaryCard
+            label="Messages"
+            value={String(messageCount)}
+            detail={messageCount === 1 ? '1 message in your thread' : `${messageCount} messages in your thread`}
+          />
+        </div>
+      </section>
+
+      {welcomeMsg && !welcomeDismissed && !isPending && (
+        <Card className="border-wfd-sage/30 bg-wfd-sage/10 p-4">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h3 className="font-bold text-wfd-sage mb-1">{welcomeMsg.title}</h3>
-              <p className="text-sm text-wfd-charcoal/70 whitespace-pre-line">{welcomeMsg.body}</p>
+              <h3 className="font-bold text-wfd-sage">{welcomeMsg.title}</h3>
+              <p className="mt-1 text-sm text-wfd-charcoal/70 whitespace-pre-line">{welcomeMsg.body}</p>
             </div>
             <button
               onClick={() => setWelcomeDismissed(true)}
-              className="text-wfd-sage/60 hover:text-wfd-sage text-lg leading-none shrink-0"
+              className="shrink-0 text-lg leading-none text-wfd-sage/60 hover:text-wfd-sage"
+              aria-label="Dismiss welcome message"
             >
               ×
             </button>
@@ -234,96 +324,108 @@ export default function DashboardPage() {
         </Card>
       )}
 
-      {student?.status === 'certified' && !student?.password_changed && (
-        <PasswordChangePrompt studentId={student?.id} onChanged={() => setStudent({ ...student, password_changed: true })} />
-      )}
-
-      {activeTab === 'calendar' && (
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                viewMode === 'grid' ? 'bg-wfd-crimson text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              Grid
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                viewMode === 'list' ? 'bg-wfd-crimson text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              List
-            </button>
-            <div className="flex-1" />
-            <Button size="sm" onClick={() => {
-              const today = new Date().toISOString().split('T')[0];
-              setSelectedDate(today);
-              setShowShiftModal(true);
-            }}>
-              + Request Shift
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-              {viewMode === 'grid' ? (
-                <CalendarGrid
-                  schedules={schedules}
-                  onDateClick={handleDateClick}
-                />
-              ) : (
-                <ShiftList
-                  schedules={schedules}
-                  onDateClick={handleDateClick}
-                  onCancel={(s) => {
-                    if (s.status === 'approved') {
-                      setDetailTarget(s);
-                      setShowDetailModal(true);
-                    } else {
-                      setCancelTarget(s);
-                      setShowCancelModal(true);
-                    }
-                  }}
-                />
-              )}
-            </div>
+      {isPending && (
+        <Card className="border-wfd-gold/40 bg-wfd-gold/10 p-5">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <Card className="p-4">
-                <h3 className="font-semibold text-wfd-charcoal mb-3">iCal Feed</h3>
-                <p className="text-sm text-gray-500 mb-2">
-                  Subscribe in Google Calendar or Apple Calendar to see your shifts.
-                </p>
-                <div className="flex items-center gap-2">
-                  <code className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600 truncate">
-                    /api/calendar/{student?.id}.ics
-                  </code>
-                  <button
-                    onClick={() => {
-                      const url = `${window.location.origin}/api/calendar/${student?.id}.ics`;
-                      navigator.clipboard.writeText(url);
-                    }}
-                    className="text-xs text-wfd-crimson hover:underline whitespace-nowrap"
-                  >
-                    Copy
-                  </button>
-                </div>
-              </Card>
+              <h2 className="text-lg font-black text-wfd-charcoal">Your account is in review</h2>
+              <p className="mt-1 text-sm leading-6 text-wfd-charcoal/70">
+                You can message training staff or copy your calendar feed now. Shift scheduling, preceptor profiles, and evaluations unlock after approval.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button onClick={showMessagesSection} variant="secondary">Message Staff</Button>
+              <Button onClick={showFeedSection} variant="sage">Calendar Feed</Button>
             </div>
           </div>
-        </div>
+        </Card>
       )}
 
-      {activeTab === 'preceptors' && (
-        <div className="space-y-6">
+      <nav className="grid gap-3 md:grid-cols-4" aria-label="Dashboard sections">
+        {sections.map((section) => (
+          <button
+            key={section.key}
+            onClick={() => !section.locked && setActiveSection(section.key)}
+            disabled={section.locked}
+            className={`rounded-xl border p-4 text-left transition-all ${
+              activeSection === section.key
+                ? 'border-wfd-crimson bg-wfd-crimson text-white shadow-md'
+                : 'border-gray-200 bg-white text-wfd-charcoal hover:-translate-y-0.5 hover:border-wfd-crimson/40 hover:shadow'
+            } ${section.locked ? 'cursor-not-allowed opacity-55 hover:translate-y-0 hover:border-gray-200 hover:shadow-none' : ''}`}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-black">{section.label}</span>
+              {section.locked && <span className="text-xs font-bold uppercase">Locked</span>}
+            </div>
+            <p className={`mt-1 text-xs ${activeSection === section.key ? 'text-white/80' : 'text-gray-500'}`}>{section.description}</p>
+          </button>
+        ))}
+      </nav>
+
+      {activeSection === 'schedule' && !isPending && (
+        <section className="space-y-4">
+          <div className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-xl font-black text-wfd-charcoal">Schedule Your Clinical Shifts</h2>
+              <p className="text-sm text-gray-500">Use the main button or click a future date on the calendar.</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`rounded-lg px-3 py-1.5 text-sm font-bold transition-colors ${viewMode === 'grid' ? 'bg-wfd-charcoal text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+              >
+                Calendar
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`rounded-lg px-3 py-1.5 text-sm font-bold transition-colors ${viewMode === 'list' ? 'bg-wfd-charcoal text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+              >
+                List
+              </button>
+              <Button onClick={openScheduleRequest}>Schedule a Shift</Button>
+            </div>
+          </div>
+
+          {activeSchedules.length === 0 && (
+            <Card className="border-wfd-crimson/20 bg-wfd-crimson/5 p-5 text-center">
+              <h3 className="text-lg font-black text-wfd-charcoal">No shifts scheduled yet</h3>
+              <p className="mx-auto mt-1 max-w-xl text-sm text-gray-600">Start with the Schedule a Shift button. You can also pick a future date directly on the calendar.</p>
+              <Button onClick={openScheduleRequest} className="mt-4">Schedule a Shift</Button>
+            </Card>
+          )}
+
+          {viewMode === 'grid' ? (
+            <CalendarGrid schedules={schedules} onDateClick={handleDateClick} />
+          ) : (
+            <ShiftList
+              schedules={schedules}
+              onDateClick={handleDateClick}
+              onCancel={(s) => {
+                if (s.status === 'approved') {
+                  setDetailTarget(s);
+                  setShowDetailModal(true);
+                } else {
+                  setCancelTarget(s);
+                  setShowCancelModal(true);
+                }
+              }}
+            />
+          )}
+        </section>
+      )}
+
+      {activeSection === 'preceptors' && !isPending && (
+        <section className="space-y-6">
           <PreceptorGallery />
           <EvaluationForm studentId={student?.id} />
-        </div>
+        </section>
       )}
 
-      {activeTab === 'messages' && <Messages studentId={student?.id} />}
+      {activeSection === 'messages' && <Messages studentId={student?.id} />}
+
+      {activeSection === 'feed' && (
+        <CalendarFeedCard studentId={student?.id} onCopy={copyCalendarFeed} />
+      )}
 
       <DayDetailModal
         open={showDetailModal}
@@ -355,41 +457,34 @@ export default function DashboardPage() {
         />
       )}
     </div>
-      )}
+  );
+}
+
+function SummaryCard({ label, value, detail }: { label: string; value: string; detail: string }) {
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/10 p-4">
+      <p className="text-xs font-bold uppercase tracking-wide text-white/60">{label}</p>
+      <p className="mt-1 text-2xl font-black text-white">{value}</p>
+      <p className="mt-1 text-xs leading-5 text-white/70">{detail}</p>
     </div>
   );
 }
 
-function PasswordChangePrompt({ studentId, onChanged }: { studentId: string; onChanged: () => void }) {
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [changing, setChanging] = useState(false);
-  const [error, setError] = useState('');
-
-  const handleChange = async () => {
-    if (newPassword !== confirmPassword) { setError('Passwords do not match.'); return; }
-    if (newPassword.length < 6) { setError('Password must be at least 6 characters.'); return; }
-
-    setChanging(true); setError('');
-    const supabase = createClient();
-    const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
-    if (updateError) { setError(updateError.message); setChanging(false); return; }
-
-    await supabase.from('students').update({ password_changed: true }).eq('id', studentId);
-    setChanging(false);
-    onChanged();
-  };
-
+function CalendarFeedCard({ studentId, onCopy }: { studentId: string; onCopy: () => void }) {
   return (
-    <Card className="p-4 bg-wfd-gold/10 border-wfd-gold/30">
-      <h3 className="font-bold text-wfd-gold mb-1">Change Your Password</h3>
-      <p className="text-sm text-wfd-charcoal/70 mb-3">Your account uses a temporary password. Please set a new one.</p>
-      <div className="grid gap-2 sm:grid-cols-2">
-        <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="New password" className="px-3 py-1.5 border border-wfd-gold/30 rounded-lg text-sm" />
-        <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Confirm password" className="px-3 py-1.5 border border-wfd-gold/30 rounded-lg text-sm" />
+    <Card className="overflow-hidden">
+      <div className="border-b-4 border-wfd-sage bg-wfd-charcoal p-5 text-white">
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/60">Calendar Subscription</p>
+        <h2 className="mt-1 text-2xl font-black">Keep your shifts on your phone calendar</h2>
+        <p className="mt-2 text-sm text-white/75">Copy this feed into Google Calendar, Apple Calendar, or Outlook to see pending and approved shifts.</p>
       </div>
-      {error && <p className="text-xs text-wfd-crimson mt-1">{error}</p>}
-      <Button onClick={handleChange} loading={changing} size="sm" className="mt-2">Update Password</Button>
+      <div className="space-y-4 p-5">
+        <div className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3 sm:flex-row sm:items-center">
+          <code className="min-w-0 flex-1 truncate text-xs text-gray-700">/api/calendar/{studentId}.ics</code>
+          <Button onClick={onCopy} size="sm">Copy Link</Button>
+        </div>
+        <p className="text-sm text-gray-500">Calendar apps refresh subscriptions on their own schedule, so newly approved shifts may not appear immediately.</p>
+      </div>
     </Card>
   );
 }
