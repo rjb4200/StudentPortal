@@ -28,10 +28,10 @@
 ## 5. Verification
 
 - [x] 5.1 Run `npm run build` to verify no TypeScript or build errors
-- [ ] 5.2 Verify student cancels pending shift: status changes to cancelled, no appearance in Action Required feed
-- [ ] 5.3 Verify student cancels approved shift: appears in Action Required feed with Cancel Req badge
-- [ ] 5.4 Verify admin clicks "Cancel Shift" on cancel request: item disappears from feed, appears in Shift Management Cancelled tab as "(by admin)"
-- [ ] 5.5 Verify admin cancels approved shift from Shift Management: status changes, appears in Cancelled tab as "(by admin)"
-- [ ] 5.6 Verify Shift Management tabs filter correctly: Approved shows only approved, Cancelled shows only cancelled, Rejected shows only rejected, All shows everything
-- [ ] 5.7 Verify date range and student filters work correctly in Shift Management
-- [ ] 5.8 Verify Recent Activity and Welcome Message cards no longer appear in Daily Operations
+- [x] 5.2 Verify student cancels pending shift: status changes to cancelled, no appearance in Action Required feed
+- [x] 5.3 Verify student cancels approved shift: appears in Action Required feed with Cancel Req badge
+- [x] 5.4 Verify admin clicks "Cancel Shift" on cancel request: item disappears from feed, appears in Shift Management Cancelled tab as "(by admin)"
+- [x] 5.5 Verify admin cancels approved shift from Shift Management: status changes, appears in Cancelled tab as "(by admin)"
+- [x] 5.6 Verify Shift Management tabs filter correctly: Approved shows only approved, Cancelled shows only cancelled, Rejected shows only rejected, All shows everything
+- [x] 5.7 Verify date range and student filters work correctly in Shift Management
+- [x] 5.8 Verify Recent Activity and Welcome Message cards no longer appear in Daily Operations
