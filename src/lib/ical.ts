@@ -1,3 +1,5 @@
+import { to24Hour } from '@/lib/time-formats';
+
 interface ScheduleRecord {
   id: string;
   date: string;
@@ -6,6 +8,17 @@ interface ScheduleRecord {
   start_time?: string | null;
   end_time?: string | null;
   student_name?: string;
+}
+
+function addOneDay(dateStr: string): string {
+  const year = parseInt(dateStr.substring(0, 4));
+  const month = parseInt(dateStr.substring(4, 6));
+  const day = parseInt(dateStr.substring(6, 8));
+  const d = new Date(year, month - 1, day + 1);
+  const yyyy = d.getFullYear().toString();
+  const mm = (d.getMonth() + 1).toString().padStart(2, '0');
+  const dd = d.getDate().toString().padStart(2, '0');
+  return yyyy + mm + dd;
 }
 
 export function generateICalFeed(schedules: ScheduleRecord[], calendarName: string): string {
@@ -37,10 +50,22 @@ export function generateICalFeed(schedules: ScheduleRecord[], calendarName: stri
       ? `Status: ${s.status}\\nTime: ${s.start_time} – ${s.end_time}`
       : `Status: ${s.status}\\nShift: ${s.shift_type}`;
 
+    const hasTimes = s.start_time && s.end_time;
+
     lines.push('BEGIN:VEVENT');
     lines.push(`UID:${s.id}@wfd-ems-portal`);
-    lines.push(`DTSTART;VALUE=DATE:${dt}`);
-    lines.push(`DTEND;VALUE=DATE:${dt}`);
+
+    if (hasTimes && s.start_time && s.end_time) {
+      const start24 = to24Hour(s.start_time);
+      const end24 = to24Hour(s.end_time);
+      const endDate = end24 <= start24 ? addOneDay(dt) : dt;
+      lines.push(`DTSTART;TZID=America/New_York:${dt}T${start24}00`);
+      lines.push(`DTEND;TZID=America/New_York:${endDate}T${end24}00`);
+    } else {
+      lines.push(`DTSTART;VALUE=DATE:${dt}`);
+      lines.push(`DTEND;VALUE=DATE:${dt}`);
+    }
+
     lines.push(`SUMMARY:${summary}`);
     lines.push(`DESCRIPTION:${desc}`);
     lines.push(`CATEGORIES:${s.status === 'approved' ? 'Approved' : s.status === 'pending' ? 'Pending' : 'Rejected'}`);
