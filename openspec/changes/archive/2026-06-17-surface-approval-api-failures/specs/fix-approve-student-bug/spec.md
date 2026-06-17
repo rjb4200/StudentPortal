@@ -1,8 +1,4 @@
-## Purpose
-
-Server-side student approval API route and queue integration.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Server-side student approval
 The system SHALL provide a server-side API route for approving pending students that updates the student record to certified status with a 120-day access expiry and returns structured JSON success or failure responses. The route SHALL return a non-OK response with a useful error message when authorization, validation, lookup, or certification update fails.

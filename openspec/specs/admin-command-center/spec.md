@@ -12,11 +12,15 @@ The system SHALL present an admin interface with three tabs: Daily Operations, P
 - **THEN** the preceptor analytics content renders and the other tab content is hidden
 
 ### Requirement: Unified action required card with visual differentiation
-The admin daily operations tab SHALL display actionable items within a unified "Action Required" card. The card SHALL contain four item types, each visually differentiated by badge color and button style: Approvals (sage green badge, crimson Approve button), Schedule Requests (blue badge, crimson Approve and red Reject buttons), Cancel Requests (amber/orange badge, amber Cancel Shift button), and Quiz Flags (amber badge, secondary Acknowledge button). Items SHALL be ordered: approvals first, then schedule requests, then cancel requests, then quiz flags. Each category SHALL be sorted newest first within itself.
+The admin daily operations tab SHALL display actionable items within a unified "Action Required" card. The card SHALL contain four item types, each visually differentiated by badge color and button style: Approvals (sage green badge, crimson Approve button), Schedule Requests (blue badge, crimson Approve and red Reject buttons), Cancel Requests (amber/orange badge, amber Cancel Shift button), and Quiz Flags (amber badge, secondary Acknowledge button). Items SHALL be ordered: approvals first, then schedule requests, then cancel requests, then quiz flags. Each category SHALL be sorted newest first within itself. Approval failures SHALL be displayed to the admin and SHALL NOT be represented as successful approvals unless the approval API confirms success.
 
 #### Scenario: Approve a new student
-- **WHEN** the Training Major clicks "Approve" on a pending student in the unified Action Required list
-- **THEN** the system sets `status` to `certified`, sets `access_until` to 120 days from now, and sends a welcome email to the student
+- **WHEN** the Training Major clicks "Approve" on a pending student in the unified Action Required list and the approval API confirms success
+- **THEN** the system sets `status` to `certified`, sets `access_until` to 120 days from now, sends a welcome email to the student, and refreshes the Action Required list
+
+#### Scenario: Approval failure is visible
+- **WHEN** the Training Major clicks "Approve" on a pending student and the approval API fails
+- **THEN** the Action Required card displays a useful error message to the admin and does not treat the approval as successful
 
 #### Scenario: Approve a schedule request
 - **WHEN** an admin clicks "Approve" on a schedule request in the unified list
