@@ -26,22 +26,29 @@ export async function POST(request: NextRequest) {
 
   const adminClient = createAdminClient();
 
-  const { data: student } = await adminClient
+  const { data: student, error: studentError } = await adminClient
     .from('students')
     .select('email, full_name, status')
     .eq('id', studentId)
     .single();
 
+  if (studentError && studentError.code !== 'PGRST116') {
+    return NextResponse.json({ error: studentError.message }, { status: 500 });
+  }
   if (!student) return NextResponse.json({ error: 'Student not found' }, { status: 404 });
   if (student.status !== 'pending') return NextResponse.json({ success: true, message: 'Already approved' });
 
-  await adminClient
+  const { error: updateError } = await adminClient
     .from('students')
     .update({
       status: 'certified',
       access_until: new Date(Date.now() + 120 * 24 * 60 * 60 * 1000).toISOString(),
     })
     .eq('id', studentId);
+
+  if (updateError) {
+    return NextResponse.json({ error: updateError.message }, { status: 500 });
+  }
 
   if (serverEnv.RESEND_API_KEY) {
     const loginUrl = `${request.nextUrl.origin}/login`;

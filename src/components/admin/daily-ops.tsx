@@ -37,6 +37,7 @@ export function DailyOps() {
   const [messages, setMessages] = useState<any[]>([]);
   const [replyText, setReplyText] = useState('');
   const [approving, setApproving] = useState<string | null>(null);
+  const [approvalError, setApprovalError] = useState<string | null>(null);
   const [broadcastTitle, setBroadcastTitle] = useState('');
   const [broadcastBody, setBroadcastBody] = useState('');
   const [broadcasting, setBroadcasting] = useState(false);
@@ -71,17 +72,38 @@ export function DailyOps() {
 
   const handleApprove = async (student: any) => {
     setApproving(student.id);
+    setApprovalError(null);
     try {
-      await fetch('/api/admin/approve-student', {
+      const response = await fetch('/api/admin/approve-student', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ studentId: student.id }),
       });
+
+      let result: any = null;
+      try {
+        result = await response.json();
+      } catch {}
+
+      if (!response.ok || result?.success !== true) {
+        const serverMessage = typeof result?.error === 'string' && result.error.trim()
+          ? result.error
+          : typeof result?.message === 'string' && result.message.trim()
+            ? result.message
+            : null;
+        throw new Error(serverMessage ?? (response.ok
+          ? 'Approval failed. The server did not confirm success.'
+          : `Approval failed with status ${response.status}.`));
+      }
+
       await loadAll();
+      setApprovalError(null);
     } catch (e) {
       console.error('Approval failed:', e);
+      setApprovalError(e instanceof Error ? e.message : 'Approval failed. Please try again.');
+    } finally {
+      setApproving(null);
     }
-    setApproving(null);
   };
 
   const handleScheduleAction = async (scheduleId: string, action: 'approved' | 'rejected' | 'cancelled', note?: string) => {
@@ -217,6 +239,11 @@ export function DailyOps() {
             </span>
           )}
         </h3>
+        {approvalError && (
+          <p role="alert" className="mb-3 rounded-lg border border-wfd-crimson/20 bg-wfd-crimson/10 px-3 py-2 text-sm text-wfd-crimson">
+            Approval failed: {approvalError}
+          </p>
+        )}
         {totalActions === 0 ? (
           <p className="text-gray-400 text-sm">Nothing requires your attention.</p>
         ) : (
