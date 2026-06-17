@@ -9,7 +9,7 @@ export async function GET() {
 
   const { data: schedules } = await supabase
     .from('schedules')
-    .select('id, date, shift_type, status, students!inner(full_name)')
+    .select('id, date, shift_type, start_time, end_time, status, students!inner(full_name)')
     .eq('status', 'approved')
     .order('date', { ascending: true });
 

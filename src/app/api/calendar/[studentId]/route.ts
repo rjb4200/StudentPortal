@@ -18,7 +18,7 @@ export async function GET(
 
   const { data: schedules } = await supabase
     .from('schedules')
-    .select('id, date, shift_type, status')
+    .select('id, date, shift_type, start_time, end_time, status')
     .eq('student_id', studentId)
     .order('date', { ascending: true });
 

@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
 
   const { data: schedule } = await adminClient
     .from('schedules')
-    .select('id, student_id, date, shift_type, status')
+    .select('id, student_id, date, shift_type, start_time, end_time, status')
     .eq('id', scheduleId)
     .single();
 
@@ -98,16 +98,19 @@ export async function POST(request: NextRequest) {
 
       const isApproved = action === 'approved';
       const title = isApproved ? 'Shift Approved' : 'Shift Update';
+      const timeDisplay = schedule.start_time && schedule.end_time
+        ? `${schedule.start_time} – ${schedule.end_time}`
+        : schedule.shift_type;
       const bodyHtml = isApproved
         ? `<p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:16px;line-height:1.6;text-align:center;">Hi ${student.full_name}, your shift request has been <strong>approved</strong>.</p>
            <div style="margin:20px auto;padding:16px 18px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;max-width:400px;">
              <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Date:</strong> ${dateStr}</p>
-             <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Shift:</strong> ${schedule.shift_type}</p>
+             <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Time:</strong> ${timeDisplay}</p>
            </div>`
         : `<p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:16px;line-height:1.6;text-align:center;">Hi ${student.full_name}, your shift request was <strong>not approved</strong>.</p>
            <div style="margin:20px auto;padding:16px 18px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;max-width:400px;">
              <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Date:</strong> ${dateStr}</p>
-             <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Shift:</strong> ${schedule.shift_type}</p>
+             <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Time:</strong> ${timeDisplay}</p>
            </div>
            <p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:14px;line-height:1.6;text-align:center;">Please contact your preceptor or the Training Major for more information.</p>`;
 

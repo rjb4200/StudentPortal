@@ -14,12 +14,15 @@ import {
   isPast,
   isSameMonth,
 } from 'date-fns';
+import { abbreviated12 } from '@/lib/time-formats';
 
 interface Schedule {
   id: string;
   date: string;
-  shift_type: 'full' | 'day' | 'night';
+  shift_type: string;
   status: 'pending' | 'approved' | 'rejected';
+  start_time?: string | null;
+  end_time?: string | null;
 }
 
 interface CalendarGridProps {
@@ -105,10 +108,14 @@ export function CalendarGrid({ schedules, onDateClick }: CalendarGridProps) {
               <span className="text-xs">{format(day, 'd')}</span>
               {schedule && (
                 <span className="text-[10px] leading-tight mt-0.5">
-                  {schedule.shift_type === 'full'
+                  {schedule.start_time && schedule.end_time
+                    ? `${abbreviated12(schedule.start_time)}–${abbreviated12(schedule.end_time)}`
+                    : schedule.shift_type === 'full'
                     ? 'Full'
                     : schedule.shift_type === 'day'
                     ? 'Day'
+                    : schedule.shift_type === 'custom'
+                    ? 'Custom'
                     : 'Night'}
                 </span>
               )}

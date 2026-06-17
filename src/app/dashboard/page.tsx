@@ -60,7 +60,7 @@ export default function DashboardPage() {
     setShowShiftModal(true);
   };
 
-  const handleShiftSubmit = async (shiftType: 'full' | 'day' | 'night') => {
+  const handleShiftSubmit = async (shiftType: 'full' | 'day' | 'custom', startTime: string, endTime: string) => {
     if (!selectedDate || !student) return;
 
     const { data: schedule } = await supabase
@@ -69,6 +69,8 @@ export default function DashboardPage() {
         student_id: student.id,
         date: selectedDate,
         shift_type: shiftType,
+        start_time: startTime,
+        end_time: endTime,
         status: 'pending',
       })
       .select()

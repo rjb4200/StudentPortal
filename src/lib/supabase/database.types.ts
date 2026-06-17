@@ -624,6 +624,8 @@ export type Database = {
           date: string
           id: string
           shift_type: Database["public"]["Enums"]["shift_type"]
+          start_time?: string | null
+          end_time?: string | null
           status: Database["public"]["Enums"]["schedule_status"]
           student_id: string
         }
@@ -632,6 +634,8 @@ export type Database = {
           date: string
           id?: string
           shift_type: Database["public"]["Enums"]["shift_type"]
+          start_time?: string | null
+          end_time?: string | null
           status?: Database["public"]["Enums"]["schedule_status"]
           student_id: string
         }
@@ -640,6 +644,8 @@ export type Database = {
           date?: string
           id?: string
           shift_type?: Database["public"]["Enums"]["shift_type"]
+          start_time?: string | null
+          end_time?: string | null
           status?: Database["public"]["Enums"]["schedule_status"]
           student_id?: string
         }
@@ -779,7 +785,7 @@ export type Database = {
       message_sender: "student" | "admin"
       note_priority: "normal" | "high_accessibility"
       schedule_status: "pending" | "approved" | "rejected"
-      shift_type: "full" | "day" | "night"
+      shift_type: "full" | "day" | "night" | "custom"
       station_unit:
         | "Station 1 - Downtown HQ"
         | "Station 2 - West Side"
@@ -915,7 +921,7 @@ export const Constants = {
       message_sender: ["student", "admin"],
       note_priority: ["normal", "high_accessibility"],
       schedule_status: ["pending", "approved", "rejected"],
-      shift_type: ["full", "day", "night"],
+      shift_type: ["full", "day", "night", "custom"],
       station_unit: [
         "Station 1 - Downtown HQ",
         "Station 2 - West Side",

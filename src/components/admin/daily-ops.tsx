@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { to24Hour } from '@/lib/time-formats';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -267,7 +268,12 @@ export function DailyOps() {
                   <span className="shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">Schedule</span>
                   <div>
                     <p className="text-sm font-medium">{s.students?.full_name}</p>
-                    <p className="text-xs text-gray-500">{s.date} — {s.shift_type}</p>
+                    <p className="text-xs text-gray-500">
+                      {s.date}
+                      {s.start_time && s.end_time
+                        ? ` — ${to24Hour(s.start_time)}–${to24Hour(s.end_time)}`
+                        : ` — ${s.shift_type}`}
+                    </p>
                   </div>
                 </div>
                 <div className="flex gap-2">
