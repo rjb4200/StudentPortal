@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { ReorderButtons } from '@/components/ui/reorder-buttons';
+import { useSortableList } from '@/lib/hooks/use-sortable-list';
 import { createClient } from '@/lib/supabase/client';
 import { uploadResourceDoc } from '@/lib/supabase/storage';
 import type { Tables, TablesInsert, TablesUpdate } from '@/lib/supabase/database.types';
@@ -16,38 +18,54 @@ const emptyDocForm = { name: '', file_url: '', file_type: 'PDF', sort_order: 0, 
 
 export function ResourceLibraryConfig() {
   const supabase = createClient();
-  const [categories, setCategories] = useState<ResCategory[]>([]);
-  const [documents, setDocuments] = useState<ResDoc[]>([]);
+  const {
+    items: categories,
+    loading: catsLoading,
+    error: catsError,
+    reload: reloadCats,
+    moveItem: moveCat,
+    canMoveUp: canMoveCatUp,
+    canMoveDown: canMoveCatDown,
+    nextSortOrder: nextCatSortOrder,
+  } = useSortableList<ResCategory>({ tableName: 'resource_categories' });
+
   const [selectedCatId, setSelectedCatId] = useState<string | null>(null);
   const [catEditingId, setCatEditingId] = useState<string | null>(null);
   const [docEditingId, setDocEditingId] = useState<string | null>(null);
   const [catForm, setCatForm] = useState(emptyCatForm);
   const [docForm, setDocForm] = useState(emptyDocForm);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
 
-  useEffect(() => { loadAll(); }, []);
+  const {
+    items: documents,
+    loading: docsLoading,
+    error: docsError,
+    reload: reloadDocs,
+    moveItem: moveDoc,
+    canMoveUp: canMoveDocUp,
+    canMoveDown: canMoveDocDown,
+    nextSortOrder: nextDocSortOrder,
+  } = useSortableList<ResDoc>({
+    tableName: 'resource_documents',
+    filter: selectedCatId ? { column: 'category_id', value: selectedCatId } : { column: 'category_id', value: '__no_match__' },
+  });
 
-  async function loadAll() {
-    setLoading(true);
-    const [{ data: catData }, { data: docData }] = await Promise.all([
-      supabase.from('resource_categories').select('*').order('sort_order'),
-      supabase.from('resource_documents').select('*').order('sort_order'),
-    ]);
-    setCategories(catData ?? []);
-    setDocuments(docData ?? []);
-    setSelectedCatId(prev => prev ?? catData?.[0]?.id ?? null);
-    setLoading(false);
-  }
+  useEffect(() => {
+    if (categories.length > 0 && !selectedCatId) {
+      setSelectedCatId(categories[0].id);
+    }
+  }, [categories, selectedCatId]);
 
-  const selectedDocs = documents.filter(d => d.category_id === selectedCatId).sort((a, b) => a.sort_order - b.sort_order);
+  const selectedDocs = documents;
+  const loading = catsLoading || (selectedCatId ? docsLoading : false);
+  const displayError = error || catsError || docsError;
 
-  function startNewCat() { setCatEditingId(null); setCatForm({ ...emptyCatForm, sort_order: (categories.length + 1) * 10 }); setMessage(null); setError(null); }
+  function startNewCat() { setCatEditingId(null); setCatForm({ ...emptyCatForm, sort_order: nextCatSortOrder() }); setMessage(null); setError(null); }
   function startEditCat(cat: ResCategory) { setCatEditingId(cat.id); setCatForm({ name: cat.name, sort_order: cat.sort_order }); setMessage(null); setError(null); }
-  function startNewDoc() { setDocEditingId(null); setDocForm({ ...emptyDocForm, sort_order: (selectedDocs.length + 1) * 10 }); setMessage(null); setError(null); }
+  function startNewDoc() { setDocEditingId(null); setDocForm({ ...emptyDocForm, sort_order: nextDocSortOrder() }); setMessage(null); setError(null); }
   function startEditDoc(doc: ResDoc) { setDocEditingId(doc.id); setDocForm({ name: doc.name, file_url: doc.file_url, file_type: doc.file_type, sort_order: doc.sort_order, is_active: doc.is_active }); setMessage(null); setError(null); }
 
   async function saveCat() {
@@ -58,7 +76,7 @@ export function ResourceLibraryConfig() {
       ? await supabase.from('resource_categories').update(payload).eq('id', catEditingId)
       : await supabase.from('resource_categories').insert(payload as TablesInsert<'resource_categories'>).select('id').single();
     if (result.error) setError(result.error.message);
-    else { setMessage('Category saved.'); setCatForm(emptyCatForm); setCatEditingId(null); if (!catEditingId && 'data' in result && result.data) setSelectedCatId(result.data.id); await loadAll(); }
+    else { setMessage('Category saved.'); setCatForm(emptyCatForm); setCatEditingId(null); if (!catEditingId && 'data' in result && result.data) setSelectedCatId(result.data.id); await reloadCats(); }
     setSaving(false);
   }
 
@@ -67,7 +85,7 @@ export function ResourceLibraryConfig() {
     setSaving(true);
     const { error: deleteError } = await supabase.from('resource_categories').delete().eq('id', cat.id);
     if (deleteError) setError(deleteError.message);
-    else { setMessage('Category deleted.'); setSelectedCatId(null); await loadAll(); }
+    else { setMessage('Category deleted.'); setSelectedCatId(null); await reloadCats(); }
     setSaving(false);
   }
 
@@ -100,7 +118,7 @@ export function ResourceLibraryConfig() {
       ? await supabase.from('resource_documents').update(payload).eq('id', docEditingId)
       : await supabase.from('resource_documents').insert(payload as TablesInsert<'resource_documents'>);
     if (result.error) setError(result.error.message);
-    else { setMessage('Document saved.'); setDocForm(emptyDocForm); setDocEditingId(null); await loadAll(); }
+    else { setMessage('Document saved.'); setDocForm(emptyDocForm); setDocEditingId(null); await reloadDocs(); }
     setSaving(false);
   }
 
@@ -109,7 +127,7 @@ export function ResourceLibraryConfig() {
     setSaving(true);
     const { error: deleteError } = await supabase.from('resource_documents').delete().eq('id', doc.id);
     if (deleteError) setError(deleteError.message);
-    else { setMessage('Document deleted.'); await loadAll(); }
+    else { setMessage('Document deleted.'); await reloadDocs(); }
     setSaving(false);
   }
 
@@ -123,9 +141,9 @@ export function ResourceLibraryConfig() {
         <Button type="button" size="sm" variant="secondary" onClick={startNewCat}>New Category</Button>
       </div>
 
-      {(message || error) && (
-        <div className={`mb-4 rounded-lg border p-3 text-sm font-medium ${error ? 'border-wfd-crimson/30 bg-wfd-crimson/10 text-wfd-crimson' : 'border-wfd-sage/30 bg-wfd-sage/10 text-wfd-sage'}`}>
-          {error ?? message}
+      {(message || displayError) && (
+        <div className={`mb-4 rounded-lg border p-3 text-sm font-medium ${displayError ? 'border-wfd-crimson/30 bg-wfd-crimson/10 text-wfd-crimson' : 'border-wfd-sage/30 bg-wfd-sage/10 text-wfd-sage'}`}>
+          {displayError ?? message}
         </div>
       )}
 
@@ -133,12 +151,20 @@ export function ResourceLibraryConfig() {
         <p className="text-sm text-gray-500">Loading...</p>
       ) : (
         <>
-          <div className="mb-4 flex flex-wrap gap-2">
+          <div className="mb-4 flex flex-wrap gap-2 items-center">
             {categories.map(cat => (
-              <button key={cat.id} type="button" onClick={() => setSelectedCatId(cat.id)}
-                className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${selectedCatId === cat.id ? 'border-wfd-crimson bg-wfd-crimson/5 text-wfd-crimson' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'}`}>
-                {cat.name}
-              </button>
+              <div key={cat.id} className="flex items-center gap-1">
+                <ReorderButtons
+                  onMoveUp={() => moveCat(cat, -1)}
+                  onMoveDown={() => moveCat(cat, 1)}
+                  canMoveUp={canMoveCatUp(cat)}
+                  canMoveDown={canMoveCatDown(cat)}
+                />
+                <button type="button" onClick={() => setSelectedCatId(cat.id)}
+                  className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${selectedCatId === cat.id ? 'border-wfd-crimson bg-wfd-crimson/5 text-wfd-crimson' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'}`}>
+                  {cat.name}
+                </button>
+              </div>
             ))}
             {categories.length === 0 && <p className="text-sm text-gray-500">No categories yet.</p>}
           </div>
@@ -163,6 +189,12 @@ export function ResourceLibraryConfig() {
               {selectedDocs.map(doc => (
                 <div key={doc.id} className="mb-2 rounded border border-gray-100 p-2">
                   <div className="flex items-center justify-between gap-2">
+                    <ReorderButtons
+                      onMoveUp={() => moveDoc(doc, -1)}
+                      onMoveDown={() => moveDoc(doc, 1)}
+                      canMoveUp={canMoveDocUp(doc)}
+                      canMoveDown={canMoveDocDown(doc)}
+                    />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{doc.name}</p>
                       <p className="text-xs text-gray-500">{doc.file_type} | Order {doc.sort_order} | {doc.file_url.substring(0, 40)}...</p>

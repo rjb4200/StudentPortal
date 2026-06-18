@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { ReorderButtons } from '@/components/ui/reorder-buttons';
+import { useSortableList } from '@/lib/hooks/use-sortable-list';
 import { createClient } from '@/lib/supabase/client';
 import { uploadQuizPhoto } from '@/lib/supabase/storage';
 import type { Tables, TablesInsert, TablesUpdate } from '@/lib/supabase/database.types';
@@ -36,53 +38,56 @@ const emptyPhotoForm: PhotoForm = {
 
 export function QuizConfig() {
   const supabase = createClient();
-  const [rules, setRules] = useState<QuizRule[]>([]);
-  const [photos, setPhotos] = useState<QuizPhoto[]>([]);
+  const {
+    items: rules,
+    loading: rulesLoading,
+    error: rulesError,
+    reload: reloadRules,
+    moveItem: moveRule,
+    canMoveUp: canMoveRuleUp,
+    canMoveDown: canMoveRuleDown,
+    nextSortOrder: nextRuleSortOrder,
+  } = useSortableList<QuizRule>({ tableName: 'quiz_rules' });
+
   const [selectedRuleId, setSelectedRuleId] = useState<string | null>(null);
   const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
   const [editingPhotoId, setEditingPhotoId] = useState<string | null>(null);
   const [ruleForm, setRuleForm] = useState<RuleForm>(emptyRuleForm);
   const [photoForm, setPhotoForm] = useState<PhotoForm>(emptyPhotoForm);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
 
-  const selectedRule = rules.find((rule) => rule.id === selectedRuleId) ?? null;
-  const selectedPhotos = photos
-    .filter((photo) => photo.rule_id === selectedRuleId)
-    .sort((a, b) => a.sort_order - b.sort_order || a.label.localeCompare(b.label));
+  const {
+    items: photos,
+    loading: photosLoading,
+    error: photosError,
+    reload: reloadPhotos,
+    moveItem: movePhoto,
+    canMoveUp: canMovePhotoUp,
+    canMoveDown: canMovePhotoDown,
+    nextSortOrder: nextPhotoSortOrder,
+  } = useSortableList<QuizPhoto>({
+    tableName: 'quiz_photos',
+    filter: selectedRuleId ? { column: 'rule_id', value: selectedRuleId } : { column: 'rule_id', value: '__no_match__' },
+  });
 
   useEffect(() => {
-    loadQuizConfig();
-  }, []);
-
-  async function loadQuizConfig() {
-    setLoading(true);
-    setError(null);
-
-    const [{ data: ruleData, error: ruleError }, { data: photoData, error: photoError }] =
-      await Promise.all([
-        supabase.from('quiz_rules').select('*').order('sort_order', { ascending: true }),
-        supabase.from('quiz_photos').select('*').order('sort_order', { ascending: true }),
-      ]);
-
-    if (ruleError || photoError) {
-      setError(ruleError?.message ?? photoError?.message ?? 'Unable to load quiz configuration.');
-      setLoading(false);
-      return;
+    if (rules.length > 0 && !selectedRuleId) {
+      setSelectedRuleId(rules[0].id);
     }
+  }, [rules, selectedRuleId]);
 
-    setRules(ruleData ?? []);
-    setPhotos(photoData ?? []);
-    setSelectedRuleId((current) => current ?? ruleData?.[0]?.id ?? null);
-    setLoading(false);
-  }
+  const selectedRule = rules.find((rule) => rule.id === selectedRuleId) ?? null;
+  const selectedPhotos = photos;
+
+  const loading = rulesLoading || (selectedRuleId ? photosLoading : false);
+  const displayError = error || rulesError || photosError;
 
   function startNewRule() {
     setEditingRuleId(null);
-    setRuleForm({ ...emptyRuleForm, sort_order: (rules.length + 1) * 10 });
+    setRuleForm({ ...emptyRuleForm, sort_order: nextRuleSortOrder() });
     setMessage(null);
     setError(null);
   }
@@ -103,7 +108,7 @@ export function QuizConfig() {
 
   function startNewPhoto() {
     setEditingPhotoId(null);
-    setPhotoForm({ ...emptyPhotoForm, sort_order: (selectedPhotos.length + 1) * 10 });
+    setPhotoForm({ ...emptyPhotoForm, sort_order: nextPhotoSortOrder() });
     setMessage(null);
     setError(null);
   }
@@ -179,7 +184,7 @@ export function QuizConfig() {
       if (!editingRuleId && 'data' in result && result.data) setSelectedRuleId(result.data.id);
       setRuleForm(emptyRuleForm);
       setEditingRuleId(null);
-      await loadQuizConfig();
+      await reloadRules();
     }
     setSaving(false);
   }
@@ -195,7 +200,7 @@ export function QuizConfig() {
     } else {
       setMessage('Rule deleted.');
       setSelectedRuleId(null);
-      await loadQuizConfig();
+      await reloadRules();
     }
     setSaving(false);
   }
@@ -281,7 +286,7 @@ export function QuizConfig() {
       setMessage('Photo saved.');
       setPhotoForm(emptyPhotoForm);
       setEditingPhotoId(null);
-      await loadQuizConfig();
+      await reloadPhotos();
     }
     setSaving(false);
   }
@@ -308,7 +313,7 @@ export function QuizConfig() {
       setError(deleteError.message);
     } else {
       setMessage('Photo deleted.');
-      await loadQuizConfig();
+      await reloadPhotos();
     }
     setSaving(false);
   }
@@ -341,45 +346,54 @@ export function QuizConfig() {
               const rulePhotos = photos.filter((photo) => photo.rule_id === rule.id);
               const activeCount = rulePhotos.filter((photo) => photo.is_active).length;
               return (
-                <button
-                  key={rule.id}
-                  type="button"
-                  onClick={() => setSelectedRuleId(rule.id)}
-                  className={`w-full rounded-lg border p-3 text-left transition-colors ${
-                    selectedRuleId === rule.id
-                      ? 'border-wfd-crimson bg-wfd-crimson/5'
-                      : 'border-gray-200 bg-white hover:border-gray-300'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-semibold text-wfd-charcoal">{rule.title}</p>
-                      <p className="mt-1 text-xs text-gray-500">
-                        Order {rule.sort_order} | {activeCount}/{rulePhotos.length} active photos
-                      </p>
-                    </div>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-bold ${
-                        rule.is_active ? 'bg-wfd-sage/15 text-wfd-sage' : 'bg-gray-100 text-gray-500'
-                      }`}
-                    >
-                      {rule.is_active ? 'Active' : 'Inactive'}
-                    </span>
+                <div key={rule.id} className="flex items-stretch gap-2">
+                  <div className="flex items-center">
+                    <ReorderButtons
+                      onMoveUp={() => moveRule(rule, -1)}
+                      onMoveDown={() => moveRule(rule, 1)}
+                      canMoveUp={canMoveRuleUp(rule)}
+                      canMoveDown={canMoveRuleDown(rule)}
+                    />
                   </div>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedRuleId(rule.id)}
+                    className={`flex-1 rounded-lg border p-3 text-left transition-colors ${
+                      selectedRuleId === rule.id
+                        ? 'border-wfd-crimson bg-wfd-crimson/5'
+                        : 'border-gray-200 bg-white hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-semibold text-wfd-charcoal">{rule.title}</p>
+                        <p className="mt-1 text-xs text-gray-500">
+                          Order {rule.sort_order} | {activeCount}/{rulePhotos.length} active photos
+                        </p>
+                      </div>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-bold ${
+                          rule.is_active ? 'bg-wfd-sage/15 text-wfd-sage' : 'bg-gray-100 text-gray-500'
+                        }`}
+                      >
+                        {rule.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                  </button>
+                </div>
               );
             })}
             {rules.length === 0 && <p className="text-sm text-gray-500">No quiz rules yet.</p>}
           </div>
 
           <div className="space-y-5">
-            {(message || error) && (
+            {(message || displayError) && (
               <div
                 className={`rounded-lg border p-3 text-sm font-medium ${
-                  error ? 'border-wfd-crimson/30 bg-wfd-crimson/10 text-wfd-crimson' : 'border-wfd-sage/30 bg-wfd-sage/10 text-wfd-sage'
+                  displayError ? 'border-wfd-crimson/30 bg-wfd-crimson/10 text-wfd-crimson' : 'border-wfd-sage/30 bg-wfd-sage/10 text-wfd-sage'
                 }`}
               >
-                {error ?? message}
+                {displayError ?? message}
               </div>
             )}
 
@@ -474,9 +488,17 @@ export function QuizConfig() {
                         }}
                       />
                       <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <p className="text-sm font-semibold text-wfd-charcoal">{photo.label}</p>
-                          <p className="text-xs text-gray-500">Order {photo.sort_order}</p>
+                        <div className="flex items-start gap-2">
+                          <ReorderButtons
+                            onMoveUp={() => movePhoto(photo, -1)}
+                            onMoveDown={() => movePhoto(photo, 1)}
+                            canMoveUp={canMovePhotoUp(photo)}
+                            canMoveDown={canMovePhotoDown(photo)}
+                          />
+                          <div>
+                            <p className="text-sm font-semibold text-wfd-charcoal">{photo.label}</p>
+                            <p className="text-xs text-gray-500">Order {photo.sort_order}</p>
+                          </div>
                         </div>
                         <span
                           className={`rounded-full px-2 py-0.5 text-xs font-bold ${

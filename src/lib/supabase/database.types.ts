@@ -292,6 +292,24 @@ export type Database = {
           },
         ]
       }
+      portal_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value?: string
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
       preceptors: {
         Row: {
           auth_user_id: string | null
@@ -331,30 +349,6 @@ export type Database = {
           notify_schedule_approved?: boolean
           specialty_tags?: string[] | null
           station_unit?: Database["public"]["Enums"]["station_unit"] | null
-        }
-        Relationships: []
-      }
-      portal_settings: {
-        Row: {
-          created_at: string
-          id: string
-          key: string
-          updated_at: string
-          value: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          key: string
-          updated_at?: string
-          value?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          key?: string
-          updated_at?: string
-          value?: string
         }
         Relationships: []
       }
@@ -620,14 +614,14 @@ export type Database = {
       }
       schedules: {
         Row: {
+          cancel_note: string | null
+          cancelled_by: string | null
           created_at: string
           date: string
+          end_time: string | null
           id: string
           shift_type: Database["public"]["Enums"]["shift_type"]
-          cancel_note?: string | null
-          cancelled_by?: string | null
-          start_time?: string | null
-          end_time?: string | null
+          start_time: string | null
           status: Database["public"]["Enums"]["schedule_status"]
           student_id: string
         }
@@ -636,10 +630,10 @@ export type Database = {
           cancelled_by?: string | null
           created_at?: string
           date: string
+          end_time?: string | null
           id?: string
           shift_type: Database["public"]["Enums"]["shift_type"]
           start_time?: string | null
-          end_time?: string | null
           status?: Database["public"]["Enums"]["schedule_status"]
           student_id: string
         }
@@ -648,10 +642,10 @@ export type Database = {
           cancelled_by?: string | null
           created_at?: string
           date?: string
+          end_time?: string | null
           id?: string
           shift_type?: Database["public"]["Enums"]["shift_type"]
           start_time?: string | null
-          end_time?: string | null
           status?: Database["public"]["Enums"]["schedule_status"]
           student_id?: string
         }
@@ -775,6 +769,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      refresh_pgrst_schema: { Args: never; Returns: undefined }
       register_onboarding_student: {
         Args: {
           p_email: string
@@ -933,7 +928,7 @@ export const Constants = {
         "Station 2 - West Side",
         "Station 3 - Industrial",
       ],
-      student_status: ["pending", "certified", "expired"],
+      student_status: ["pending", "certified", "expired", "archived"],
     },
   },
 } as const

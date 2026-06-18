@@ -5,7 +5,7 @@
 End-to-end onboarding completion experience including auth user creation with temp password on quiz finish, admin-configurable completion screen, pending-approval dashboard, and login email validation.
 ## Requirements
 ### Requirement: Quiz completion creates auth user with temp password
-The system SHALL create or reuse a Supabase Auth user with a random 6-digit temporary password when the onboarding quiz is completed. Completion SHALL link the auth user to the student enrollment through `students.auth_user_id` and SHALL NOT change `students.id`.
+The system SHALL create or reuse a Supabase Auth user with a random 6-digit temporary password when the onboarding quiz is completed. Completion SHALL link the auth user to the student enrollment through `students.auth_user_id` and SHALL NOT change `students.id`. Auth user creation and linking SHALL succeed independently of notification email delivery — the temp password SHALL always be returned in the API response payload.
 
 #### Scenario: Quiz completed by new student
 - **WHEN** a student completes the onboarding quiz and the notification API is called
@@ -22,6 +22,16 @@ The system SHALL create or reuse a Supabase Auth user with a random 6-digit temp
 #### Scenario: Quiz complete spinner stops
 - **WHEN** the Finish Onboarding button is clicked and the API call completes
 - **THEN** the spinner stops and the onboarding continues to the completion screen
+
+#### Scenario: Email provider fails during onboarding completion
+- **WHEN** a student completes onboarding and the Resend API is unreachable
+- **THEN** the auth user is still created and linked, the API returns HTTP 200 with the temp password, and the email failure is logged
+- **AND** the frontend displays the password to the student on the completion screen
+
+#### Scenario: API returns error for auth creation failure
+- **WHEN** the notification API is called but auth user creation fails (not an email failure)
+- **THEN** the API returns `{ success: false }` with an error message
+- **AND** the frontend displays the error and allows the student to retry
 
 ### Requirement: Admin-configurable completion screen
 The system SHALL display an onboarding completion screen after the quiz that renders admin-configurable text from the database. For newly created accounts, the screen SHALL show a "Continue to Dashboard" button that performs client-side auto-login using the temporary password. For existing accounts, the screen SHALL only show instructions to use existing credentials and a login link. When no admin template is active, the screen SHALL display default content appropriate to the account type.

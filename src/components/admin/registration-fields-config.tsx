@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { ReorderButtons } from '@/components/ui/reorder-buttons';
+import { useSortableList } from '@/lib/hooks/use-sortable-list';
 import { createClient } from '@/lib/supabase/client';
 import type { Tables, TablesInsert, TablesUpdate } from '@/lib/supabase/database.types';
 
@@ -24,26 +26,16 @@ const emptyForm = {
 
 export function RegistrationFieldsConfig() {
   const supabase = createClient();
-  const [fields, setFields] = useState<RegField[]>([]);
+  const { items: fields, loading, error: loadError, reload, moveItem, canMoveUp, canMoveDown, nextSortOrder } = useSortableList<RegField>({ tableName: 'registration_fields' });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => { loadFields(); }, []);
-
-  async function loadFields() {
-    setLoading(true);
-    const { data } = await supabase.from('registration_fields').select('*').order('sort_order');
-    setFields(data ?? []);
-    setLoading(false);
-  }
-
   function startNew() {
     setEditingId(null);
-    setForm({ ...emptyForm, sort_order: (fields.length + 1) * 10 });
+    setForm({ ...emptyForm, sort_order: nextSortOrder() });
     setMessage(null);
     setError(null);
   }
@@ -96,7 +88,7 @@ export function RegistrationFieldsConfig() {
       setMessage('Field saved.');
       setForm(emptyForm);
       setEditingId(null);
-      await loadFields();
+      await reload();
     }
     setSaving(false);
   }
@@ -111,7 +103,7 @@ export function RegistrationFieldsConfig() {
     setSaving(true);
     const { error: deleteError } = await supabase.from('registration_fields').delete().eq('id', field.id);
     if (deleteError) setError(deleteError.message);
-    else { setMessage('Field deleted.'); await loadFields(); }
+    else { setMessage('Field deleted.'); await reload(); }
     setSaving(false);
   }
 
@@ -125,24 +117,10 @@ export function RegistrationFieldsConfig() {
       .update({ is_active: !field.is_active, updated_at: new Date().toISOString() })
       .eq('id', field.id);
     if (updateError) setError(updateError.message);
-    else await loadFields();
+    else await reload();
   }
 
-  async function moveField(field: RegField, direction: number) {
-    const swap = fields
-      .filter(f => f.id !== field.id)
-      .sort((a, b) => a.sort_order - b.sort_order);
-
-    const newIndex = Math.max(0, Math.min(swap.length, swap.findIndex(f => f.sort_order >= field.sort_order) + direction));
-    const newOrder = newIndex === 0 ? (swap[0]?.sort_order ?? 0) - 10 : Math.round((swap[newIndex - 1].sort_order + (swap[newIndex]?.sort_order ?? swap[newIndex - 1].sort_order + 20)) / 2);
-
-    const { error: updateError } = await supabase
-      .from('registration_fields')
-      .update({ sort_order: newOrder, updated_at: new Date().toISOString() })
-      .eq('id', field.id);
-    if (updateError) setError(updateError.message);
-    else await loadFields();
-  }
+  const displayError = error || loadError;
 
   return (
     <Card className="p-4">
@@ -154,9 +132,9 @@ export function RegistrationFieldsConfig() {
         <Button type="button" size="sm" variant="secondary" onClick={startNew}>New Field</Button>
       </div>
 
-      {(message || error) && (
-        <div className={`mb-4 rounded-lg border p-3 text-sm font-medium ${error ? 'border-wfd-crimson/30 bg-wfd-crimson/10 text-wfd-crimson' : 'border-wfd-sage/30 bg-wfd-sage/10 text-wfd-sage'}`}>
-          {error ?? message}
+      {(message || displayError) && (
+        <div className={`mb-4 rounded-lg border p-3 text-sm font-medium ${displayError ? 'border-wfd-crimson/30 bg-wfd-crimson/10 text-wfd-crimson' : 'border-wfd-sage/30 bg-wfd-sage/10 text-wfd-sage'}`}>
+          {displayError ?? message}
         </div>
       )}
 
@@ -168,10 +146,12 @@ export function RegistrationFieldsConfig() {
             {fields.map((field) => (
               <div key={field.id} className={`rounded-lg border p-3 ${field.is_permanent ? 'bg-gray-50' : ''}`}>
                 <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => moveField(field, -1)} disabled={field.sort_order <= fields[0]?.sort_order || false} className="text-xs text-gray-400 hover:text-gray-700 disabled:opacity-30">▲</button>
-                    <button onClick={() => moveField(field, 1)} disabled={field.sort_order >= fields[fields.length - 1]?.sort_order || false} className="text-xs text-gray-400 hover:text-gray-700 disabled:opacity-30">▼</button>
-                  </div>
+                  <ReorderButtons
+                    onMoveUp={() => moveItem(field, -1)}
+                    onMoveDown={() => moveItem(field, 1)}
+                    canMoveUp={canMoveUp(field)}
+                    canMoveDown={canMoveDown(field)}
+                  />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{field.label}</p>
                     <p className="text-xs text-gray-500">{field.field_key} | {field.field_type} {field.is_required ? '| required' : ''}</p>

@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { ReorderButtons } from '@/components/ui/reorder-buttons';
+import { useSortableList } from '@/lib/hooks/use-sortable-list';
 import { createClient } from '@/lib/supabase/client';
 import type { Tables, TablesInsert, TablesUpdate } from '@/lib/supabase/database.types';
 
@@ -13,26 +15,16 @@ const emptyForm = { title: '', body_text: '', require_checkbox: true, sort_order
 
 export function LegalDocsConfig() {
   const supabase = createClient();
-  const [docs, setDocs] = useState<LegalDoc[]>([]);
+  const { items: docs, loading, error: loadError, reload, moveItem, canMoveUp, canMoveDown, nextSortOrder } = useSortableList<LegalDoc>({ tableName: 'legal_documents' });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => { loadDocs(); }, []);
-
-  async function loadDocs() {
-    setLoading(true);
-    const { data } = await supabase.from('legal_documents').select('*').order('sort_order');
-    setDocs(data ?? []);
-    setLoading(false);
-  }
-
   function startNew() {
     setEditingId(null);
-    setForm({ ...emptyForm, sort_order: (docs.length + 1) * 10 });
+    setForm({ ...emptyForm, sort_order: nextSortOrder() });
     setMessage(null); setError(null);
   }
 
@@ -57,7 +49,7 @@ export function LegalDocsConfig() {
       ? await supabase.from('legal_documents').update(payload).eq('id', editingId)
       : await supabase.from('legal_documents').insert(payload as TablesInsert<'legal_documents'>);
     if (result.error) setError(result.error.message);
-    else { setMessage('Document saved.'); setForm(emptyForm); setEditingId(null); await loadDocs(); }
+    else { setMessage('Document saved.'); setForm(emptyForm); setEditingId(null); await reload(); }
     setSaving(false);
   }
 
@@ -66,9 +58,11 @@ export function LegalDocsConfig() {
     setSaving(true);
     const { error: deleteError } = await supabase.from('legal_documents').delete().eq('id', doc.id);
     if (deleteError) setError(deleteError.message);
-    else { setMessage('Document deleted.'); await loadDocs(); }
+    else { setMessage('Document deleted.'); await reload(); }
     setSaving(false);
   }
+
+  const displayError = error || loadError;
 
   return (
     <Card className="p-4">
@@ -80,9 +74,9 @@ export function LegalDocsConfig() {
         <Button type="button" size="sm" variant="secondary" onClick={startNew}>New Document</Button>
       </div>
 
-      {(message || error) && (
-        <div className={`mb-4 rounded-lg border p-3 text-sm font-medium ${error ? 'border-wfd-crimson/30 bg-wfd-crimson/10 text-wfd-crimson' : 'border-wfd-sage/30 bg-wfd-sage/10 text-wfd-sage'}`}>
-          {error ?? message}
+      {(message || displayError) && (
+        <div className={`mb-4 rounded-lg border p-3 text-sm font-medium ${displayError ? 'border-wfd-crimson/30 bg-wfd-crimson/10 text-wfd-crimson' : 'border-wfd-sage/30 bg-wfd-sage/10 text-wfd-sage'}`}>
+          {displayError ?? message}
         </div>
       )}
 
@@ -94,6 +88,12 @@ export function LegalDocsConfig() {
             {docs.map((doc) => (
               <div key={doc.id} className="rounded-lg border border-gray-200 p-3">
                 <div className="flex items-center justify-between gap-2">
+                  <ReorderButtons
+                    onMoveUp={() => moveItem(doc, -1)}
+                    onMoveDown={() => moveItem(doc, 1)}
+                    canMoveUp={canMoveUp(doc)}
+                    canMoveDown={canMoveDown(doc)}
+                  />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{doc.title}</p>
                     <p className="text-xs text-gray-500">Order {doc.sort_order} | {doc.require_checkbox ? 'Checkbox required' : 'No checkbox'}</p>

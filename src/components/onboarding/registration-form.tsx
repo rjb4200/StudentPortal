@@ -37,11 +37,7 @@ export function RegistrationForm({ onComplete, onBack, helpEmail }: Registration
         .eq('is_active', true)
         .order('sort_order');
 
-      const sorted = (data ?? []).sort((a, b) => {
-        if (a.field_key === 'full_name' || a.field_key === 'email') return -1;
-        if (b.field_key === 'full_name' || b.field_key === 'email') return 1;
-        return a.sort_order - b.sort_order;
-      });
+      const sorted = (data ?? []).sort((a, b) => a.sort_order - b.sort_order);
       setFields(sorted);
 
       const initial: Record<string, string> = { full_name: '', email: '' };
