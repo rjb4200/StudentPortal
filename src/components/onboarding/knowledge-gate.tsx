@@ -26,6 +26,7 @@ export function KnowledgeGate({ studentId, onComplete, onBack, helpEmail }: Know
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [ruleAttempts, setRuleAttempts] = useState(0);
   const [certifying, setCertifying] = useState(false);
+  const [completeError, setCompleteError] = useState<string | null>(null);
   const [transitioning, setTransitioning] = useState(false);
   const [slideDir, setSlideDir] = useState<'left' | 'right' | 'up'>('right');
 
@@ -164,6 +165,7 @@ export function KnowledgeGate({ studentId, onComplete, onBack, helpEmail }: Know
 
   const handleComplete = async () => {
     setCertifying(true);
+    setCompleteError(null);
 
     let password: string | null = null;
     let email = '';
@@ -175,10 +177,17 @@ export function KnowledgeGate({ studentId, onComplete, onBack, helpEmail }: Know
         body: JSON.stringify({ studentId }),
       });
       const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Onboarding completion failed. Please try again.');
+      }
       password = data.password ?? null;
       email = data.email ?? '';
       isNew = data.isNewAccount ?? false;
-    } catch {}
+    } catch (e) {
+      setCompleteError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
+      setCertifying(false);
+      return;
+    }
 
     setCertifying(false);
     onComplete(password, email, isNew);
@@ -249,6 +258,11 @@ export function KnowledgeGate({ studentId, onComplete, onBack, helpEmail }: Know
             You have passed each compliance rule. An administrator will review your onboarding
             record and grant portal access after approval.
           </p>
+          {completeError && (
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              {completeError}
+            </div>
+          )}
           <Button onClick={handleComplete} loading={certifying}>
             Finish Onboarding
           </Button>

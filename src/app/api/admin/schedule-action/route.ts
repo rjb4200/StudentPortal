@@ -3,7 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { canAccessAdmin } from '@/lib/roles';
 import { publicEnv } from '@/lib/env';
-import { serverEnv } from '@/lib/env.server';
+import { sendEmail } from '@/lib/email';
 
 function buildEmailHtml(title: string, bodyHtml: string, loginUrl: string): string {
   return `<div style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,Helvetica,sans-serif;color:#1C1C1E;">
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
   }
 
-  if (serverEnv.RESEND_API_KEY && !isProcessingStudentCancellation) {
+  if (!isProcessingStudentCancellation) {
     const { data: student } = await adminClient
       .from('students')
       .select('email, full_name')
@@ -149,19 +149,14 @@ export async function POST(request: NextRequest) {
 
       const html = buildEmailHtml(title, bodyHtml, loginUrl);
 
-      await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${serverEnv.RESEND_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      try {
+        await sendEmail({
           from: 'WFD EMS Portal <noreply@winchesterfireems.com>',
           to: student.email,
           subject,
           html,
-        }),
-      });
+        });
+      } catch {}
     }
   }
 

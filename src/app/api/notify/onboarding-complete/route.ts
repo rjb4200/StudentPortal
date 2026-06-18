@@ -1,27 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { serverEnv } from '@/lib/env.server';
+import { sendEmail } from '@/lib/email';
 
 export async function POST(request: NextRequest) {
+  const { studentId } = await request.json();
+
+  const supabase = createAdminClient();
+
+  const { data: student } = await supabase
+    .from('students')
+    .select('id, auth_user_id, full_name, email, school_name')
+    .eq('id', studentId)
+    .single();
+
+  if (!student) {
+    return NextResponse.json({ success: false }, { status: 404 });
+  }
+
+  let tempPassword: string | null = null;
+  let isNewAccount = false;
+  let authUserId: string | null = null;
+
   try {
-    const { studentId } = await request.json();
-
-    const supabase = createAdminClient();
-
-    const { data: student } = await supabase
-      .from('students')
-      .select('id, auth_user_id, full_name, email, school_name')
-      .eq('id', studentId)
-      .single();
-
-    if (!student) {
-      return NextResponse.json({ success: false }, { status: 404 });
-    }
-
-    let tempPassword: string | null = null;
-    let isNewAccount = false;
-    let authUserId: string | null = null;
-
     const { data: existing } = await supabase.auth.admin.listUsers();
     let authMatch = existing?.users?.find((u) => u.email?.toLowerCase() === student.email.toLowerCase());
 
@@ -63,47 +63,41 @@ export async function POST(request: NextRequest) {
 
       console.log('auth_user_id link verify:', { studentId, expected: authUserId, actual: verify?.auth_user_id });
     }
+  } catch (e) {
+    console.error('Auth creation or linking failed:', e);
+    return NextResponse.json({ success: false, error: 'Auth setup failed' }, { status: 500 });
+  }
 
-    console.log('Onboarding complete auth result:', { isNewAccount, tempPassword: tempPassword ? '***' : null, email: student.email, authUserId });
+  console.log('Onboarding complete auth result:', { isNewAccount, tempPassword: tempPassword ? '***' : null, email: student.email, authUserId });
 
-    const adminMessage = `New student completed onboarding: ${student.full_name} (${student.email}) from ${student.school_name}`;
+  const adminMessage = `New student completed onboarding: ${student.full_name} (${student.email}) from ${student.school_name}`;
 
-    const { data: admins } = await supabase
-      .from('admin_accounts')
-      .select('email')
-      .eq('is_active', true)
-      .eq('notify_onboarding_complete', true);
+  const { data: admins } = await supabase
+    .from('admin_accounts')
+    .select('email')
+    .eq('is_active', true)
+    .eq('notify_onboarding_complete', true);
 
-    if (serverEnv.RESEND_API_KEY && admins?.length) {
-      const res = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${serverEnv.RESEND_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          from: 'WFD EMS Portal <onboarding@winchesterfireems.com>',
-          to: admins.map((a: any) => a.email),
-          subject: 'New Student Onboarding Complete',
-          html: `<p>${adminMessage}</p><p>Review and approve in the admin portal.</p>`,
-        }),
+  if (admins?.length) {
+    try {
+      await sendEmail({
+        to: admins.map((a: any) => a.email),
+        subject: 'New Student Onboarding Complete',
+        html: `<p>${adminMessage}</p><p>Review and approve in the admin portal.</p>`,
       });
-      if (!res.ok) {
-        console.error('Resend admin email failed:', res.status, await res.text());
-      }
-    }
+    } catch {}
+  }
 
-    if (serverEnv.RESEND_API_KEY) {
-      console.log('Sending student credential email to:', student.email, 'isNewAccount:', isNewAccount, 'hasPassword:', !!tempPassword);
-      const loginUrl = `${request.nextUrl.origin}/login`;
-      const passwordDisplay = `<div style="margin:20px 0;padding:16px 18px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;">
-            <p style="margin:0 0 8px 0;color:#1C1C1E;font-size:14px;font-weight:700;">Your Login Credentials</p>
-            <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Username:</strong> ${student.email}</p>
-            <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Password:</strong> ${tempPassword || 'Use your existing WFD password'}</p>
-            <p style="margin:12px 0 0 0;color:#6b7280;font-size:12px;">You will need these to log in once an administrator approves your account.</p>
-          </div>`;
+  {
+    const loginUrl = `${request.nextUrl.origin}/login`;
+    const passwordDisplay = `<div style="margin:20px 0;padding:16px 18px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;">
+          <p style="margin:0 0 8px 0;color:#1C1C1E;font-size:14px;font-weight:700;">Your Login Credentials</p>
+          <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Username:</strong> ${student.email}</p>
+          <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Password:</strong> ${tempPassword || 'Use your existing WFD password'}</p>
+          <p style="margin:12px 0 0 0;color:#6b7280;font-size:12px;">You will need these to log in once an administrator approves your account.</p>
+        </div>`;
 
-      const studentHtml = `<div style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,Helvetica,sans-serif;color:#1C1C1E;">
+    const studentHtml = `<div style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,Helvetica,sans-serif;color:#1C1C1E;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f4f5;margin:0;padding:32px 12px;">
     <tr>
       <td align="center">
@@ -139,27 +133,14 @@ export async function POST(request: NextRequest) {
   </table>
 </div>`;
 
-      const res = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${serverEnv.RESEND_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          from: 'WFD EMS Portal <onboarding@winchesterfireems.com>',
-          to: student.email,
-          subject: 'WFD EMS Student Portal — Registration Complete',
-          html: studentHtml,
-        }),
+    try {
+      await sendEmail({
+        to: student.email,
+        subject: 'WFD EMS Student Portal — Registration Complete',
+        html: studentHtml,
       });
-      if (!res.ok) {
-        console.error('Resend student email failed:', res.status, await res.text());
-      }
-    }
-
-    return NextResponse.json({ success: true, password: tempPassword, email: student.email, isNewAccount });
-  } catch (e) {
-    console.error('Onboarding complete error:', e);
-    return NextResponse.json({ success: false }, { status: 500 });
+    } catch {}
   }
+
+  return NextResponse.json({ success: true, password: tempPassword, email: student.email, isNewAccount });
 }

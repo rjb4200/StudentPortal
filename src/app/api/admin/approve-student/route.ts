@@ -3,7 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { canAccessAdmin } from '@/lib/roles';
 import { publicEnv } from '@/lib/env';
-import { serverEnv } from '@/lib/env.server';
+import { sendEmail } from '@/lib/email';
 
 export async function POST(request: NextRequest) {
   const cookieHeader = request.headers.get('cookie') || '';
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
   }
 
-  if (serverEnv.RESEND_API_KEY) {
+  {
     const loginUrl = `${request.nextUrl.origin}/login`;
     const html = `<div style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,Helvetica,sans-serif;color:#1C1C1E;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f4f5;margin:0;padding:32px 12px;">
@@ -86,19 +86,13 @@ export async function POST(request: NextRequest) {
   </table>
 </div>`;
 
-    await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${serverEnv.RESEND_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: 'WFD EMS Portal <onboarding@winchesterfireems.com>',
+    try {
+      await sendEmail({
         to: student.email,
         subject: 'WFD EMS Student Portal — Account Approved',
         html,
-      }),
-    });
+      });
+    } catch {}
   }
 
   return NextResponse.json({ success: true });
