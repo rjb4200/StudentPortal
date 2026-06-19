@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
               <h1 style="margin:0 0 12px 0;color:#1C1C1E;font-size:28px;line-height:1.25;font-weight:800;text-align:center;">Account Approved</h1>
               <p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:16px;line-height:1.6;text-align:center;">Hi ${student.full_name}, your WFD EMS Student Portal account has been approved. You now have full access to schedule ride time, view preceptors, and submit evaluations.</p>
               <div style="margin:30px 0;text-align:center;">
-                <a href="${loginUrl}" style="display:inline-block;background:#A40104;color:#ffffff;text-decoration:none;font-size:16px;font-weight:800;padding:15px 30px;border-radius:10px;border:1px solid #8a1518;box-shadow:0 4px 12px rgba(164,1,4,0.25);">Go to Student Portal Login</a>
+                <a href="${loginUrl}" style="display:inline-block;background:#A40104;color:#ffffff;text-decoration:none;font-size:16px;font-weight:800;padding:15px 30px;border-radius:10px;box-shadow:0 4px 12px rgba(164,1,4,0.25);">Go to Student Portal Login</a>
               </div>
             </td>
           </tr>

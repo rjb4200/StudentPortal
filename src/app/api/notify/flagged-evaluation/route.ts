@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { serverEnv } from '@/lib/env.server';
+import { sendEmail, buildEmailHtml } from '@/lib/email';
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,19 +21,15 @@ export async function POST(request: NextRequest) {
       .eq('is_active', true)
       .eq('notify_evaluation_flagged', true);
 
-    if (serverEnv.RESEND_API_KEY && admins?.length) {
-      await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${serverEnv.RESEND_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          from: 'WFD EMS Portal <onboarding@winchesterfireems.com>',
-          to: admins.map((a: any) => a.email),
-          subject: 'WFD EMS: Flagged Evaluation',
-          html: `<p>${msg}</p>`,
-        }),
+    if (admins?.length) {
+      await sendEmail({
+        from: 'WFD EMS Portal <onboarding@winchesterfireems.com>',
+        to: admins.map((a: any) => a.email),
+        subject: 'WFD EMS: Flagged Evaluation',
+        html: buildEmailHtml(
+          'Flagged Evaluation',
+          `<p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:16px;line-height:1.6;text-align:center;">${msg}</p>`
+        ),
       });
     }
 

@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
               <p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:16px;line-height:1.6;text-align:center;">Thank you for registering with the WFD EMS Student Portal. Your account has been created and is pending administrative approval.</p>
               ${passwordDisplay}
               <div style="margin:30px 0;text-align:center;">
-                <a href="${loginUrl}" style="display:inline-block;background:#A40104;color:#ffffff;text-decoration:none;font-size:16px;font-weight:800;padding:15px 30px;border-radius:10px;border:1px solid #8a1518;box-shadow:0 4px 12px rgba(164,1,4,0.25);">Go to Student Portal Login</a>
+                <a href="${loginUrl}" style="display:inline-block;background:#A40104;color:#ffffff;text-decoration:none;font-size:16px;font-weight:800;padding:15px 30px;border-radius:10px;box-shadow:0 4px 12px rgba(164,1,4,0.25);">Go to Student Portal Login</a>
               </div>
               <p style="margin:0 auto 20px auto;max-width:500px;color:#4b5563;font-size:14px;line-height:1.6;text-align:center;">You will be able to log in once an administrator approves your account. You will receive a confirmation email when approved.</p>
             </td>
