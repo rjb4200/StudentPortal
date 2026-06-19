@@ -15,6 +15,7 @@ import Link from 'next/link';
 export default function SetupPage() {
   const supabase = createClient();
   const [loading, setLoading] = useState(true);
+  const [rejected, setRejected] = useState(false);
   const [welcomeId, setWelcomeId] = useState<string | null>(null);
   const [welcomeTitle, setWelcomeTitle] = useState('');
   const [welcomeBody, setWelcomeBody] = useState('');
@@ -32,12 +33,14 @@ export default function SetupPage() {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => {
       if (!canAccessAdmin(data?.user)) {
-        window.location.href = '/login';
+        setRejected(true);
+        setLoading(false);
+        return;
       }
+      loadWelcome();
+      loadHelpEmail();
       setLoading(false);
     });
-    loadWelcome();
-    loadHelpEmail();
   }, []);
 
   async function loadHelpEmail() {
@@ -121,6 +124,17 @@ export default function SetupPage() {
       if (data) setCompletionId(data.id);
     }
     setSavingCompletion(false);
+  }
+
+  if (rejected) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-wfd-crimson mb-2">Access Denied</h1>
+          <p className="text-gray-500">You do not have permission to access this page.</p>
+        </div>
+      </div>
+    );
   }
 
   if (loading) {
