@@ -35,7 +35,7 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
           </p>
         </div>
 
-        <div className="w-full max-w-md lg:max-w-xl">
+        <div className="w-full max-w-md lg:max-w-2xl">
           <div className="bg-white rounded-2xl shadow-2xl border border-white/10 p-6 lg:p-8">
             {children}
           </div>
