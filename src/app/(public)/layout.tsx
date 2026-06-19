@@ -1,4 +1,4 @@
-const LOGO_URL = 'https://ejjsahtohaydoogtilgp.supabase.co/storage/v1/object/public/branding/wfd-logo-1848.jpg';
+const LOGO_URL = '/WFD_logo_transparent.png';
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
