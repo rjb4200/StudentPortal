@@ -107,7 +107,7 @@ export function ResourceLibraryConfig() {
 
   async function saveDoc() {
     if (!selectedCatId) { setError('Select a category first.'); return; }
-    if (!docForm.name.trim() || !docForm.file_url.trim()) { setError('Document name and file URL are required.'); return; }
+    if (!docForm.name.trim() || (!docForm.file_url.trim() && !docForm.map_embed_url.trim())) { setError('Document name and at least one of File URL or Map Embed URL are required.'); return; }
     setSaving(true); setError(null);
     const payload: TablesInsert<'resource_documents'> | TablesUpdate<'resource_documents'> = {
       category_id: selectedCatId, name: docForm.name.trim(), file_url: docForm.file_url.trim(),
