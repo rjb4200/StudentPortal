@@ -62,18 +62,20 @@ export function LegalWaiver({ studentId, onComplete, onBack, helpEmail }: LegalW
     setLoading(true);
     setError('');
 
-    const supabase = createClient();
-    const { error: updateError } = await supabase
-      .from('students')
-      .update({
-        legal_signature: fullName.trim(),
-        signature_ip: 'client',
-        signature_timestamp: new Date().toISOString(),
-      })
-      .eq('id', studentId);
+    const res = await fetch('/api/onboarding/legal-signature', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        studentId,
+        fullName: fullName.trim(),
+        agreedDocumentIds: Array.from(agreed),
+      }),
+    });
 
-    if (updateError) {
-      setError(updateError.message);
+    const data = await res.json();
+
+    if (!data.success) {
+      setError(data.error || 'Failed to save signature.');
       setLoading(false);
       return;
     }
