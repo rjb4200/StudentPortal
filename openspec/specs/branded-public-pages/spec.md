@@ -15,9 +15,16 @@ The system SHALL provide a crimson hero layout for public-facing pages (`/`, `/l
 #### Scenario: Desktop two-column layout with compact branding for onboarding
 
 - **WHEN** a user visits `/onboarding` on a screen wider than 1024px
-- **THEN** the page renders a crimson background with a compact WFD logo and serif branding in the left column
-- **AND** a wider white content card appears in the right column to accommodate multi-field forms
+- **THEN** the page renders a two-column layout: a compact branding pane on the left and a wide form card on the right
+- **AND** the branding pane uses a reduced logo (`clamp(100px, 18vw, 200px)`), smaller serif headings (`lg:text-2xl`), and a narrow max-width constraint to leave more room for the form
+- **AND** the form card fills the remaining horizontal space with `lg:flex-1` up to `lg:max-w-5xl`
 - **AND** the branding pane is visually smaller than on `/` and `/login` to prioritize form space
+
+#### Scenario: Direct-to-form flow with no intro interstitial
+
+- **WHEN** a user clicks "Begin Student Onboarding" from the landing page
+- **THEN** the browser navigates directly to the registration form at `/onboarding`
+- **AND** no interstitial intro screen or secondary "Begin Registration" button is displayed
 
 #### Scenario: Mobile stacked layout
 
