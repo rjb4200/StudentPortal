@@ -576,6 +576,7 @@ export type Database = {
           file_url: string
           id: string
           is_active: boolean
+          map_embed_url: string | null
           name: string
           sort_order: number
           updated_at: string
@@ -587,6 +588,7 @@ export type Database = {
           file_url: string
           id?: string
           is_active?: boolean
+          map_embed_url?: string | null
           name: string
           sort_order?: number
           updated_at?: string
@@ -598,6 +600,7 @@ export type Database = {
           file_url?: string
           id?: string
           is_active?: boolean
+          map_embed_url?: string | null
           name?: string
           sort_order?: number
           updated_at?: string

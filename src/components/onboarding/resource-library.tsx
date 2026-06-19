@@ -88,33 +88,45 @@ export function ResourceLibrary({ onComplete, onBack, helpEmail }: ResourceLibra
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {section.docs.map((item) => (
-                  <a
-                    key={item.id}
-                    href={item.file_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:border-wfd-crimson hover:bg-red-50 transition-colors group"
-                  >
-                    <svg
-                      className="w-8 h-8 text-wfd-crimson group-hover:scale-110 transition-transform"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                  <div key={item.id} className="border border-gray-200 rounded-lg overflow-hidden">
+                    <a
+                      href={item.file_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 p-3 hover:bg-red-50 transition-colors group"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                      />
-                    </svg>
-                    <div>
-                      <div className="text-sm font-medium text-wfd-charcoal group-hover:text-wfd-crimson">
-                        {item.name}
+                      <svg
+                        className="w-8 h-8 text-wfd-crimson group-hover:scale-110 transition-transform"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.5}
+                          d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        />
+                      </svg>
+                      <div>
+                        <div className="text-sm font-medium text-wfd-charcoal group-hover:text-wfd-crimson">
+                          {item.name}
+                        </div>
+                        <div className="text-xs text-gray-400">{item.file_type} Document</div>
                       </div>
-                      <div className="text-xs text-gray-400">{item.file_type} Document</div>
-                    </div>
-                  </a>
+                    </a>
+                    {item.map_embed_url && (
+                      <iframe
+                        src={item.map_embed_url}
+                        width="100%"
+                        height="300"
+                        style={{ border: 0, borderRadius: '0 0 0.5rem 0.5rem' }}
+                        allowFullScreen
+                        loading="lazy"
+                        referrerPolicy="no-referrer-when-downgrade"
+                      />
+                    )}
+                  </div>
                 ))}
               </div>
             </div>

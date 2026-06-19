@@ -14,7 +14,7 @@ type ResCategory = Tables<'resource_categories'>;
 type ResDoc = Tables<'resource_documents'>;
 
 const emptyCatForm = { name: '', sort_order: 0 };
-const emptyDocForm = { name: '', file_url: '', file_type: 'PDF', sort_order: 0, is_active: true };
+const emptyDocForm = { name: '', file_url: '', file_type: 'PDF', sort_order: 0, is_active: true, map_embed_url: '' };
 
 export function ResourceLibraryConfig() {
   const supabase = createClient();
@@ -66,7 +66,7 @@ export function ResourceLibraryConfig() {
   function startNewCat() { setCatEditingId(null); setCatForm({ ...emptyCatForm, sort_order: nextCatSortOrder() }); setMessage(null); setError(null); }
   function startEditCat(cat: ResCategory) { setCatEditingId(cat.id); setCatForm({ name: cat.name, sort_order: cat.sort_order }); setMessage(null); setError(null); }
   function startNewDoc() { setDocEditingId(null); setDocForm({ ...emptyDocForm, sort_order: nextDocSortOrder() }); setMessage(null); setError(null); }
-  function startEditDoc(doc: ResDoc) { setDocEditingId(doc.id); setDocForm({ name: doc.name, file_url: doc.file_url, file_type: doc.file_type, sort_order: doc.sort_order, is_active: doc.is_active }); setMessage(null); setError(null); }
+  function startEditDoc(doc: ResDoc) { setDocEditingId(doc.id); setDocForm({ name: doc.name, file_url: doc.file_url, file_type: doc.file_type, sort_order: doc.sort_order, is_active: doc.is_active, map_embed_url: doc.map_embed_url ?? '' }); setMessage(null); setError(null); }
 
   async function saveCat() {
     if (!catForm.name.trim()) { setError('Category name is required.'); return; }
@@ -112,7 +112,8 @@ export function ResourceLibraryConfig() {
     const payload: TablesInsert<'resource_documents'> | TablesUpdate<'resource_documents'> = {
       category_id: selectedCatId, name: docForm.name.trim(), file_url: docForm.file_url.trim(),
       file_type: docForm.file_type, sort_order: Number(docForm.sort_order) || 0,
-      is_active: docForm.is_active, updated_at: new Date().toISOString(),
+      is_active: docForm.is_active, map_embed_url: docForm.map_embed_url.trim() || null,
+      updated_at: new Date().toISOString(),
     };
     const result = docEditingId
       ? await supabase.from('resource_documents').update(payload).eq('id', docEditingId)
@@ -217,6 +218,7 @@ export function ResourceLibraryConfig() {
               <div className="grid gap-2 sm:grid-cols-2">
                 <Input label="Name" value={docForm.name} onChange={(e) => setDocForm(f => ({ ...f, name: e.target.value }))} />
                 <Input label="File URL" value={docForm.file_url} onChange={(e) => setDocForm(f => ({ ...f, file_url: e.target.value }))} />
+                <Input label="Map Embed URL (optional)" value={docForm.map_embed_url} onChange={(e) => setDocForm(f => ({ ...f, map_embed_url: e.target.value }))} placeholder="Google Maps embed URL" />
                 <div className="flex items-center gap-2">
                   <label className={`rounded-lg border border-gray-300 px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 transition-colors ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
                     Choose File
