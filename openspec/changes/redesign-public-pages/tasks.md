@@ -22,4 +22,4 @@
 ## 6. Verification
 
 - [x] 6.1 Run `npm run build` to verify no compilation errors
-- [ ] 6.2 Visually verify: check `/` and `/login` at desktop and mobile widths, confirm student login works, confirm admin login works, confirm forgot password works, confirm status messages from query params display correctly
+- [x] 6.2 Visually verify: check `/` and `/login` at desktop and mobile widths, confirm student login works, confirm admin login works, confirm forgot password works, confirm status messages from query params display correctly
