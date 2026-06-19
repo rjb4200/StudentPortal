@@ -1,0 +1,46 @@
+const LOGO_URL = 'https://ejjsahtohaydoogtilgp.supabase.co/storage/v1/object/public/branding/wfd-logo-1848.jpg';
+
+export default function PublicLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="relative min-h-screen bg-wfd-crimson flex flex-col">
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse at center, transparent 30%, rgba(95,0,0,0.6) 100%)',
+        }}
+      />
+
+      <div className="relative z-10 flex-1 flex flex-col lg:flex-row items-center justify-center px-4 py-12 lg:px-12 lg:py-8 gap-8 lg:gap-16">
+        <div className="flex flex-col items-center lg:items-start text-center lg:text-left max-w-md">
+          <p className="text-wfd-gold/80 text-xs lg:text-sm tracking-[0.2em] uppercase font-semibold mb-4 font-serif">
+            Winchester Fire Department
+          </p>
+          <img
+            src={LOGO_URL}
+            alt="Winchester Fire Department"
+            className="h-20 lg:h-32 w-auto mb-6 rounded"
+          />
+          <h1 className="text-3xl lg:text-5xl font-bold text-white font-serif mb-3">
+            EMS Student Portal
+          </h1>
+          <p className="text-white/70 text-sm lg:text-base mb-2">
+            Winchester Fire Department — Division of EMS
+          </p>
+          <p className="text-wfd-gold/60 text-xs lg:text-sm italic font-serif">
+            Training the next generation of EMS professionals.
+          </p>
+        </div>
+
+        <div className="w-full max-w-md lg:max-w-lg">
+          <div className="bg-white rounded-2xl shadow-2xl border border-white/10 p-6 lg:p-8">
+            {children}
+          </div>
+        </div>
+      </div>
+
+      <div className="relative z-10 bg-wfd-charcoal/60 text-white/50 text-xs text-center py-3">
+        &copy; Winchester Fire Department &middot; Division of EMS
+      </div>
+    </div>
+  );
+}
