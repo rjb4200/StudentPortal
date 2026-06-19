@@ -3,23 +3,29 @@
 ## Purpose
 Crimson hero design system for public-facing pages featuring full-viewport WFD-branded layouts with logo, serif typography, dark vignette, responsive two-column architecture, and consistent white card + charcoal footer pattern.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Crimson hero public page layout
-The system SHALL provide a crimson hero layout for public-facing pages (`/` and `/login`) featuring a full-viewport crimson background with a dark radial vignette overlay, the WFD department logo, serif typography for display headings, and a white content card. The layout SHALL be responsive: two-column on desktop (branding left, card right) and stacked single-column on mobile. The layout SHALL include a slim charcoal footer with copyright text.
+The system SHALL provide a crimson hero layout for public-facing pages (`/`, `/login`, and `/onboarding`) featuring a full-viewport crimson background with a dark radial vignette overlay, the WFD department logo, serif typography for display headings, and a white content card. The layout SHALL be responsive: two-column on desktop for `/` and `/login` (branding left, card right), and centered single-column for `/onboarding`. The layout SHALL include a slim charcoal footer with copyright text.
 
 #### Scenario: Desktop two-column layout
 - **WHEN** a user visits `/` or `/login` on a screen wider than 1024px
 - **THEN** the page renders a crimson background with the WFD logo and serif branding text in the left column and a white content card in the right column
 - **AND** the columns are centered vertically and horizontally within the viewport
 
+#### Scenario: Centered single-column layout for onboarding
+- **WHEN** a user visits `/onboarding`
+- **THEN** the page renders a crimson background with the WFD logo and serif branding centered at the top
+- **AND** the white content card is centered below the branding block
+- **AND** the charcoal footer appears at the bottom
+
 #### Scenario: Mobile stacked layout
-- **WHEN** a user visits `/` or `/login` on a screen narrower than 1024px
+- **WHEN** a user visits `/`, `/login`, or `/onboarding` on a screen narrower than 1024px
 - **THEN** the page renders the branding block (logo, department name, heading) stacked above the white content card in a single column
 - **AND** the logo is smaller than on desktop to keep the card visible without excessive scrolling
 
 #### Scenario: Footer on public pages
-- **WHEN** a user visits `/` or `/login`
+- **WHEN** a user visits `/`, `/login`, or `/onboarding`
 - **THEN** a slim footer bar is displayed at the bottom of the page with text "© Winchester Fire Department · Division of EMS"
 
 ### Requirement: Branded landing page
