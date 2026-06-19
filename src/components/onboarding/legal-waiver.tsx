@@ -59,7 +59,7 @@ export function LegalWaiver({ studentId, onComplete, onBack, helpEmail }: LegalW
     if (el && el.scrollHeight <= el.clientHeight) {
       setScrolledBottom(true);
     }
-  }, [currentDocIndex]);
+  }, [currentDocIndex, docs]);
 
   const toggleAgree = (docId: string) => {
     setAgreed((prev) => {
