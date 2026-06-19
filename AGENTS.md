@@ -22,17 +22,13 @@ SUPABASE_SERVICE_ROLE_KEY         # secret — server-only, used by admin client
 RESEND_API_KEY                    # email (Resend)
 ```
 
-## Supabase MCP
+## Supabase
 
-The MCP is project-scoped in `opencode.jsonc` — `project_ref=ejjsahtohaydoogtilgp`. Do NOT add a global Supabase MCP config elsewhere.
-
-## Database Migrations
-
-Migrations live in `supabase/migrations/` (numbered `.sql` files). **Every migration must also be applied live** via the `supabase_apply_migration` tool. Migrations are DDL + seed data combined — they run against the live Supabase project.
+Migrations live in `supabase/migrations/` (numbered `.sql` files). **Every migration must also be applied live** via the Supabase dashboard SQL editor. Migrations are DDL + seed data combined — they run against the live Supabase project at `ejjsahtohaydoogtilgp`.
 
 After any DDL change:
-1. Run `supabase_generate_typescript_types`
-2. Replace `src/lib/supabase/database.types.ts` with the output
+1. Apply the migration in the Supabase dashboard SQL editor
+2. Run `supabase_generate_typescript_types` (if available) or manually update `src/lib/supabase/database.types.ts`
 
 ## Supabase Clients (three patterns)
 
