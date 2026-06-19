@@ -29,7 +29,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             EMS Student Portal
           </h1>
           <p className="text-white/70 text-sm lg:text-base mb-2">
-            Winchester Fire Department — Division of EMS
+            Winchester Fire Department
           </p>
           <p className="text-wfd-gold/60 text-xs lg:text-sm italic font-serif">
             Training the next generation of EMS professionals.
