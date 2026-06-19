@@ -90,7 +90,7 @@ export function ResourceLibrary({ onComplete, onBack, helpEmail }: ResourceLibra
                 {section.docs.map((item) => (
                   <div key={item.id} className="border border-gray-200 rounded-lg overflow-hidden">
                     <a
-                      href={item.file_url}
+                      href={item.file_url ?? undefined}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-3 p-3 hover:bg-red-50 transition-colors group"

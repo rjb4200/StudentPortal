@@ -66,7 +66,7 @@ export function ResourceLibraryConfig() {
   function startNewCat() { setCatEditingId(null); setCatForm({ ...emptyCatForm, sort_order: nextCatSortOrder() }); setMessage(null); setError(null); }
   function startEditCat(cat: ResCategory) { setCatEditingId(cat.id); setCatForm({ name: cat.name, sort_order: cat.sort_order }); setMessage(null); setError(null); }
   function startNewDoc() { setDocEditingId(null); setDocForm({ ...emptyDocForm, sort_order: nextDocSortOrder() }); setMessage(null); setError(null); }
-  function startEditDoc(doc: ResDoc) { setDocEditingId(doc.id); setDocForm({ name: doc.name, file_url: doc.file_url, file_type: doc.file_type, sort_order: doc.sort_order, is_active: doc.is_active, map_embed_url: doc.map_embed_url ?? '' }); setMessage(null); setError(null); }
+  function startEditDoc(doc: ResDoc) { setDocEditingId(doc.id); setDocForm({ name: doc.name, file_url: doc.file_url ?? '', file_type: doc.file_type, sort_order: doc.sort_order, is_active: doc.is_active, map_embed_url: doc.map_embed_url ?? '' }); setMessage(null); setError(null); }
 
   async function saveCat() {
     if (!catForm.name.trim()) { setError('Category name is required.'); return; }
@@ -110,7 +110,8 @@ export function ResourceLibraryConfig() {
     if (!docForm.name.trim() || (!docForm.file_url.trim() && !docForm.map_embed_url.trim())) { setError('Document name and at least one of File URL or Map Embed URL are required.'); return; }
     setSaving(true); setError(null);
     const payload: TablesInsert<'resource_documents'> | TablesUpdate<'resource_documents'> = {
-      category_id: selectedCatId, name: docForm.name.trim(), file_url: docForm.file_url.trim(),
+      category_id: selectedCatId, name: docForm.name.trim(),
+      file_url: docForm.file_url.trim() || null,
       file_type: docForm.file_type, sort_order: Number(docForm.sort_order) || 0,
       is_active: docForm.is_active, map_embed_url: docForm.map_embed_url.trim() || null,
       updated_at: new Date().toISOString(),
@@ -198,7 +199,7 @@ export function ResourceLibraryConfig() {
                     />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{doc.name}</p>
-                      <p className="text-xs text-gray-500">{doc.file_type} | Order {doc.sort_order} | {doc.file_url.substring(0, 40)}...</p>
+                      <p className="text-xs text-gray-500">{doc.file_type} | Order {doc.sort_order} | {doc.file_url?.substring(0, 40) ?? ''}...</p>
                     </div>
                     <div className="flex items-center gap-1">
                       <span className={`rounded-full px-1.5 py-0.5 text-xs font-bold ${doc.is_active ? 'bg-wfd-sage/15 text-wfd-sage' : 'bg-gray-100 text-gray-500'}`}>{doc.is_active ? 'On' : 'Off'}</span>

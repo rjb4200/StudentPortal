@@ -573,7 +573,7 @@ export type Database = {
           category_id: string
           created_at: string
           file_type: string
-          file_url: string
+          file_url: string | null
           id: string
           is_active: boolean
           map_embed_url: string | null
@@ -585,7 +585,7 @@ export type Database = {
           category_id: string
           created_at?: string
           file_type?: string
-          file_url: string
+          file_url?: string | null
           id?: string
           is_active?: boolean
           map_embed_url?: string | null
@@ -597,7 +597,7 @@ export type Database = {
           category_id?: string
           created_at?: string
           file_type?: string
-          file_url?: string
+          file_url?: string | null
           id?: string
           is_active?: boolean
           map_embed_url?: string | null
