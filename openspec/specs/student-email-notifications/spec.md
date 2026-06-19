@@ -73,3 +73,23 @@ When a student cancels their own shift, the system SHALL attempt to notify all a
 - **THEN** the cancellation succeeds and the student confirmation email is still attempted independently
 - **AND** the admin notification failure is logged
 
+### Requirement: Safe HTML formatting in all transactional emails
+
+All student-provided data inserted into transactional email HTML SHALL be HTML-escaped so that special characters (`<`, `>`, `&`, `"`, `'`) in student names, email addresses, school names, and cancel notes cannot break the email markup or alter the rendered content. This requirement applies to every transactional email: account approval, onboarding completion, schedule approval/rejection/cancellation, evaluation receipt, flagged evaluation, and admin notifications.
+
+#### Scenario: Approval email is safe with special characters in name
+- **WHEN** an admin approves a student whose `full_name` is `O'Brien <test@evil.com>`
+- **THEN** the approval email HTML contains `O&#39;Brien &lt;test@evil.com&gt;`
+- **AND** the email renders correctly in an email client showing the literal name `O'Brien <test@evil.com>`
+
+#### Scenario: Cancel note containing HTML-like text is escaped
+- **WHEN** a student submits a shift cancellation note containing `<b>urgent</b>`
+- **AND** the cancellation email is rendered
+- **THEN** the email HTML contains `&lt;b&gt;urgent&lt;/b&gt;` as literal text
+- **AND** the text is not interpreted as HTML bold tags
+
+#### Scenario: All existing emails render identically with normal data
+- **WHEN** student data contains no special characters (typical names, valid emails)
+- **THEN** every transactional email renders identically to its pre-fix version
+- **AND** no visual differences are detectable in any email client
+

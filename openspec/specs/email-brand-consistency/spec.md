@@ -3,7 +3,7 @@
 ## Purpose
 Shared email template utility with canonical WFD brand color constants, a reusable `buildEmailHtml()` function, and consistent logo/header across all transactional emails.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Centralized email brand constants
 The system SHALL define canonical email brand color constants and a shared `buildEmailHtml()` template function in `src/lib/email.ts`. All email routes SHALL import these constants rather than hardcoding color values. The template function SHALL produce a WFD-branded HTML email with crimson header, logo, charcoal divider, branded body, and CTA button styling.
@@ -13,9 +13,10 @@ The system SHALL define canonical email brand color constants and a shared `buil
 - **THEN** it imports `EMAIL_CRIMSON`, `EMAIL_CHARCOAL`, and `EMAIL_LOGO_URL` from `src/lib/email.ts`
 - **AND** no route hardcodes a hex color value for branding
 
-#### Scenario: buildEmailHtml shared across routes
-- **WHEN** `schedule/cancel` or `schedule-action` sends a branded email
+#### Scenario: buildEmailHtml shared across all routes
+- **WHEN** any transactional email route sends a branded email
 - **THEN** it calls the shared `buildEmailHtml()` from `src/lib/email.ts` instead of using its own copy-pasted version
+- **AND** this applies to approve-student, onboarding-complete, schedule/cancel, schedule-action, evaluation-receipt, and flagged-evaluation routes
 
 ### Requirement: Single brand red in email templates
 All WFD-branded email templates SHALL use only `#A40104` (WFD crimson) for header backgrounds, button backgrounds, and button shadows. No secondary red color SHALL appear in any email template.
@@ -39,3 +40,17 @@ Evaluation receipt and flagged-evaluation emails SHALL include the WFD logo head
 #### Scenario: Flagged evaluation email is branded
 - **WHEN** a low-rating evaluation triggers an admin notification
 - **THEN** the notification email includes the WFD logo header with crimson background and charcoal divider
+
+### Requirement: Admin notification emails have WFD branding
+
+Admin-facing notification emails (onboarding complete alerts, student shift cancellation alerts) SHALL use the same WFD-branded HTML template via `buildEmailHtml()` as student-facing emails. These emails SHALL NOT include a CTA button since the admin dashboard URL differs from the student dashboard URL.
+
+#### Scenario: Admin onboarding notification is branded
+- **WHEN** a student completes onboarding and the system notifies admins
+- **THEN** the admin notification email includes the WFD logo header with crimson background and charcoal divider
+- **AND** the email does not include a "View Your Dashboard" CTA button
+
+#### Scenario: Admin shift cancellation notification is branded
+- **WHEN** a student cancels their own shift and the system notifies admins
+- **THEN** the admin notification email includes the WFD logo header with crimson background and charcoal divider
+- **AND** the email does not include a CTA button
