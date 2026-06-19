@@ -9,7 +9,7 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
       }}
     >
       <div className="relative z-10 flex-1 flex flex-col lg:flex-row items-center justify-center px-4 py-12 lg:px-12 lg:gap-12">
-        <div className="flex flex-col items-center text-center max-w-xs mb-4 lg:mb-0">
+        <div className="flex flex-col items-center text-center max-w-xs shrink-0 mb-4 lg:mb-0">
           <p className="text-wfd-gold/80 text-xs lg:text-sm tracking-[0.2em] uppercase font-semibold mb-4 font-serif">
             Winchester Fire Department
           </p>
@@ -35,7 +35,7 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
           </p>
         </div>
 
-        <div className="w-full max-w-md lg:max-w-3xl">
+        <div className="w-full max-w-md lg:flex-1 lg:max-w-none">
           <div className="bg-white rounded-2xl shadow-2xl border border-white/10 p-6 lg:p-8">
             {children}
           </div>
