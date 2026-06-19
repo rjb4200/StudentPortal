@@ -10,6 +10,7 @@ export function MaintenanceArchive() {
   const [exporting, setExporting] = useState(false);
   const [purging, setPurging] = useState(false);
   const [purgeDone, setPurgeDone] = useState(false);
+  const [purgeError, setPurgeError] = useState<string | null>(null);
 
   const supabase = createClient();
 
@@ -47,6 +48,7 @@ export function MaintenanceArchive() {
     }
 
     setPurging(true);
+    setPurgeError(null);
     try {
       await supabase.from('messages').delete().neq('id', '00000000-0000-0000-0000-000000000000');
       await supabase.from('admin_notes').delete().neq('id', '00000000-0000-0000-0000-000000000000');
@@ -55,7 +57,9 @@ export function MaintenanceArchive() {
       await supabase.from('students').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 
       setPurgeDone(true);
-    } catch {}
+    } catch (e: any) {
+      setPurgeError(e?.message || 'Purge failed. Some data may have been partially deleted.');
+    }
     setPurging(false);
   };
 
@@ -94,6 +98,9 @@ export function MaintenanceArchive() {
           <Button variant="danger" onClick={handlePurge} loading={purging}>
             Purge All Student Data
           </Button>
+        )}
+        {purgeError && (
+          <p className="text-sm text-wfd-crimson mt-2">{purgeError}</p>
         )}
       </Card>
 

@@ -44,6 +44,8 @@ export function DailyOps() {
   const [showBroadcast, setShowBroadcast] = useState(false);
   const [quizFlags, setQuizFlags] = useState<any[]>([]);
   const [acknowledgingFlag, setAcknowledgingFlag] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const supabase = createClient();
 
@@ -159,16 +161,23 @@ export function DailyOps() {
     if (!confirm(`FINAL WARNING: All data for ${student.full_name} will be permanently deleted. Proceed?`)) {
       return;
     }
+    setDeleting(student.id);
+    setDeleteError(null);
     try {
-      await fetch('/api/admin/delete-auth-user', {
-        method: 'DELETE', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: student.id }),
+      const res = await fetch('/api/admin/delete-student', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studentId: student.id }),
       });
-    } catch {}
-    try {
-      await supabase.from('students').delete().eq('id', student.id);
-      await loadAll();
-    } catch {}
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setDeleteError(data.error || `Deletion failed with status ${res.status}`);
+      } else {
+        await loadAll();
+      }
+    } catch (e: any) {
+      setDeleteError(e?.message || 'Network error during deletion.');
+    }
+    setDeleting(null);
   };
 
   const handleSendBroadcast = async () => {
@@ -242,6 +251,11 @@ export function DailyOps() {
         {approvalError && (
           <p role="alert" className="mb-3 rounded-lg border border-wfd-crimson/20 bg-wfd-crimson/10 px-3 py-2 text-sm text-wfd-crimson">
             Approval failed: {approvalError}
+          </p>
+        )}
+        {deleteError && (
+          <p role="alert" className="mb-3 rounded-lg border border-wfd-crimson/20 bg-wfd-crimson/10 px-3 py-2 text-sm text-wfd-crimson">
+            Deletion failed: {deleteError}
           </p>
         )}
         {totalActions === 0 ? (
@@ -454,9 +468,10 @@ export function DailyOps() {
                       </button>
                       <button
                         onClick={() => handleDeleteStudent(s)}
-                        className="px-3 py-1 rounded text-xs font-medium bg-wfd-crimson text-white hover:brightness-90 ml-1"
+                        disabled={deleting === s.id}
+                        className="px-3 py-1 rounded text-xs font-medium bg-wfd-crimson text-white hover:brightness-90 disabled:opacity-50 ml-1"
                       >
-                        Delete
+                        {deleting === s.id ? '...' : 'Delete'}
                       </button>
                     </td>
                   </tr>

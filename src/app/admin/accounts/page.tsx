@@ -30,6 +30,8 @@ function AccountsPageInner() {
   const [formPassword, setFormPassword] = useState('');
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   useEffect(() => {
     const checkAccessAndLoad = async () => {
@@ -224,18 +226,40 @@ function AccountsPageInner() {
     if (!confirm(`Delete ${row.full_name} (${row.email}) permanently?`)) return;
     if (!confirm('FINAL WARNING: This cannot be undone. Proceed?')) return;
 
+    setDeleting(row.id);
+    setDeleteError(null);
+
     if (row.auth_user_id) {
       try {
-        await fetch('/api/admin/delete-auth-user', {
+        const res = await fetch('/api/admin/delete-auth-user', {
           method: 'DELETE', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId: row.auth_user_id }),
         });
-      } catch {}
+        const data = await res.json();
+        if (!res.ok || data.error) {
+          setDeleteError(data.error || `Auth deletion failed with status ${res.status}`);
+          setDeleting(null);
+          return;
+        }
+      } catch (e: any) {
+        setDeleteError(e?.message || 'Network error during auth deletion.');
+        setDeleting(null);
+        return;
+      }
     }
 
     const table = type === 'admin' ? 'admin_accounts' : 'preceptors';
-    await supabase.from(table).delete().eq('id', row.id);
-    await loadAll();
+    try {
+      const { error } = await supabase.from(table).delete().eq('id', row.id);
+      if (error) {
+        setDeleteError(`Failed to delete ${type} record: ${error.message}`);
+      } else {
+        await loadAll();
+      }
+    } catch (e: any) {
+      setDeleteError(e?.message || `Failed to delete ${type} record.`);
+    }
+    setDeleting(null);
   }
 
   const filteredStudents = students.filter(s =>
@@ -342,6 +366,12 @@ function AccountsPageInner() {
               </button>
             ))}
           </div>
+
+          {deleteError && (
+            <p role="alert" className="mb-3 mt-2 rounded-lg border border-wfd-crimson/20 bg-wfd-crimson/10 px-3 py-2 text-sm text-wfd-crimson">
+              {deleteError}
+            </p>
+          )}
 
           {tab === 'admins' && (
             <div className="space-y-3">
