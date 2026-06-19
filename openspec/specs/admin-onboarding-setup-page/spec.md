@@ -1,19 +1,24 @@
 # admin-onboarding-setup-page
 
-**Purpose:** Move all onboarding configuration components (quiz rules, registration fields, legal documents, resource library, welcome message) to a dedicated `/admin/setup` page accessible via a hamburger menu, uncluttering the Daily Operations and Maintenance & Archive tabs.
-
+## Purpose
+Move all onboarding configuration components (quiz rules, registration fields, legal documents, resource library, welcome message) to a dedicated `/admin/setup` page accessible via a hamburger menu, uncluttering the Daily Operations and Maintenance & Archive tabs.
 ## Requirements
-
 ### Requirement: Dedicated onboarding setup page
-The Admin Command Center SHALL provide a dedicated page at `/admin/setup` that contains all five onboarding configuration components: quiz rules and photos, registration fields, legal documents, resource library, and welcome message.
+
+The Admin Command Center SHALL provide a dedicated page at `/admin/setup` that contains all five onboarding configuration components. The page SHALL load setup data (welcome message template, help email, and child config components) only after confirming the current user has admin access via `canAccessAdmin()`. Unauthorized users SHALL see an "Access Denied" error message rather than triggering a client-side full-page redirect. The server-side middleware SHALL remain the primary authorization gate for `/admin/*` routes.
 
 #### Scenario: Admin navigates to setup page
+
 - **WHEN** an admin navigates to `/admin/setup`
-- **THEN** the page displays the quiz configuration, registration fields, legal documents, resource library, and welcome message sections
+- **THEN** the page confirms admin access before fetching setup data
+- **AND** the page displays the quiz configuration, registration fields, legal documents, resource library, and welcome message sections
 
 #### Scenario: Non-admin access blocked
+
 - **WHEN** a non-admin user navigates to `/admin/setup`
-- **THEN** the system redirects to `/login` or returns 403, consistent with existing middleware
+- **THEN** the page displays an "Access Denied" message
+- **AND** no setup data queries are dispatched to Supabase
+- **AND** no child config components are mounted
 
 ### Requirement: Hamburger menu navigation
 The Admin Command Center header SHALL include a hamburger icon that opens a dropdown menu containing a link to the Onboarding Setup page.
@@ -47,3 +52,4 @@ The Maintenance & Archive tab SHALL contain only operational tools: master expor
 #### Scenario: Admin views Maintenance & Archive
 - **WHEN** an admin selects the Maintenance & Archive tab
 - **THEN** the tab displays Master Export, Purge Data, and Aggregate iCal Feed sections but no onboarding configuration components
+
