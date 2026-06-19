@@ -3,7 +3,8 @@ import { createServerClient } from '@supabase/ssr';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { canAccessAdmin } from '@/lib/roles';
 import { publicEnv } from '@/lib/env';
-import { sendEmail, buildEmailHtml } from '@/lib/email';
+import { sendEmail } from '@/lib/email';
+import { buildShiftApprovedEmail, buildShiftCancelledByAdminEmail, buildShiftRejectedEmail } from '@/lib/email-templates';
 
 export async function POST(request: NextRequest) {
   const cookieHeader = request.headers.get('cookie') || '';
@@ -78,47 +79,23 @@ export async function POST(request: NextRequest) {
         ? `${schedule.start_time} – ${schedule.end_time}`
         : schedule.shift_type;
 
-      let title: string;
-      let bodyHtml: string;
-      let subject: string;
+      const templateParams = { full_name: student.full_name, date_str: dateStr, time_display: timeDisplay };
+      let result;
 
       if (action === 'approved') {
-        title = 'Shift Approved';
-        subject = 'Shift Approved — WFD EMS Student Portal';
-        bodyHtml = `<p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:16px;line-height:1.6;text-align:center;">Hi ${student.full_name}, your shift request has been <strong>approved</strong>.</p>
-           <div style="margin:20px auto;padding:16px 18px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;max-width:400px;">
-             <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Date:</strong> ${dateStr}</p>
-             <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Time:</strong> ${timeDisplay}</p>
-           </div>`;
+        result = buildShiftApprovedEmail({ ...templateParams, login_url: loginUrl });
       } else if (action === 'cancelled') {
-        title = 'Shift Cancelled';
-        subject = 'Shift Cancelled — WFD EMS Student Portal';
-        bodyHtml = `<p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:16px;line-height:1.6;text-align:center;">Hi ${student.full_name}, your shift has been <strong>cancelled</strong> by the EMS Training Division.</p>
-           <div style="margin:20px auto;padding:16px 18px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;max-width:400px;">
-             <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Date:</strong> ${dateStr}</p>
-             <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Time:</strong> ${timeDisplay}</p>
-             ${note ? `<p style="margin:10px 0 0 0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Note:</strong> ${note}</p>` : ''}
-           </div>
-           <p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:14px;line-height:1.6;text-align:center;">Please contact the Training Division if you have questions.</p>`;
+        result = buildShiftCancelledByAdminEmail({ ...templateParams, note: note || null, login_url: loginUrl });
       } else {
-        title = 'Shift Update';
-        subject = 'Shift Request Update — WFD EMS Student Portal';
-        bodyHtml = `<p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:16px;line-height:1.6;text-align:center;">Hi ${student.full_name}, your shift request was <strong>not approved</strong>.</p>
-           <div style="margin:20px auto;padding:16px 18px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;max-width:400px;">
-             <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Date:</strong> ${dateStr}</p>
-             <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Time:</strong> ${timeDisplay}</p>
-           </div>
-           <p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:14px;line-height:1.6;text-align:center;">Please contact your preceptor or the Training Major for more information.</p>`;
+        result = buildShiftRejectedEmail({ ...templateParams, login_url: loginUrl });
       }
-
-      const html = buildEmailHtml(title, bodyHtml, loginUrl);
 
       try {
         await sendEmail({
           from: 'WFD EMS Portal <noreply@winchesterfireems.com>',
           to: student.email,
-          subject,
-          html,
+          subject: result.subject,
+          html: result.html,
         });
       } catch {}
     }

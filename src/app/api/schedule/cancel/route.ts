@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { publicEnv } from '@/lib/env';
-import { sendEmail, buildEmailHtml } from '@/lib/email';
+import { sendEmail } from '@/lib/email';
+import { buildShiftCancelledByStudentEmail, buildShiftCancelledByStudentAdminEmail } from '@/lib/email-templates';
 
 export async function POST(request: NextRequest) {
   const cookieHeader = request.headers.get('cookie') || '';
@@ -75,21 +76,18 @@ export async function POST(request: NextRequest) {
     : schedule.shift_type;
 
   {
-    const bodyHtml = `<p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:16px;line-height:1.6;text-align:center;">Hi ${student.full_name}, your shift has been <strong>cancelled</strong>.</p>
-      <div style="margin:20px auto;padding:16px 18px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;max-width:400px;">
-        <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Date:</strong> ${dateStr}</p>
-        <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Time:</strong> ${timeDisplay}</p>
-        <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Status:</strong> Student-initiated</p>
-        ${note ? `<p style="margin:10px 0 0 0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Note:</strong> ${note}</p>` : ''}
-      </div>`;
-
-    const html = buildEmailHtml('Shift Cancelled', bodyHtml, loginUrl);
-
+    const { subject, html } = buildShiftCancelledByStudentEmail({
+      full_name: student.full_name,
+      date_str: dateStr,
+      time_display: timeDisplay,
+      note: note || null,
+      login_url: loginUrl,
+    });
     try {
       await sendEmail({
         from: 'WFD EMS Portal <noreply@winchesterfireems.com>',
         to: student.email,
-        subject: 'Shift Cancelled — WFD EMS Student Portal',
+        subject,
         html,
       });
     } catch {}
@@ -102,20 +100,18 @@ export async function POST(request: NextRequest) {
       .eq('is_active', true);
 
     if (admins?.length) {
-      const adminMsg = `<p>${student.full_name} has cancelled their shift.</p>
-        <div style="margin:20px auto;padding:16px 18px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;max-width:400px;">
-          <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Date:</strong> ${dateStr}</p>
-          <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Time:</strong> ${timeDisplay}</p>
-          <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Status:</strong> Student-initiated</p>
-          ${note ? `<p style="margin:10px 0 0 0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Student note:</strong> ${note}</p>` : ''}
-        </div>`;
-
+      const { subject, html } = buildShiftCancelledByStudentAdminEmail({
+        full_name: student.full_name,
+        date_str: dateStr,
+        time_display: timeDisplay,
+        note: note || null,
+      });
       try {
         await sendEmail({
           from: 'WFD EMS Portal <onboarding@winchesterfireems.com>',
           to: admins.map((a: any) => a.email),
-          subject: 'Student Shift Cancellation — WFD EMS',
-          html: adminMsg,
+          subject,
+          html,
         });
       } catch {}
     }

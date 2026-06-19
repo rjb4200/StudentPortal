@@ -9,7 +9,8 @@
 - **Next.js 15** (App Router) with React 18, Tailwind CSS 3
 - **Supabase** project: `ejjsahtohaydoogtilgp` (NOT the old `dewuhmdgmoewoqmsflcw`)
 - Deployed on **Vercel** with a daily cron: `GET /api/cron/sweep`
-- `npm run build` is the verification command; no test suite exists yet.
+- `npm run build` is the verification command.
+- `npm run test` runs **Vitest** unit tests.
 
 ## Environment Variables
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { sendEmail, buildEmailHtml } from '@/lib/email';
+import { sendEmail } from '@/lib/email';
+import { buildFlaggedEvaluationEmail } from '@/lib/email-templates';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,8 +14,6 @@ export async function POST(request: NextRequest) {
       supabase.from('preceptors').select('full_name').eq('id', preceptorId).single(),
     ]);
 
-    const msg = `Student ${student?.full_name || studentId} submitted a low evaluation (${overallRating}/5) for preceptor ${preceptor?.full_name || preceptorId}. Review in the admin portal.`;
-
     const { data: admins } = await supabase
       .from('admin_accounts')
       .select('email')
@@ -22,14 +21,16 @@ export async function POST(request: NextRequest) {
       .eq('notify_evaluation_flagged', true);
 
     if (admins?.length) {
+      const { subject, html } = buildFlaggedEvaluationEmail({
+        student_name: student?.full_name || studentId,
+        preceptor_name: preceptor?.full_name || preceptorId,
+        overall_rating: overallRating,
+      });
       await sendEmail({
         from: 'WFD EMS Portal <onboarding@winchesterfireems.com>',
         to: admins.map((a: any) => a.email),
-        subject: 'WFD EMS: Flagged Evaluation',
-        html: buildEmailHtml(
-          'Flagged Evaluation',
-          `<p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:16px;line-height:1.6;text-align:center;">${msg}</p>`
-        ),
+        subject,
+        html,
       });
     }
 
