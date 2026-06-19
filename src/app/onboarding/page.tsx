@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { OnboardingIntro } from '@/components/onboarding/onboarding-intro';
 import { RegistrationForm } from '@/components/onboarding/registration-form';
 import { LegalWaiver } from '@/components/onboarding/legal-waiver';
 import { ResourceLibrary } from '@/components/onboarding/resource-library';
@@ -10,7 +9,7 @@ import { KnowledgeGate } from '@/components/onboarding/knowledge-gate';
 import { OnboardingComplete } from '@/components/onboarding/onboarding-complete';
 
 export default function OnboardingPage() {
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState(1);
   const [studentId, setStudentId] = useState<string | null>(null);
   const [credentials, setCredentials] = useState<{
     password: string | null;
@@ -32,7 +31,6 @@ export default function OnboardingPage() {
     loadHelpEmail();
   }, []);
 
-  const handleBegin = useCallback(() => setCurrentStep(1), []);
   const handleRegistrationComplete = useCallback((id: string) => {
     setStudentId(id);
     setCurrentStep(2);
@@ -46,13 +44,11 @@ export default function OnboardingPage() {
     },
     []
   );
-  const handleBack = useCallback(() => setCurrentStep((s) => Math.max(0, s - 1)), []);
+  const handleBack = useCallback(() => setCurrentStep((s) => Math.max(1, s - 1)), []);
 
   switch (currentStep) {
-    case 0:
-      return <OnboardingIntro onBegin={handleBegin} helpEmail={helpEmail} />;
     case 1:
-      return <RegistrationForm onComplete={handleRegistrationComplete} onBack={handleBack} helpEmail={helpEmail} />;
+      return <RegistrationForm onComplete={handleRegistrationComplete} helpEmail={helpEmail} />;
     case 2:
       return studentId ? <LegalWaiver studentId={studentId} onComplete={handleLegalComplete} onBack={handleBack} helpEmail={helpEmail} /> : null;
     case 3:
@@ -70,6 +66,6 @@ export default function OnboardingPage() {
         />
       ) : null;
     default:
-      return <OnboardingIntro onBegin={handleBegin} helpEmail={helpEmail} />;
+      return null;
   }
 }
