@@ -38,17 +38,26 @@ The system SHALL present a multi-step registration form collecting full name, em
 - **THEN** the created record has `is_test_record = false`
 
 ### Requirement: Legal waiver and HIPAA NDA signing
-The system SHALL display all active legal documents in a scrollable container with individual agreement checkboxes. The student SHALL enter their full legal name as an electronic signature. Upon submission, the system SHALL send the signature request to a server-side API route that captures the real client IP address, uses server-accurate timestamps, and records per-document acceptances in a `student_legal_acceptances` table. The `legal_signature`, `signature_ip`, and `signature_timestamp` fields on the `students` row SHALL be populated with real values captured server-side.
+The system SHALL display all active legal documents one at a time in a scrollable container with individual agreement checkboxes that require scroll-to-bottom before enabling. The student SHALL enter their full legal name as an electronic signature in a dedicated signature phase that includes a summary of agreed documents, a visual signature line with date, and a legal disclaimer. Upon submission, the system SHALL send the signature request to a server-side API route that captures the real client IP address, uses server-accurate timestamps, and records per-document acceptances in a `student_legal_acceptances` table. When only one document exists, the signature block SHALL appear inline below the document.
 
-#### Scenario: Complete legal signing
-- **WHEN** a student checks all required document agreement boxes, enters their full name, and submits
+#### Scenario: Complete legal signing with multiple documents
+- **WHEN** a student scrolls through each document, checks all required agreement boxes, enters their full name in the signature phase, and submits
 - **THEN** the server-side API records the real IP and server timestamp on the `students` row
 - **AND** per-document acceptance records are created in `student_legal_acceptances`
 - **AND** the workflow advances to the resource library
 
+#### Scenario: Complete legal signing with single document
+- **WHEN** only one active document exists, the student scrolls to the bottom, checks the agreement box, enters their full name in the inline signature block, and submits
+- **THEN** the server-side API records the signature with real metadata
+- **AND** the workflow advances
+
 #### Scenario: Incomplete legal signing
 - **WHEN** a student submits without entering their full name or without checking all required agreement checkboxes
 - **THEN** the system blocks submission and indicates the missing required field
+
+#### Scenario: Scroll enforcement before agreement
+- **WHEN** a document is displayed and the student has not scrolled to the bottom
+- **THEN** the agreement checkbox remains disabled and cannot be checked
 
 ### Requirement: Resource library downloads
 The system SHALL present downloadable WFD Station Maps (Station 1 Downtown HQ, Station 2 Fulton Rd, Station 3 Fortune Dr) and Departmental SOGs. Each resource SHALL have a download button that triggers a browser file download.
