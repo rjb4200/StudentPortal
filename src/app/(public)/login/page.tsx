@@ -91,11 +91,11 @@ export default function LoginPage() {
 
     const { data: student, error: studentError } = await supabase
       .from('students')
-      .select('status, is_blacklisted, auth_user_id')
+      .select('status, is_blacklisted, auth_user_id, onboarding_completed_at')
       .eq('auth_user_id', data.user.id)
       .single();
 
-    console.log('Login student query:', { userId: data.user.id, student: student ? { status: student.status, is_blacklisted: student.is_blacklisted, auth_user_id: student.auth_user_id } : null, error: studentError?.message });
+    console.log('Login student query:', { userId: data.user.id, student: student ? { status: student.status, is_blacklisted: student.is_blacklisted, auth_user_id: student.auth_user_id, onboarding_completed_at: student.onboarding_completed_at } : null, error: studentError?.message });
 
     if (studentError || !student) {
       setMessage(REASON_MESSAGES['account-no-link']);
@@ -121,7 +121,7 @@ export default function LoginPage() {
       return;
     }
 
-    if (student.status === 'certified' || student.status === 'pending') {
+    if (student.status === 'certified' || (student.status === 'pending' && student.onboarding_completed_at)) {
       window.location.href = '/dashboard';
       return;
     }

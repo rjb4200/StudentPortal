@@ -60,7 +60,7 @@ export function DailyOps() {
       { data: allSchedules },
       { data: quizFlagsData },
     ] = await Promise.all([
-      supabase.from('students').select('*').eq('status', 'pending').not('auth_user_id', 'is', null).order('created_at', { ascending: false }),
+      supabase.from('students').select('*').eq('status', 'pending').not('onboarding_completed_at', 'is', null).order('created_at', { ascending: false }),
       supabase.from('students').select('*').order('created_at', { ascending: false }),
       supabase.from('schedules').select('*, students!inner(full_name, email)').order('created_at', { ascending: false }),
       supabase.from('quiz_flags').select('*').eq('acknowledged', false).order('created_at', { ascending: false }),
@@ -234,6 +234,7 @@ export function DailyOps() {
 
   const pendingSchedules = schedules.filter((s: any) => s.status === 'pending');
   const cancelRequests = schedules.filter((s: any) => s.status === 'cancelled' && s.cancelled_by === 'student');
+  const rosterStudents = students.filter((s: any) => s.status === 'certified');
   const totalActions = pendingStudents.length + pendingSchedules.length + cancelRequests.length + quizFlags.length;
 
   return (
@@ -425,7 +426,7 @@ export function DailyOps() {
               </tr>
             </thead>
             <tbody>
-              {students.map((s) => {
+              {rosterStudents.map((s) => {
                 const expirationCountdown = getExpirationCountdown(s.access_until);
 
                 return (

@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
 
   const { data: student, error: studentError } = await adminClient
     .from('students')
-    .select('email, full_name, status')
+    .select('email, full_name, status, onboarding_completed_at')
     .eq('id', studentId)
     .single();
 
@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
   }
   if (!student) return NextResponse.json({ error: 'Student not found' }, { status: 404 });
   if (student.status !== 'pending') return NextResponse.json({ success: true, message: 'Already approved' });
+  if (!student.onboarding_completed_at) return NextResponse.json({ error: 'Student has not completed onboarding.' }, { status: 400 });
 
   const { error: updateError } = await adminClient
     .from('students')

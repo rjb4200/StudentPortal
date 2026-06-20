@@ -45,25 +45,23 @@ export async function POST(request: NextRequest) {
 
     authUserId = authMatch.id;
 
-    if (student.auth_user_id !== authUserId) {
-      const { error: linkError } = await supabase
-        .from('students')
-        .update({ auth_user_id: authUserId })
-        .eq('id', studentId);
+    const { error: linkError } = await supabase
+      .from('students')
+      .update({ auth_user_id: authUserId, onboarding_completed_at: new Date().toISOString() })
+      .eq('id', studentId);
 
-      if (linkError) {
-        console.error('Failed to link auth_user_id:', linkError);
-        return NextResponse.json({ success: false, error: 'Failed to link student to auth user' }, { status: 500 });
-      }
-
-      const { data: verify } = await supabase
-        .from('students')
-        .select('auth_user_id')
-        .eq('id', studentId)
-        .single();
-
-      console.log('auth_user_id link verify:', { studentId, expected: authUserId, actual: verify?.auth_user_id });
+    if (linkError) {
+      console.error('Failed to link auth_user_id:', linkError);
+      return NextResponse.json({ success: false, error: 'Failed to link student to auth user' }, { status: 500 });
     }
+
+    const { data: verify } = await supabase
+      .from('students')
+      .select('auth_user_id, onboarding_completed_at')
+      .eq('id', studentId)
+      .single();
+
+    console.log('onboarding completion link verify:', { studentId, expected: authUserId, actual: verify?.auth_user_id, completedAt: verify?.onboarding_completed_at });
   } catch (e) {
     console.error('Auth creation or linking failed:', e);
     return NextResponse.json({ success: false, error: 'Auth setup failed' }, { status: 500 });

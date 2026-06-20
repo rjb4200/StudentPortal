@@ -751,6 +751,7 @@ export type Database = {
           is_test_record: boolean | null
           legal_signature: string | null
           no_show_count: number
+          onboarding_completed_at: string | null
           password_changed: boolean
           phone: string | null
           previous_student_id: string | null
@@ -772,6 +773,7 @@ export type Database = {
           is_test_record?: boolean | null
           legal_signature?: string | null
           no_show_count?: number
+          onboarding_completed_at?: string | null
           password_changed?: boolean
           phone?: string | null
           previous_student_id?: string | null
@@ -793,6 +795,7 @@ export type Database = {
           is_test_record?: boolean | null
           legal_signature?: string | null
           no_show_count?: number
+          onboarding_completed_at?: string | null
           password_changed?: boolean
           phone?: string | null
           previous_student_id?: string | null
