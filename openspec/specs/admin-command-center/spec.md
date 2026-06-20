@@ -12,11 +12,19 @@ The system SHALL present an admin interface with three tabs: Daily Operations, P
 - **THEN** the preceptor analytics content renders and the other tab content is hidden
 
 ### Requirement: Unified action required card with visual differentiation
-The admin daily operations tab SHALL display actionable items within a unified "Action Required" card. The card SHALL contain four item types, each visually differentiated by badge color and button style: Approvals (sage green badge, crimson Approve button), Schedule Requests (blue badge, crimson Approve and red Reject buttons), Cancel Requests (amber/orange badge, amber Cancel Shift button), and Quiz Flags (amber badge, secondary Acknowledge button). Items SHALL be ordered: approvals first, then schedule requests, then cancel requests, then quiz flags. Each category SHALL be sorted newest first within itself. Approval failures SHALL be displayed to the admin and SHALL NOT be represented as successful approvals unless the approval API confirms success.
+The admin daily operations tab SHALL display actionable items within a unified "Action Required" card. The card SHALL contain four item types, each visually differentiated by badge color and button style: Approvals for students with `status = 'pending'` and non-null `onboarding_completed_at` (sage green badge, crimson Approve button), Schedule Requests (blue badge, crimson Approve and red Reject buttons), Cancel Requests (amber/orange badge, amber Cancel Shift button), and Quiz Flags (amber badge, secondary Acknowledge button). Items SHALL be ordered: approvals first, then schedule requests, then cancel requests, then quiz flags. Each category SHALL be sorted newest first within itself. Approval failures SHALL be displayed to the admin and SHALL NOT be represented as successful approvals unless the approval API confirms success.
 
 #### Scenario: Approve a new student
 - **WHEN** the Training Major clicks "Approve" on a pending student in the unified Action Required list and the approval API confirms success
 - **THEN** the system sets `status` to `certified`, sets `access_until` to 120 days from now, sends a welcome email to the student, and refreshes the Action Required list
+
+#### Scenario: Incomplete pending student does not appear for approval
+- **WHEN** a student has `status = 'pending'` and `onboarding_completed_at IS NULL`
+- **THEN** the student does not appear as an Approval item in Action Required
+
+#### Scenario: Approval-ready pending student appears for approval
+- **WHEN** a student has `status = 'pending'` and `onboarding_completed_at IS NOT NULL`
+- **THEN** the student appears as an Approval item in Action Required
 
 #### Scenario: Approval failure is visible
 - **WHEN** the Training Major clicks "Approve" on a pending student and the approval API fails
@@ -47,7 +55,7 @@ The admin daily operations tab SHALL display actionable items within a unified "
 - **THEN** the flag is marked as acknowledged and removed from the active list
 
 #### Scenario: Empty unified list
-- **WHEN** no pending approvals, schedule requests, cancel requests, or quiz flags exist
+- **WHEN** no approval-ready pending students, schedule requests, cancel requests, or quiz flags exist
 - **THEN** the Action Required card displays "Nothing requires your attention"
 
 ### Requirement: Threaded messaging
@@ -95,10 +103,10 @@ A prominent red toggle SHALL allow the admin to terminate a student's access. Ac
 - **THEN** the student's access is immediately restored and they can log in again
 
 ### Requirement: Student roster expiration countdown badge
-The admin daily operations Student Roster SHALL display a color-coded, number-only expiration countdown badge for each student with an `access_until` value.
+The admin daily operations Student Roster SHALL display certified students only and SHALL exclude incomplete pending registrations and approval-ready pending students. The roster SHALL display a color-coded, number-only expiration countdown badge for each certified student with an `access_until` value.
 
 #### Scenario: Certified student has remaining access days
-- **WHEN** an admin views the Student Roster and a student has future `access_until` value
+- **WHEN** an admin views the Student Roster and a certified student has future `access_until` value
 - **THEN** the roster displays a zero-padded three-digit countdown badge such as `120`, `115`, or `001`
 
 #### Scenario: Countdown badge communicates urgency
@@ -110,8 +118,12 @@ The admin daily operations Student Roster SHALL display a color-coded, number-on
 - **THEN** the system displays hover text explaining that the number is the student's days remaining until access expiration
 
 #### Scenario: Missing access expiration date
-- **WHEN** an admin views a student without an `access_until` value
+- **WHEN** an admin views a certified student without an `access_until` value
 - **THEN** the roster does not display an expiration countdown badge for that student
+
+#### Scenario: Pending student excluded from roster
+- **WHEN** an admin views the Student Roster and a student has `status = 'pending'`
+- **THEN** that student does not appear in the Student Roster regardless of `onboarding_completed_at`
 
 ### Requirement: Preceptor analytics with export
 The preceptor analytics tab SHALL display a leaderboard of preceptor ratings, trend charts over time, and buttons to export data as CSV and PDF.
@@ -142,4 +154,31 @@ The maintenance tab SHALL provide a "Master Export" button that downloads all da
 - **WHEN** an admin clicks "Purge Data" and confirms
 - **THEN** all student, schedule, evaluation, message, and note records are deleted
 
+### Requirement: Abandoned registration cleanup
+The Maintenance & Archive tab SHALL display an abandoned-registration cleanup view listing students with `status = 'pending'` and `onboarding_completed_at IS NULL`. The view SHALL show all incomplete pending records, visually flag records older than 24 hours, and allow admins to delete abandoned records through the existing safe student deletion API.
+
+#### Scenario: All incomplete pending registrations are listed
+- **WHEN** an admin opens Maintenance & Archive
+- **THEN** the abandoned-registration cleanup view lists students with `status = 'pending'` and `onboarding_completed_at IS NULL`
+
+#### Scenario: Approval-ready students are excluded from cleanup
+- **WHEN** a student has `status = 'pending'` and `onboarding_completed_at IS NOT NULL`
+- **THEN** the student does not appear in the abandoned-registration cleanup view
+
+#### Scenario: Certified students are excluded from cleanup
+- **WHEN** a student has `status = 'certified'`
+- **THEN** the student does not appear in the abandoned-registration cleanup view
+
+#### Scenario: Stale abandoned registration is flagged
+- **WHEN** an incomplete pending registration is older than 24 hours
+- **THEN** the cleanup view visually flags the record as stale or 24h+
+
+#### Scenario: Same-day abandoned registration remains visible
+- **WHEN** an incomplete pending registration is less than 24 hours old
+- **THEN** the cleanup view still lists the record without the stale warning
+
+#### Scenario: Admin deletes abandoned registration
+- **WHEN** an admin confirms deletion for an abandoned registration
+- **THEN** the existing safe student deletion API deletes the student row and any cascaded data
+- **AND** the cleanup view refreshes without the deleted record
 

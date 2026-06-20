@@ -3,11 +3,13 @@
 Define the student-facing onboarding flow from public registration through legal signing, resources, quiz completion, and admin notification.
 ## Requirements
 ### Requirement: Student registration form
-The system SHALL present a multi-step registration form collecting full name, email, phone, school name, instructor name, and instructor contact. The onboarding route SHALL be anonymously accessible at `/onboarding` without requiring a query token. Registration SHALL preserve historical real student records by creating new enrollment rows for eligible repeat students instead of overwriting existing records.
+The system SHALL present a multi-step registration form collecting full name, email, phone, school name, instructor name, and instructor contact. The onboarding route SHALL be anonymously accessible at `/onboarding` without requiring a query token. Registration SHALL preserve historical real student records by creating new enrollment rows for eligible repeat students instead of overwriting existing records. A registration-created student row SHALL have `status = 'pending'` and `onboarding_completed_at = null` until the student completes the full onboarding flow.
 
 #### Scenario: Successful registration
 - **WHEN** a student submits a complete registration form with an email not present in an active student record from `/onboarding`
-- **THEN** the student enrollment record is created with status `pending` and the workflow advances to the legal waiver step
+- **THEN** the student enrollment record is created with status `pending`
+- **AND** `onboarding_completed_at` is null
+- **AND** the workflow advances to the legal waiver step
 
 #### Scenario: Duplicate pending email registration
 - **WHEN** a student submits a registration form with an email already present on a `pending` student record
@@ -20,6 +22,7 @@ The system SHALL present a multi-step registration form collecting full name, em
 #### Scenario: Repeat expired or archived student registration
 - **WHEN** a student submits a registration form with an email already present only on an `expired` or `archived` real student record
 - **THEN** the system creates a new `pending` enrollment row linked to the prior row by `previous_student_id` and does not modify the prior row's `id` or historical fields
+- **AND** the new enrollment row has `onboarding_completed_at = null`
 
 #### Scenario: Blacklisted student registration
 - **WHEN** a student submits a registration form with an email present on a row where `is_blacklisted = true`
@@ -36,6 +39,11 @@ The system SHALL present a multi-step registration form collecting full name, em
 #### Scenario: Self-registration does not create test records
 - **WHEN** a student submits the public onboarding registration form
 - **THEN** the created record has `is_test_record = false`
+
+#### Scenario: Incomplete registration is not approval-ready
+- **WHEN** a student has submitted registration but has not completed the full onboarding flow
+- **THEN** the student row remains `pending` with `onboarding_completed_at = null`
+- **AND** the row is not treated as ready for admin approval
 
 ### Requirement: Legal waiver and HIPAA NDA signing
 The system SHALL display all active legal documents one at a time in a scrollable container with individual agreement checkboxes that require scroll-to-bottom before enabling. The student SHALL enter their full legal name as an electronic signature in a dedicated signature phase that includes a summary of agreed documents, a visual signature line with date, and a legal disclaimer. Upon submission, the system SHALL send the signature request to a server-side API route that captures the real client IP address, uses server-accurate timestamps, and records per-document acceptances in a `student_legal_acceptances` table. When only one document exists, the signature block SHALL appear inline below the document.
