@@ -9,7 +9,6 @@ import { KnowledgeGate } from '@/components/onboarding/knowledge-gate';
 import { OnboardingComplete } from '@/components/onboarding/onboarding-complete';
 import { OnboardingStepper } from '@/components/onboarding/onboarding-stepper';
 import { OnboardingStepperMobile } from '@/components/onboarding/onboarding-stepper-mobile';
-import { OnboardingIntro } from '@/components/onboarding/onboarding-intro';
 import { SaveResumeBanner } from '@/components/onboarding/save-resume-banner';
 
 interface WfdOnboardingSession {
@@ -64,7 +63,6 @@ function clearSession() {
 }
 
 export default function OnboardingPage() {
-  const [showIntro, setShowIntro] = useState(true);
   const [showResumeBanner, setShowResumeBanner] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [studentId, setStudentId] = useState<string | null>(null);
@@ -93,7 +91,6 @@ export default function OnboardingPage() {
     const saved = loadSession();
     if (saved) {
       setShowResumeBanner(true);
-      setShowIntro(false);
     }
   }, []);
 
@@ -104,13 +101,11 @@ export default function OnboardingPage() {
     setStudentEmail(saved.email);
     setCurrentStep(saved.currentStep);
     setShowResumeBanner(false);
-    setShowIntro(false);
   }, []);
 
   const handleStartOver = useCallback(() => {
     clearSession();
     setShowResumeBanner(false);
-    setShowIntro(true);
     setCurrentStep(1);
     setStudentId(null);
     setStudentEmail('');
@@ -144,10 +139,6 @@ export default function OnboardingPage() {
 
   if (showResumeBanner) {
     return <SaveResumeBanner onResume={handleResume} onStartOver={handleStartOver} />;
-  }
-
-  if (showIntro) {
-    return <OnboardingIntro onBegin={() => setShowIntro(false)} helpEmail={helpEmail} />;
   }
 
   let stepContent: React.ReactNode = null;
