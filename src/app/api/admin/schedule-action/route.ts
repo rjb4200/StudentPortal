@@ -5,6 +5,7 @@ import { canAccessAdmin } from '@/lib/roles';
 import { publicEnv } from '@/lib/env';
 import { sendEmail } from '@/lib/email';
 import { buildShiftApprovedEmail, buildShiftCancelledByAdminEmail, buildShiftRejectedEmail } from '@/lib/email-templates';
+import { scheduleActionBody } from '@/lib/validation';
 
 export async function POST(request: NextRequest) {
   const cookieHeader = request.headers.get('cookie') || '';
@@ -20,10 +21,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const { scheduleId, action, note } = await request.json();
-  if (!scheduleId || !action || !['approved', 'rejected', 'cancelled'].includes(action)) {
-    return NextResponse.json({ error: 'scheduleId and action (approved|rejected|cancelled) required' }, { status: 400 });
+  const body = await request.json();
+  const parsed = scheduleActionBody.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
   }
+  const { scheduleId, action, note } = parsed.data;
 
   const adminClient = createAdminClient();
 

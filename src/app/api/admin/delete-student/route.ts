@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { canAccessAdmin } from '@/lib/roles';
 import { publicEnv } from '@/lib/env';
+import { deleteStudentBody } from '@/lib/validation';
 
 export async function POST(request: NextRequest) {
   const cookieHeader = request.headers.get('cookie') || '';
@@ -18,10 +19,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const { studentId } = await request.json();
-  if (!studentId) {
-    return NextResponse.json({ error: 'Student ID required' }, { status: 400 });
+  const body = await request.json();
+  const parsed = deleteStudentBody.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
   }
+  const { studentId } = parsed.data;
 
   const adminClient = createAdminClient();
 

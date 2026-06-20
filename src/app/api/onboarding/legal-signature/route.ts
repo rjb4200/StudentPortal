@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { legalSignatureBody } from '@/lib/validation';
 
 export async function POST(request: NextRequest) {
   try {
-    const { studentId, fullName, agreedDocumentIds } = await request.json();
-
-    if (!studentId || !fullName || !agreedDocumentIds?.length) {
-      return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 });
+    const body = await request.json();
+    const parsed = legalSignatureBody.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ success: false, error: parsed.error.issues[0].message }, { status: 400 });
     }
+    const { studentId, fullName, agreedDocumentIds } = parsed.data;
 
     const ip =
       request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??

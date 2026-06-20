@@ -4,6 +4,7 @@ import { useEffect, useState, FormEvent } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { emailSchema, phoneSchema } from '@/lib/validation';
 import type { Tables } from '@/lib/supabase/database.types';
 
 interface RegistrationFormProps {
@@ -58,17 +59,32 @@ export function RegistrationForm({ onComplete, onBack, helpEmail }: Registration
     setLoading(true);
     setError('');
 
+    const emailResult = emailSchema.safeParse(form.email);
+    if (!emailResult.success) {
+      setError(`Email: ${emailResult.error.issues[0].message}`);
+      setLoading(false);
+      return;
+    }
+    if (form.phone) {
+      const phoneResult = phoneSchema.safeParse(form.phone);
+      if (!phoneResult.success) {
+        setError(`Phone: ${phoneResult.error.issues[0].message}`);
+        setLoading(false);
+        return;
+      }
+    }
+
     try {
       const supabase = createClient();
       const { data: studentId, error: registrationError } = await (supabase as any).rpc(
         'register_onboarding_student',
         {
-          p_full_name: form.full_name,
-          p_email: form.email,
-          p_phone: form.phone || '',
-          p_school_name: form.school_name || '',
-          p_instructor_name: form.instructor_name || '',
-          p_instructor_contact: form.instructor_contact || '',
+          p_full_name: form.full_name.trim(),
+          p_email: emailResult.data,
+          p_phone: form.phone.trim() || '',
+          p_school_name: form.school_name.trim() || '',
+          p_instructor_name: form.instructor_name.trim() || '',
+          p_instructor_contact: form.instructor_contact.trim() || '',
         }
       );
 
@@ -155,11 +171,12 @@ export function RegistrationForm({ onComplete, onBack, helpEmail }: Registration
       <Input
         key={field.id}
         label={field.label + (field.is_required ? '' : ' (optional)')}
-        type={field.field_type === 'tel' ? 'tel' : 'text'}
+        type={field.field_type === 'tel' ? 'tel' : field.field_type === 'email' ? 'email' : 'text'}
         required={field.is_required}
         value={form[field.field_key] ?? ''}
         onChange={(e) => updateValue(field.field_key, e.target.value)}
         placeholder={field.placeholder ?? undefined}
+        autoComplete={field.field_type === 'email' ? 'email' : field.field_type === 'tel' ? 'tel' : undefined}
       />
     );
   };

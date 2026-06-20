@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { canAccessAdmin } from '@/lib/roles';
 import { publicEnv } from '@/lib/env';
+import { createAuthUserBody } from '@/lib/validation';
 
 export async function POST(request: NextRequest) {
   const cookieHeader = request.headers.get('cookie') || '';
@@ -18,10 +19,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const { email, password, role } = await request.json();
-  if (!email || !password) {
-    return NextResponse.json({ error: 'Email and password required' }, { status: 400 });
+  const body = await request.json();
+  const parsed = createAuthUserBody.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
   }
+  const { email, password } = parsed.data;
 
   const adminClient = createAdminClient();
 
@@ -29,7 +32,7 @@ export async function POST(request: NextRequest) {
     email,
     password,
     email_confirm: true,
-    user_metadata: { role: role || 'admin' },
+    user_metadata: { role: 'admin' },
   });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
