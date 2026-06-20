@@ -15,6 +15,17 @@ interface RegistrationFormProps {
 
 type RegField = Tables<'registration_fields'>;
 
+const BUILT_IN_FIELD_KEYS = [
+  'full_name',
+  'email',
+  'phone',
+  'school_name',
+  'instructor_name',
+  'instructor_contact',
+];
+
+const getFieldValue = (form: Record<string, string>, key: string) => (form[key] ?? '').trim();
+
 export function RegistrationForm({ onComplete, onBack, helpEmail }: RegistrationFormProps) {
   const [loading, setLoading] = useState(false);
   const [loadingFields, setLoadingFields] = useState(true);
@@ -41,7 +52,14 @@ export function RegistrationForm({ onComplete, onBack, helpEmail }: Registration
       const sorted = (data ?? []).sort((a, b) => a.sort_order - b.sort_order);
       setFields(sorted);
 
-      const initial: Record<string, string> = { full_name: '', email: '' };
+      const initial: Record<string, string> = {
+        full_name: '',
+        email: '',
+        phone: '',
+        school_name: '',
+        instructor_name: '',
+        instructor_contact: '',
+      };
       for (const f of sorted) {
         if (!initial[f.field_key]) initial[f.field_key] = '';
       }
@@ -59,14 +77,16 @@ export function RegistrationForm({ onComplete, onBack, helpEmail }: Registration
     setLoading(true);
     setError('');
 
-    const emailResult = emailSchema.safeParse(form.email);
+    const emailResult = emailSchema.safeParse(getFieldValue(form, 'email'));
     if (!emailResult.success) {
       setError(`Email: ${emailResult.error.issues[0].message}`);
       setLoading(false);
       return;
     }
-    if (form.phone) {
-      const phoneResult = phoneSchema.safeParse(form.phone);
+
+    const phone = getFieldValue(form, 'phone');
+    if (phone) {
+      const phoneResult = phoneSchema.safeParse(phone);
       if (!phoneResult.success) {
         setError(`Phone: ${phoneResult.error.issues[0].message}`);
         setLoading(false);
@@ -79,12 +99,12 @@ export function RegistrationForm({ onComplete, onBack, helpEmail }: Registration
       const { data: studentId, error: registrationError } = await (supabase as any).rpc(
         'register_onboarding_student',
         {
-          p_full_name: form.full_name.trim(),
+          p_full_name: getFieldValue(form, 'full_name'),
           p_email: emailResult.data,
-          p_phone: form.phone.trim() || '',
-          p_school_name: form.school_name.trim() || '',
-          p_instructor_name: form.instructor_name.trim() || '',
-          p_instructor_contact: form.instructor_contact.trim() || '',
+          p_phone: phone,
+          p_school_name: getFieldValue(form, 'school_name'),
+          p_instructor_name: getFieldValue(form, 'instructor_name'),
+          p_instructor_contact: getFieldValue(form, 'instructor_contact'),
         }
       );
 
@@ -100,7 +120,7 @@ export function RegistrationForm({ onComplete, onBack, helpEmail }: Registration
       }
 
       const customFields = fields.filter(
-        (f) => !['full_name', 'email', 'phone', 'school_name', 'instructor_name', 'instructor_contact'].includes(f.field_key) && form[f.field_key]
+        (f) => !BUILT_IN_FIELD_KEYS.includes(f.field_key) && form[f.field_key]
       );
 
       if (customFields.length > 0) {
@@ -108,7 +128,7 @@ export function RegistrationForm({ onComplete, onBack, helpEmail }: Registration
           customFields.map((f) => ({
             student_id: studentId,
             field_id: f.id,
-            value: form[f.field_key],
+            value: getFieldValue(form, f.field_key),
           }))
         );
       }
