@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
 
     const { error: insertError } = await supabase
       .from('student_legal_acceptances')
-      .insert(acceptanceRows);
+      .upsert(acceptanceRows, { onConflict: 'student_id, document_id' });
 
     if (insertError) {
       console.error('Failed to insert legal acceptances:', insertError);
