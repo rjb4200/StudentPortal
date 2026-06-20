@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
   }
 
-  const loginUrl = `${request.nextUrl.origin}/dashboard`;
+  const loginUrl = `${publicEnv.SITE_URL}/dashboard`;
   const dateStr = new Date(schedule.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   const timeDisplay = schedule.start_time && schedule.end_time
     ? `${schedule.start_time} – ${schedule.end_time}`

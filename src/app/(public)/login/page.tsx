@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { canAccessAdmin, canAccessPreceptor } from '@/lib/roles';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { publicEnv } from '@/lib/env';
 
 type LoginMessage = {
   type: 'error' | 'warning' | 'success';
@@ -140,7 +141,7 @@ export default function LoginPage() {
 
     const supabase = createClient();
     const { error } = await supabase.auth.resetPasswordForEmail(email.toLowerCase().trim(), {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: `${publicEnv.SITE_URL}/reset-password`,
     });
 
     if (error) {

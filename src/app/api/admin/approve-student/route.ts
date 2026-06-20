@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
   }
 
   {
-    const loginUrl = `${request.nextUrl.origin}/login`;
+    const loginUrl = `${publicEnv.SITE_URL}/login`;
     const { subject, html } = buildStudentApprovalEmail({ full_name: student.full_name, login_url: loginUrl });
     try {
       await sendEmail({ to: student.email, subject, html });

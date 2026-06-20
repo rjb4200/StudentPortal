@@ -18,9 +18,19 @@ All in `.env.local`:
 ```
 NEXT_PUBLIC_SUPABASE_URL          # Supabase project URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY     # public anon key
+NEXT_PUBLIC_SITE_URL              # canonical public app URL, e.g. https://student-portal-chi-woad.vercel.app
 SUPABASE_SERVICE_ROLE_KEY         # secret — server-only, used by admin client
 RESEND_API_KEY                    # email (Resend)
 ```
+
+## Auth URLs
+
+- Canonical production app URL: `https://student-portal-chi-woad.vercel.app`
+- Supported auth/account routes: `/login`, `/reset-password`, `/auth/callback`, `/onboarding`, `/dashboard`
+- Supabase Auth URL Configuration for project `ejjsahtohaydoogtilgp` should use:
+  - Site URL: `https://student-portal-chi-woad.vercel.app`
+  - Redirect URLs: `https://student-portal-chi-woad.vercel.app/reset-password`, `https://student-portal-chi-woad.vercel.app/auth/callback`
+  - Local development: `http://localhost:3000/**` when testing auth redirects locally
 
 ## Supabase
 

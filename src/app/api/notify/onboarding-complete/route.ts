@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendEmail } from '@/lib/email';
 import { buildOnboardingCompleteStudentEmail, buildOnboardingCompleteAdminEmail } from '@/lib/email-templates';
+import { publicEnv } from '@/lib/env';
 
 export async function POST(request: NextRequest) {
   const { studentId } = await request.json();
@@ -87,7 +88,7 @@ export async function POST(request: NextRequest) {
   }
 
   {
-    const loginUrl = `${request.nextUrl.origin}/login`;
+    const loginUrl = `${publicEnv.SITE_URL}/login`;
     const { subject, html } = buildOnboardingCompleteStudentEmail({
       email: student.email,
       temp_password: tempPassword,
