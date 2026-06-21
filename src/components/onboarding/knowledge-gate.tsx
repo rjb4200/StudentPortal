@@ -30,6 +30,7 @@ export function KnowledgeGate({ studentId, onboardingToken, onComplete, onBack, 
   const [completeError, setCompleteError] = useState<string | null>(null);
   const [transitioning, setTransitioning] = useState(false);
   const [slideDir, setSlideDir] = useState<'left' | 'right' | 'up'>('right');
+  const [failedPhotoIds, setFailedPhotoIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     async function loadRules() {
@@ -93,6 +94,7 @@ export function KnowledgeGate({ studentId, onboardingToken, onComplete, onBack, 
       setMode('rule');
       setSelected(new Set());
       setRuleAttempts(0);
+      setFailedPhotoIds(new Set());
       setLoadingRules(false);
     }
 
@@ -101,6 +103,7 @@ export function KnowledgeGate({ studentId, onboardingToken, onComplete, onBack, 
 
   const currentRule = rules[ruleIndex];
   const progressStep = mode === 'complete' ? rules.length : ruleIndex + 1;
+  const currentRuleHasFailedPhoto = currentRule?.photos.some((photo) => failedPhotoIds.has(photo.id)) ?? false;
 
   const changeMode = useCallback((newMode: Mode, dir: 'left' | 'right' | 'up' = 'right') => {
     setSlideDir(dir);
@@ -112,6 +115,8 @@ export function KnowledgeGate({ studentId, onboardingToken, onComplete, onBack, 
   }, []);
 
   const togglePhoto = (photoId: string) => {
+    if (failedPhotoIds.has(photoId)) return;
+
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(photoId)) {
@@ -125,6 +130,10 @@ export function KnowledgeGate({ studentId, onboardingToken, onComplete, onBack, 
 
   const submitAnswer = () => {
     if (!currentRule) return;
+
+    if (currentRuleHasFailedPhoto) {
+      return;
+    }
 
     const correctIds = currentRule.photos
       .filter((photo) => photo.nonCompliant)
@@ -159,6 +168,7 @@ export function KnowledgeGate({ studentId, onboardingToken, onComplete, onBack, 
       } else {
         setRuleIndex((value) => value + 1);
         setRuleAttempts(0);
+        setFailedPhotoIds(new Set());
         changeMode('rule', 'right');
       }
     }, 1500);
@@ -386,17 +396,33 @@ export function KnowledgeGate({ studentId, onboardingToken, onComplete, onBack, 
             label={photo.label}
             reason={photo.reason}
             isSelected={selected.has(photo.id)}
+            disabled={failedPhotoIds.has(photo.id)}
             mode="selection"
             onToggle={() => togglePhoto(photo.id)}
+            onImageError={() => {
+              setSelected((prev) => {
+                if (!prev.has(photo.id)) return prev;
+                const next = new Set(prev);
+                next.delete(photo.id);
+                return next;
+              });
+              setFailedPhotoIds((prev) => new Set(prev).add(photo.id));
+            }}
           />
         ))}
       </div>
+
+      {currentRuleHasFailedPhoto && (
+        <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          One or more quiz photos could not load. Please refresh and try again, or contact EMS administration for help before submitting this rule.
+        </div>
+      )}
 
       <div className="sticky bottom-0 mt-6 flex flex-col gap-3 sm:flex-row bg-white/90 backdrop-blur-sm -mx-1 px-1 py-3 sm:static sm:bg-transparent sm:backdrop-blur-none sm:-mx-0 sm:px-0 sm:py-0">
         <Button variant="secondary" onClick={() => changeMode('rule', 'right')} className="flex-1">
           Review Rule
         </Button>
-        <Button onClick={submitAnswer} className="flex-1">
+        <Button onClick={submitAnswer} disabled={currentRuleHasFailedPhoto} className="flex-1">
           Submit Selection
         </Button>
       </div>
