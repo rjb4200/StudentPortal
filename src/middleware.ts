@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
-import { canAccessAdmin } from './lib/roles';
+import { canAccessAdmin, canAccessPreceptor } from './lib/roles';
 import { publicEnv } from './lib/env';
 
 export async function middleware(request: NextRequest) {
@@ -76,9 +76,18 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  if (pathname.startsWith('/preceptor')) {
+    if (!user) {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+    if (!canAccessPreceptor(user)) {
+      return new NextResponse('Forbidden', { status: 403 });
+    }
+  }
+
   return supabaseResponse;
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/admin/:path*'],
+  matcher: ['/dashboard/:path*', '/admin/:path*', '/preceptor/:path*'],
 };
