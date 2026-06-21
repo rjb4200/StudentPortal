@@ -3,14 +3,14 @@
 Define authentication, authorization, role-based access control, and student access enforcement for the portal.
 ## Requirements
 ### Requirement: Admin-gated account creation with temp passwords
-Students SHALL only receive login access after the Training Major approves their onboarding submission. The system SHALL create a Supabase Auth user with the student's email and a random 6-digit temporary password upon onboarding quiz completion, or reuse an existing auth user for the same email if one already exists. The temp password SHALL be displayed on the completion screen and emailed to the student.
+Students SHALL only receive login access after completing onboarding through a verified onboarding session and after the Training Major approves their onboarding submission. The system SHALL create a Supabase Auth user with the student's email and a cryptographically secure random 6-digit temporary PIN/password upon verified onboarding quiz completion, or reuse an existing auth user for the same email if one already exists. The temp PIN SHALL be displayed on the completion screen and emailed to the student only for the verified completing onboarding session.
 
-#### Scenario: Auth user created on onboarding completion
-- **WHEN** a student completes the onboarding quiz and no existing auth user exists for their email
-- **THEN** a Supabase Auth user is created with a random 6-digit password, `students.auth_user_id` is set, and credentials are returned to the frontend
+#### Scenario: Auth user created on verified onboarding completion
+- **WHEN** a student completes the onboarding quiz and submits matching onboarding session proof for their student record
+- **THEN** a Supabase Auth user is created with a cryptographically secure random 6-digit PIN/password, `students.auth_user_id` is set, and credentials are returned to the verified frontend session
 
-#### Scenario: Existing auth user reused on onboarding completion
-- **WHEN** a student completes onboarding and an auth user already exists for their email
+#### Scenario: Existing auth user reused on verified onboarding completion
+- **WHEN** a student completes onboarding with valid onboarding session proof and an auth user already exists for their email
 - **THEN** creation is skipped, the current enrollment row is linked through `students.auth_user_id`, and no new password is generated
 
 #### Scenario: Admin approves pending student
@@ -20,6 +20,10 @@ Students SHALL only receive login access after the Training Major approves their
 #### Scenario: Student cannot self-register for auth
 - **WHEN** an unauthorized user attempts to access Supabase Auth sign-up endpoints directly
 - **THEN** the request is rejected
+
+#### Scenario: Unverified onboarding completion is rejected
+- **WHEN** a caller submits onboarding completion for a student record without matching onboarding session proof
+- **THEN** the system rejects the request before creating or linking any Supabase Auth user
 
 ### Requirement: Password-based authentication for students
 Students SHALL authenticate using email and password via Supabase Auth. The login page Student tab SHALL accept the student's email and password and attempt `signInWithPassword` before performing any student-record lookup. After successful authentication, the system SHALL query the `students` table by `auth_user_id` to resolve the student record and check status. Authenticated students with a valid student record SHALL be redirected to `/dashboard`.

@@ -5,17 +5,17 @@
 End-to-end onboarding completion experience including auth user creation with temp password on quiz finish, admin-configurable completion screen, pending-approval dashboard, and login email validation.
 ## Requirements
 ### Requirement: Quiz completion creates auth user with temp password
-The system SHALL create or reuse a Supabase Auth user with a random 6-digit temporary password when the onboarding quiz is completed. Completion SHALL link the auth user to the student enrollment through `students.auth_user_id`, set `students.onboarding_completed_at` to a server-generated timestamp, and SHALL NOT change `students.id`. Auth user creation, auth linking, and completion timestamp recording SHALL succeed independently of notification email delivery — the temp password SHALL always be returned in the API response payload when auth setup succeeds.
+The system SHALL create or reuse a Supabase Auth user with a cryptographically secure random 6-digit temporary PIN/password when the onboarding quiz is completed through a verified onboarding session. Completion SHALL link the auth user to the student enrollment through `students.auth_user_id`, set `students.onboarding_completed_at` to a server-generated timestamp, and SHALL NOT change `students.id`. Auth user creation, auth linking, and completion timestamp recording SHALL succeed independently of notification email delivery — the temp PIN SHALL always be returned in the API response payload when auth setup succeeds for the verified onboarding session.
 
 #### Scenario: Quiz completed by new student
-- **WHEN** a student completes the onboarding quiz and the notification API is called
-- **THEN** a Supabase Auth user is created for the student's email with a random 6-digit password
+- **WHEN** a student completes the onboarding quiz and the notification API is called with matching onboarding session proof
+- **THEN** a Supabase Auth user is created for the student's email with a cryptographically secure random 6-digit PIN/password
 - **AND** `students.auth_user_id` is set to that auth user id
 - **AND** `students.onboarding_completed_at` is set to a non-null server timestamp
-- **AND** the temp password is returned to the frontend
+- **AND** the temp PIN is returned to the verified frontend session
 
 #### Scenario: Quiz completed by re-registering student
-- **WHEN** a student completes the quiz and an auth user already exists for their email
+- **WHEN** a student completes the quiz with matching onboarding session proof and an auth user already exists for their email
 - **THEN** creation is skipped, the current enrollment row is linked through `students.auth_user_id`, and a null password is returned (student uses existing credentials)
 - **AND** `students.onboarding_completed_at` is set to a non-null server timestamp
 
@@ -28,15 +28,20 @@ The system SHALL create or reuse a Supabase Auth user with a random 6-digit temp
 - **THEN** the spinner stops and the onboarding continues to the completion screen
 
 #### Scenario: Email provider fails during onboarding completion
-- **WHEN** a student completes onboarding and the Resend API is unreachable
-- **THEN** the auth user is still created and linked, `students.onboarding_completed_at` is recorded, the API returns HTTP 200 with the temp password, and the email failure is logged
-- **AND** the frontend displays the password to the student on the completion screen
+- **WHEN** a student completes onboarding with matching onboarding session proof and the Resend API is unreachable
+- **THEN** the auth user is still created and linked, `students.onboarding_completed_at` is recorded, the API returns HTTP 200 with the temp PIN, and the email failure is logged without exposing the PIN in logs
+- **AND** the frontend displays the PIN to the student on the completion screen
 
 #### Scenario: API returns error for auth creation failure
-- **WHEN** the notification API is called but auth user creation fails (not an email failure)
+- **WHEN** the notification API is called with matching onboarding session proof but auth user creation fails (not an email failure)
 - **THEN** the API returns `{ success: false }` with an error message
 - **AND** the frontend displays the error and allows the student to retry
 - **AND** `students.onboarding_completed_at` remains null
+
+#### Scenario: API rejects missing or invalid onboarding proof
+- **WHEN** the notification API is called without matching onboarding session proof for the submitted student id
+- **THEN** the API returns an authorization error before auth user creation, auth linking, notification email delivery, or completion timestamp recording
+- **AND** the frontend displays a clear session verification error with restart/help guidance
 
 ### Requirement: Admin-configurable completion screen
 The system SHALL display an onboarding completion screen after the quiz that renders admin-configurable text from the database. For newly created accounts, the screen SHALL show a "Continue to Dashboard" button that performs client-side auto-login using the temporary password. For existing accounts, the screen SHALL only show instructions to use existing credentials and a login link. When no admin template is active, the screen SHALL display default content appropriate to the account type.
@@ -98,4 +103,3 @@ The system SHALL validate the entered email against eligible students table rows
 #### Scenario: Expired archived or blacklisted student on login
 - **WHEN** a student with status `expired`, status `archived`, or `is_blacklisted = true` enters their email on the login page
 - **THEN** the user is redirected to the onboarding page with the appropriate status query parameter
-

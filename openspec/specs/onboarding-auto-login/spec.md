@@ -4,13 +4,13 @@
 TBD - created by archiving change onboarding-auto-login. Update Purpose after archive.
 ## Requirements
 ### Requirement: Continue to Dashboard button for new accounts
-The system SHALL present a "Continue to Dashboard" button on the onboarding completion page for students whose onboarding created a new auth account. The button SHALL sign the student in client-side using the temporary password and redirect to the dashboard.
+The system SHALL present a "Continue to Dashboard" button on the onboarding completion page for students whose verified onboarding session created a new auth account. The button SHALL sign the student in client-side using the temporary PIN/password returned to that verified session and redirect to the dashboard.
 
 #### Scenario: New student clicks Continue to Dashboard
 - **WHEN** a new-account student clicks "Continue to Dashboard" on the onboarding completion page
-- **THEN** the system calls `supabase.auth.signInWithPassword` with the student's email and temporary password
+- **THEN** the system calls `supabase.auth.signInWithPassword` with the student's email and temporary PIN/password
 - **AND** on success, redirects the browser to `/dashboard`
-- **AND** the temporary password is removed from sessionStorage
+- **AND** the temporary PIN/password is removed from sessionStorage if it was stored for the auto-login attempt
 
 #### Scenario: Auto-login fails gracefully
 - **WHEN** the auto-login `signInWithPassword` call fails (network error, expired password, or account not yet approved)
@@ -39,13 +39,16 @@ The system SHALL render different completion page content depending on whether t
 - **AND** a "Go to Login" button linking to `/login` is shown
 
 ### Requirement: API identifies new vs existing accounts
-The `POST /api/notify/onboarding-complete` endpoint SHALL include an `isNewAccount` boolean in the response indicating whether a new auth user was created.
+The `POST /api/notify/onboarding-complete` endpoint SHALL include an `isNewAccount` boolean in the response indicating whether a new auth user was created, but only after validating onboarding session proof for the submitted student id.
 
 #### Scenario: New account response
-- **WHEN** the onboarding completion API creates a new Supabase Auth user for the student
+- **WHEN** the onboarding completion API validates onboarding session proof and creates a new Supabase Auth user for the student
 - **THEN** the response includes `isNewAccount: true`
 
 #### Scenario: Existing account response
-- **WHEN** the onboarding completion API links an existing Supabase Auth user to the student
+- **WHEN** the onboarding completion API validates onboarding session proof and links an existing Supabase Auth user to the student
 - **THEN** the response includes `isNewAccount: false`
 
+#### Scenario: Invalid proof response
+- **WHEN** the onboarding completion API receives missing, expired, mismatched, or consumed onboarding session proof
+- **THEN** the response does not include account credentials or `isNewAccount` success data
