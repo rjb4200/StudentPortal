@@ -79,23 +79,29 @@ The system SHALL present downloadable WFD Station Maps (Station 1 Downtown HQ, S
 - **THEN** the browser initiates a file download of the SOG document
 
 ### Requirement: Knowledge gate safety quiz
-The system SHALL present a photo-grid compliance quiz where students visually inspect photographs and tap every photo that is not in compliance with the displayed rule. Photo labels and reasons SHALL be hidden during selection and revealed only after submission. The system SHALL show slide transitions between rule, question, and feedback modes. Three or more failed attempts on a rule followed by a successful pass SHALL trigger an admin flag.
+
+The system SHALL present a photo-grid compliance quiz where students visually inspect photographs and tap every photo that is not in compliance with the displayed rule. Photo labels and reasons SHALL be hidden during selection and revealed only after submission. The system SHALL show slide transitions between rule, question, and feedback modes. Three or more failed attempts on a rule followed by a successful pass SHALL trigger an admin flag. If a quiz photo fails to load, the system SHALL clearly show the failed media state and SHALL prevent students from submitting an answer for that rule based on missing media.
 
 #### Scenario: Correct photo selection
+
 - **WHEN** a student correctly selects all non-compliant photos for a rule based on visual inspection alone
 - **THEN** the system displays a "Correct!" success indicator and advances to the next rule or completion
 
 #### Scenario: Incorrect photo selection
+
 - **WHEN** a student submits an incorrect photo selection
 - **THEN** the system displays a persistent feedback panel showing per-photo results with labels and reasons
 - **AND** the feedback panel does not auto-dismiss
 
 #### Scenario: Image load failure
+
 - **WHEN** a quiz photo image fails to load
 - **THEN** the system displays a branded fallback placeholder instead of a broken image icon
-- **AND** the quiz remains functional
+- **AND** the affected photo cannot be selected
+- **AND** submitting the current rule is blocked with a clear media-unavailable message
 
 #### Scenario: Knowledge gate completion
+
 - **WHEN** a student correctly completes all quiz rules
 - **THEN** the system presents the completion screen and allows the student to finish onboarding
 
