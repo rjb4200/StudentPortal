@@ -292,6 +292,41 @@ export type Database = {
           },
         ]
       }
+      onboarding_sessions: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          student_id: string
+          token_hash: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          expires_at: string
+          id?: string
+          student_id: string
+          token_hash: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          student_id?: string
+          token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_sessions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       portal_settings: {
         Row: {
           key: string

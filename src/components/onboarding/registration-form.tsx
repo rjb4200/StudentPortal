@@ -8,7 +8,7 @@ import { emailSchema, phoneSchema } from '@/lib/validation';
 import type { Tables } from '@/lib/supabase/database.types';
 
 interface RegistrationFormProps {
-  onComplete: (studentId: string) => void;
+  onComplete: (studentId: string, onboardingToken: string) => void;
   onBack?: () => void;
   helpEmail?: string;
 }
@@ -96,28 +96,33 @@ export function RegistrationForm({ onComplete, onBack, helpEmail }: Registration
 
     try {
       const supabase = createClient();
-      const { data: studentId, error: registrationError } = await (supabase as any).rpc(
-        'register_onboarding_student',
-        {
-          p_full_name: getFieldValue(form, 'full_name'),
-          p_email: emailResult.data,
-          p_phone: phone,
-          p_school_name: getFieldValue(form, 'school_name'),
-          p_instructor_name: getFieldValue(form, 'instructor_name'),
-          p_instructor_contact: getFieldValue(form, 'instructor_contact'),
-        }
-      );
+      const res = await fetch('/api/onboarding/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fullName: getFieldValue(form, 'full_name'),
+          email: emailResult.data,
+          phone,
+          schoolName: getFieldValue(form, 'school_name'),
+          instructorName: getFieldValue(form, 'instructor_name'),
+          instructorContact: getFieldValue(form, 'instructor_contact'),
+        }),
+      });
+      const registration = await res.json();
 
-      if (registrationError) {
-        if (registrationError.code === '23505') {
+      if (!res.ok || !registration.success) {
+        if (res.status === 409) {
           setError('A student with this email is already registered.');
           setLoading(false);
           return;
         }
-        setError(registrationError.message);
+        setError(registration.error || 'Registration failed.');
         setLoading(false);
         return;
       }
+
+      const studentId = registration.studentId as string;
+      const onboardingToken = registration.onboardingToken as string;
 
       const customFields = fields.filter(
         (f) => !BUILT_IN_FIELD_KEYS.includes(f.field_key) && form[f.field_key]
@@ -133,7 +138,7 @@ export function RegistrationForm({ onComplete, onBack, helpEmail }: Registration
         );
       }
 
-      onComplete(studentId);
+      onComplete(studentId, onboardingToken);
     } catch (err: any) {
       setError('Unable to connect. Please check your connection and try again.');
       setLoading(false);

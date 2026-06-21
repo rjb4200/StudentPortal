@@ -12,12 +12,13 @@ type Mode = 'rule' | 'question' | 'feedback' | 'success' | 'complete';
 
 interface KnowledgeGateProps {
   studentId: string;
+  onboardingToken: string | null;
   onComplete: (password: string | null, email: string, isNewAccount: boolean) => void;
   onBack?: () => void;
   helpEmail?: string;
 }
 
-export function KnowledgeGate({ studentId, onComplete, onBack, helpEmail }: KnowledgeGateProps) {
+export function KnowledgeGate({ studentId, onboardingToken, onComplete, onBack, helpEmail }: KnowledgeGateProps) {
   const [rules, setRules] = useState<ComplianceRule[]>([]);
   const [loadingRules, setLoadingRules] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -164,6 +165,11 @@ export function KnowledgeGate({ studentId, onComplete, onBack, helpEmail }: Know
   };
 
   const handleComplete = async () => {
+    if (!onboardingToken) {
+      setCompleteError('Your onboarding session could not be verified. Please restart registration or contact your instructor for help.');
+      return;
+    }
+
     setCertifying(true);
     setCompleteError(null);
 
@@ -174,7 +180,7 @@ export function KnowledgeGate({ studentId, onComplete, onBack, helpEmail }: Know
       const res = await fetch('/api/notify/onboarding-complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ studentId }),
+        body: JSON.stringify({ studentId, onboardingToken }),
       });
       const data = await res.json();
       if (!res.ok || !data.success) {

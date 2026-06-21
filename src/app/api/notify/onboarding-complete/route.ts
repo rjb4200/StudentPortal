@@ -3,20 +3,59 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { sendEmail } from '@/lib/email';
 import { buildOnboardingCompleteStudentEmail, buildOnboardingCompleteAdminEmail } from '@/lib/email-templates';
 import { publicEnv } from '@/lib/env';
+import { generateTemporaryPin, hashOnboardingToken } from '@/lib/onboarding-session';
+import { onboardingCompleteBody } from '@/lib/validation';
 
 export async function POST(request: NextRequest) {
-  const { studentId } = await request.json();
+  const body = await request.json();
+  const parsed = onboardingCompleteBody.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ success: false, error: parsed.error.issues[0].message }, { status: 400 });
+  }
+  const { studentId, onboardingToken } = parsed.data;
 
   const supabase = createAdminClient();
 
+  const { data: session, error: sessionError } = await supabase
+    .from('onboarding_sessions')
+    .select('id, expires_at, completed_at')
+    .eq('student_id', studentId)
+    .eq('token_hash', hashOnboardingToken(onboardingToken))
+    .maybeSingle();
+
+  if (sessionError) {
+    console.error('Onboarding session verification failed:', sessionError);
+    return NextResponse.json({ success: false, error: 'Unable to verify onboarding session.' }, { status: 500 });
+  }
+
+  if (!session) {
+    return NextResponse.json({ success: false, error: 'Your onboarding session could not be verified. Please restart registration or contact your instructor for help.' }, { status: 403 });
+  }
+
+  if (session.completed_at) {
+    return NextResponse.json({ success: false, error: 'This onboarding session has already been completed.' }, { status: 409 });
+  }
+
+  if (new Date(session.expires_at).getTime() <= Date.now()) {
+    return NextResponse.json({ success: false, error: 'Your onboarding session has expired. Please restart registration or contact your instructor for help.' }, { status: 403 });
+  }
+
   const { data: student } = await supabase
     .from('students')
-    .select('id, auth_user_id, full_name, email, school_name')
+    .select('id, auth_user_id, full_name, email, school_name, status, is_blacklisted, onboarding_completed_at, legal_signature')
     .eq('id', studentId)
     .single();
 
   if (!student) {
     return NextResponse.json({ success: false }, { status: 404 });
+  }
+
+  if (student.is_blacklisted || student.status !== 'pending' || student.onboarding_completed_at) {
+    return NextResponse.json({ success: false, error: 'This student record is not eligible for onboarding completion.' }, { status: 409 });
+  }
+
+  if (!student.legal_signature) {
+    return NextResponse.json({ success: false, error: 'Legal agreements must be completed before finishing onboarding.' }, { status: 409 });
   }
 
   let tempPassword: string | null = null;
@@ -28,7 +67,7 @@ export async function POST(request: NextRequest) {
     let authMatch = existing?.users?.find((u) => u.email?.toLowerCase() === student.email.toLowerCase());
 
     if (!authMatch) {
-      tempPassword = String(Math.floor(100000 + Math.random() * 900000));
+      tempPassword = generateTemporaryPin();
       const { data: created, error: createError } = await supabase.auth.admin.createUser({
         email: student.email,
         password: tempPassword,
@@ -49,11 +88,27 @@ export async function POST(request: NextRequest) {
     const { error: linkError } = await supabase
       .from('students')
       .update({ auth_user_id: authUserId, onboarding_completed_at: new Date().toISOString() })
-      .eq('id', studentId);
+      .eq('id', studentId)
+      .is('onboarding_completed_at', null)
+      .select('id')
+      .single();
 
     if (linkError) {
       console.error('Failed to link auth_user_id:', linkError);
       return NextResponse.json({ success: false, error: 'Failed to link student to auth user' }, { status: 500 });
+    }
+
+    const { error: sessionUpdateError } = await supabase
+      .from('onboarding_sessions')
+      .update({ completed_at: new Date().toISOString() })
+      .eq('id', session.id)
+      .is('completed_at', null)
+      .select('id')
+      .single();
+
+    if (sessionUpdateError) {
+      console.error('Failed to complete onboarding session:', sessionUpdateError);
+      return NextResponse.json({ success: false, error: 'Failed to complete onboarding session' }, { status: 500 });
     }
 
     const { data: verify } = await supabase

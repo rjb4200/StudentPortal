@@ -12,6 +12,20 @@ export const legalSignatureBody = z.object({
   agreedDocumentIds: z.array(uuidSchema).min(1),
 });
 
+export const onboardingRegistrationBody = z.object({
+  fullName: nameSchema,
+  email: emailSchema,
+  phone: z.string().trim().max(30).optional(),
+  schoolName: nameSchema,
+  instructorName: nameSchema,
+  instructorContact: textSchema(100).min(1),
+});
+
+export const onboardingCompleteBody = z.object({
+  studentId: uuidSchema,
+  onboardingToken: z.string().min(32).max(256),
+});
+
 export const createAuthUserBody = z.object({
   email: emailSchema,
   password: z.string().min(6).max(128),

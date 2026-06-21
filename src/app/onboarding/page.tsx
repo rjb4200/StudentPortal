@@ -13,6 +13,7 @@ import { SaveResumeBanner } from '@/components/onboarding/save-resume-banner';
 
 interface WfdOnboardingSession {
   studentId: string | null;
+  onboardingToken: string | null;
   currentStep: number;
   timestamp: string;
   email: string;
@@ -20,11 +21,12 @@ interface WfdOnboardingSession {
 
 const SAVE_KEY = 'wfd_onboarding_session';
 
-function saveSession(studentId: string | null, currentStep: number, email: string) {
+function saveSession(studentId: string | null, onboardingToken: string | null, currentStep: number, email: string) {
   if (typeof window === 'undefined') return;
   try {
     const session: WfdOnboardingSession = {
       studentId,
+      onboardingToken,
       currentStep,
       timestamp: new Date().toISOString(),
       email,
@@ -66,6 +68,7 @@ export default function OnboardingPage() {
   const [showResumeBanner, setShowResumeBanner] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [studentId, setStudentId] = useState<string | null>(null);
+  const [onboardingToken, setOnboardingToken] = useState<string | null>(null);
   const [studentEmail, setStudentEmail] = useState('');
   const [credentials, setCredentials] = useState<{
     password: string | null;
@@ -98,6 +101,7 @@ export default function OnboardingPage() {
     const saved = loadSession();
     if (!saved) return;
     setStudentId(saved.studentId);
+    setOnboardingToken(saved.onboardingToken ?? null);
     setStudentEmail(saved.email);
     setCurrentStep(saved.currentStep);
     setShowResumeBanner(false);
@@ -108,25 +112,27 @@ export default function OnboardingPage() {
     setShowResumeBanner(false);
     setCurrentStep(1);
     setStudentId(null);
+    setOnboardingToken(null);
     setStudentEmail('');
   }, []);
 
   const handleRegistrationComplete = useCallback(
-    (id: string) => {
+    (id: string, token: string) => {
       setStudentId(id);
+      setOnboardingToken(token);
       setCurrentStep(2);
-      saveSession(id, 2, studentEmail);
+      saveSession(id, token, 2, studentEmail);
     },
     [studentEmail]
   );
   const handleLegalComplete = useCallback(() => {
     setCurrentStep(3);
-    saveSession(studentId, 3, studentEmail);
-  }, [studentId, studentEmail]);
+    saveSession(studentId, onboardingToken, 3, studentEmail);
+  }, [studentId, onboardingToken, studentEmail]);
   const handleResourcesComplete = useCallback(() => {
     setCurrentStep(4);
-    saveSession(studentId, 4, studentEmail);
-  }, [studentId, studentEmail]);
+    saveSession(studentId, onboardingToken, 4, studentEmail);
+  }, [studentId, onboardingToken, studentEmail]);
   const handleQuizComplete = useCallback(
     (password: string | null, email: string, isNewAccount: boolean) => {
       setCredentials({ password, email, isNewAccount });
@@ -156,7 +162,7 @@ export default function OnboardingPage() {
       break;
     case 4:
       stepContent = studentId ? (
-        <KnowledgeGate studentId={studentId} onComplete={handleQuizComplete} onBack={handleBack} helpEmail={helpEmail} />
+        <KnowledgeGate studentId={studentId} onboardingToken={onboardingToken} onComplete={handleQuizComplete} onBack={handleBack} helpEmail={helpEmail} />
       ) : null;
       break;
     case 5:
