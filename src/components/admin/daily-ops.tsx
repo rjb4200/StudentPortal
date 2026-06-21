@@ -46,6 +46,7 @@ export function DailyOps() {
   const [acknowledgingFlag, setAcknowledgingFlag] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [scheduleActionError, setScheduleActionError] = useState<string | null>(null);
 
   const supabase = createClient();
 
@@ -109,12 +110,21 @@ export function DailyOps() {
   };
 
   const handleScheduleAction = async (scheduleId: string, action: 'approved' | 'rejected' | 'cancelled', note?: string) => {
-    await fetch('/api/admin/schedule-action', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ scheduleId, action, note: note || undefined }),
-    });
-    await loadAll();
+    setScheduleActionError(null);
+    try {
+      const response = await fetch('/api/admin/schedule-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scheduleId, action, note: note || undefined }),
+      });
+      const data = await response.json();
+      if (!response.ok || data?.success !== true) {
+        throw new Error(data?.error || `Schedule action failed with status ${response.status}.`);
+      }
+      await loadAll();
+    } catch (e) {
+      setScheduleActionError(e instanceof Error ? e.message : 'Schedule action failed. Please try again.');
+    }
   };
 
   const handleSendReply = async () => {
@@ -282,6 +292,9 @@ export function DailyOps() {
                 </Button>
               </div>
             ))}
+            {scheduleActionError && (
+              <p className="text-xs text-red-600 bg-red-50 rounded-lg px-2 py-1">{scheduleActionError}</p>
+            )}
             {pendingSchedules.map((s: any) => (
               <div key={`schedule-${s.id}`} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
                 <div className="flex items-center gap-2 min-w-0 flex-1">
