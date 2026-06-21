@@ -9,7 +9,7 @@ const steps = [
   { step: 2, label: 'Legal', description: 'Review & sign' },
   { step: 3, label: 'Resources', description: 'Study materials' },
   { step: 4, label: 'Review', description: 'Policy & protocol' },
-  { step: 5, label: 'Submitted', description: 'Awaiting approval' },
+  { step: 5, label: 'Complete', description: 'Awaiting approval' },
 ];
 
 export function OnboardingStepper({ currentStep }: StepperProps) {
