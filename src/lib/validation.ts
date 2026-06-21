@@ -5,6 +5,7 @@ export const uuidSchema = z.string().uuid();
 export const nameSchema = z.string().trim().min(1).max(100);
 export const phoneSchema = z.string().trim().max(30).regex(/^[\d\s\-\(\)\+\.]{7,30}$/, 'Invalid phone number format');
 export const textSchema = (maxLen: number) => z.string().trim().max(maxLen);
+const optionalTextSchema = (maxLen: number) => z.string().trim().max(maxLen).optional().or(z.literal(''));
 
 export const legalSignatureBody = z.object({
   studentId: uuidSchema,
@@ -15,10 +16,10 @@ export const legalSignatureBody = z.object({
 export const onboardingRegistrationBody = z.object({
   fullName: nameSchema,
   email: emailSchema,
-  phone: z.string().trim().max(30).optional(),
-  schoolName: nameSchema,
-  instructorName: nameSchema,
-  instructorContact: textSchema(100).min(1),
+  phone: optionalTextSchema(30),
+  schoolName: optionalTextSchema(100),
+  instructorName: optionalTextSchema(100),
+  instructorContact: optionalTextSchema(100),
 });
 
 export const onboardingCompleteBody = z.object({
