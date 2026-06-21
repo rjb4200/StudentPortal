@@ -49,7 +49,18 @@ export function RegistrationForm({ onComplete, onBack, helpEmail }: Registration
         .eq('is_active', true)
         .order('sort_order');
 
-      const sorted = (data ?? []).sort((a, b) => a.sort_order - b.sort_order);
+      const sorted = (data ?? []).sort((a, b) => {
+        const aIsBuiltIn = BUILT_IN_FIELD_KEYS.includes(a.field_key);
+        const bIsBuiltIn = BUILT_IN_FIELD_KEYS.includes(b.field_key);
+        if (aIsBuiltIn && bIsBuiltIn) {
+          return BUILT_IN_FIELD_KEYS.indexOf(a.field_key) - BUILT_IN_FIELD_KEYS.indexOf(b.field_key);
+        }
+        if (aIsBuiltIn) return -1;
+        if (bIsBuiltIn) return 1;
+        const orderDiff = a.sort_order - b.sort_order;
+        if (orderDiff !== 0) return orderDiff;
+        return a.field_key.localeCompare(b.field_key);
+      });
       setFields(sorted);
 
       const initial: Record<string, string> = {
