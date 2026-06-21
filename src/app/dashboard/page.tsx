@@ -270,9 +270,12 @@ export default function DashboardPage() {
               <p className="mt-2 text-sm text-white/75">{student?.full_name} • {student?.school_name}</p>
             </div>
             <div className="flex w-full flex-col gap-3 sm:w-auto sm:min-w-56">
-              <Button onClick={commandState.onPrimary} className="w-full bg-white px-5 py-3 text-base text-wfd-crimson hover:bg-white/90 focus:ring-white">
+              <button
+                onClick={commandState.onPrimary}
+                className="w-full rounded-lg bg-white px-5 py-3 text-base font-semibold text-wfd-crimson transition-all hover:bg-white/90 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
                 {commandState.primaryLabel}
-              </Button>
+              </button>
               <button
                 onClick={commandState.onSecondary}
                 className="rounded-lg border border-white/35 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-white/10"
