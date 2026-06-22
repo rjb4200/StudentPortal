@@ -26,35 +26,48 @@ Students SHALL only receive login access after completing onboarding through a v
 - **THEN** the system rejects the request before creating or linking any Supabase Auth user
 
 ### Requirement: Password-based authentication for students
-Students SHALL authenticate using email and password via Supabase Auth. The login page Student tab SHALL accept the student's email and password and attempt `signInWithPassword` before performing any student-record lookup. After successful authentication, the system SHALL query the `students` table by `auth_user_id` to resolve the student record and check status. Authenticated students with a valid student record SHALL be redirected to `/dashboard`.
+
+Students SHALL authenticate using email and password via Supabase Auth. The login page Student tab SHALL accept the student's email and password and attempt `signInWithPassword` before performing any student-record lookup. After successful authentication, the system SHALL query the `students` table by `auth_user_id` to resolve the student record and check status. Authenticated students with a valid student record SHALL be redirected to `/dashboard`. The public login flow SHALL NOT print auth session details or student lookup details to the browser console during normal use.
 
 #### Scenario: Password login
+
 - **WHEN** a certified student enters their email and password on the login page Student tab and submits
 - **THEN** Supabase authenticates the credentials, the system queries `students` by `auth_user_id`, finds the certified record, and redirects to `/dashboard`
 
 #### Scenario: Password login for pending student
+
 - **WHEN** a pending student with a linked auth user enters their email and password
 - **THEN** Supabase authenticates the credentials, the system queries `students` by `auth_user_id`, finds the pending record, and redirects to `/dashboard`
 
 #### Scenario: Password login for expired student
+
 - **WHEN** a student with an expired `access_until` timestamp authenticates
 - **THEN** the system queries `students` by `auth_user_id`, finds the expired record, and displays the expired-access inline message on the login page
 
 #### Scenario: Password login for archived or blacklisted student
+
 - **WHEN** a student with status `archived` or `is_blacklisted = true` authenticates
 - **THEN** the system queries `students` by `auth_user_id`, finds the record, and displays the appropriate inline status message on the login page
 
 #### Scenario: No student account for email
+
 - **WHEN** a user enters credentials that do not match any Supabase Auth user
 - **THEN** the login page displays "Invalid email or password." with a "Don't have an account? Start Onboarding" link to `/onboarding`
 
 #### Scenario: Auth succeeds but no linked student record
+
 - **WHEN** a user authenticates successfully but no `students` row matches their `auth_user_id`
 - **THEN** the login page displays "Your login account exists but no student registration is linked. Please complete onboarding." with a link to `/onboarding`
 
 #### Scenario: Forgot password
+
 - **WHEN** a user clicks "Forgot password?" on the Student tab and enters their email
 - **THEN** Supabase sends a password reset email to that address, and the user is directed to `/reset-password` to set a new password
+
+#### Scenario: Login does not emit debug account state
+
+- **WHEN** a user submits the public login form during normal use
+- **THEN** the login page does not write auth session details, sampled student records, or student lookup details to the browser console
 
 ### Requirement: Canonical auth and account URLs
 The system SHALL define a canonical public StudentPortal app URL for user-facing authentication and account links. Password reset redirects and transactional email CTA links SHALL use supported StudentPortal routes derived from that canonical URL rather than deriving public links from arbitrary request or browser origins.
@@ -171,3 +184,4 @@ The system middleware SHALL evaluate the active student row resolved by `student
 #### Scenario: Session blocked when no student record matches
 - **WHEN** an authenticated user with no matching `students` row by `auth_user_id` makes a request to `/dashboard`
 - **THEN** the session is blocked and the user is redirected to `/login?reason=not-registered`
+
