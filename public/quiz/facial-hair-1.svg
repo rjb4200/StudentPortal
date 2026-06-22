@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 320" role="img" aria-labelledby="title desc">
+  <title id="title">Long sideburns and jaw facial hair</title>
+  <desc id="desc">Illustration of a face with long sideburns and facial hair extending along the jaw line.</desc>
+  <rect width="420" height="320" fill="#f7f4ee"/>
+  <circle cx="210" cy="152" r="92" fill="#ffc27d"/>
+  <rect x="176" y="232" width="68" height="40" rx="12" fill="#e2a166"/>
+  <path d="M105 122c12-58 58-90 119-82 52 7 87 44 88 93-28-43-63-59-105-57-42 2-76 17-102 46z" fill="#6b3a1f"/>
+  <path d="M113 142c-17 72 5 111 42 126V148zM307 142c17 72-5 111-42 126V148z" fill="#5d351f"/>
+  <path d="M139 130c18-22 45-37 79-39 39-2 67 11 86 35-23-7-47-9-72-6-36 5-65 20-93 10z" fill="#8d552e" opacity=".85"/>
+  <rect x="142" y="151" width="62" height="9" rx="5" fill="#3b271b"/>
+  <rect x="232" y="151" width="62" height="9" rx="5" fill="#3b271b"/>
+  <circle cx="171" cy="176" r="10" fill="#34251b"/>
+  <circle cx="265" cy="176" r="10" fill="#34251b"/>
+  <path d="M180 210c30 10 54 6 72-12-7 26-45 38-72 12z" fill="#fff"/>
+  <text x="210" y="300" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#9b1c1f">Photo 1</text>
+</svg>
