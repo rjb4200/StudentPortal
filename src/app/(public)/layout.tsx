@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 const LOGO_URL = '/WFD_logo_transparent.png';
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
@@ -43,8 +45,12 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
         </div>
       </div>
 
-      <div className="relative z-10 bg-wfd-charcoal/60 text-white/50 text-xs text-center py-3">
-        &copy; Winchester Fire Department &middot; Division of EMS
+      <div className="relative z-10 bg-wfd-charcoal/60 text-white/50 text-xs text-center py-3 px-4">
+        <span>&copy; Winchester Fire Department &middot; Division of EMS</span>
+        <span className="mx-2">|</span>
+        <Link href="/privacy-policy" className="underline hover:text-white/80 transition-colors">Privacy Policy</Link>
+        <span className="mx-2">|</span>
+        <Link href="/terms-and-conditions" className="underline hover:text-white/80 transition-colors">Terms &amp; Conditions</Link>
       </div>
     </div>
   );
