@@ -455,10 +455,11 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          image_url: string
+          image_url: string | null
           is_active: boolean
           is_non_compliant: boolean
           label: string
+          option_text: string | null
           reason: string
           rule_id: string
           sort_order: number
@@ -467,10 +468,11 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
-          image_url: string
+          image_url?: string | null
           is_active?: boolean
           is_non_compliant?: boolean
           label: string
+          option_text?: string | null
           reason: string
           rule_id: string
           sort_order?: number
@@ -479,10 +481,11 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
-          image_url?: string
+          image_url?: string | null
           is_active?: boolean
           is_non_compliant?: boolean
           label?: string
+          option_text?: string | null
           reason?: string
           rule_id?: string
           sort_order?: number
@@ -504,6 +507,7 @@ export type Database = {
           id: string
           instruction: string
           is_active: boolean
+          question_type: string
           rule_text: string
           sort_order: number
           title: string
@@ -514,6 +518,7 @@ export type Database = {
           id?: string
           instruction: string
           is_active?: boolean
+          question_type?: string
           rule_text: string
           sort_order?: number
           title: string
@@ -524,6 +529,7 @@ export type Database = {
           id?: string
           instruction?: string
           is_active?: boolean
+          question_type?: string
           rule_text?: string
           sort_order?: number
           title?: string

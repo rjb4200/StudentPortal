@@ -1,7 +1,5 @@
-# admin-configurable-onboarding-quiz
+## MODIFIED Requirements
 
-**Purpose:** Allow training staff to manage the onboarding compliance quiz (rules, question types, answer options, correct answers, and active state) from the Admin Command Center without code changes or redeploys.
-## Requirements
 ### Requirement: Admin-managed quiz rules
 The system SHALL allow admin users to create, edit, reorder, activate, deactivate, and delete onboarding quiz rules from the Admin Command Center. Each rule SHALL have a question type of `photo_grid` or `text_choice`. Reordering SHALL use ▲/▼ buttons with recalculation to guarantee unique sort_order values.
 

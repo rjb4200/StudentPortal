@@ -40,7 +40,7 @@ export function KnowledgeGate({ studentId, onboardingToken, onComplete, onBack, 
       const supabase = createClient();
       const { data: ruleData, error: ruleError } = await supabase
         .from('quiz_rules')
-        .select('id, title, rule_text, instruction, sort_order')
+        .select('id, title, rule_text, instruction, question_type, sort_order')
         .eq('is_active', true)
         .order('sort_order', { ascending: true });
 
@@ -59,7 +59,7 @@ export function KnowledgeGate({ studentId, onboardingToken, onComplete, onBack, 
 
       const { data: photoData, error: photoError } = await supabase
         .from('quiz_photos')
-        .select('id, rule_id, label, image_url, is_non_compliant, reason, sort_order')
+        .select('id, rule_id, label, image_url, option_text, is_non_compliant, reason, sort_order')
         .in('rule_id', ruleIds)
         .eq('is_active', true)
         .order('sort_order', { ascending: true });
@@ -71,23 +71,37 @@ export function KnowledgeGate({ studentId, onboardingToken, onComplete, onBack, 
       }
 
       const loadedRules = (ruleData ?? [])
-        .map((rule) => ({
-          id: rule.id,
-          title: rule.title,
-          rule: rule.rule_text,
-          instruction: rule.instruction,
-          photos: (photoData ?? [])
+        .map((rule) => {
+          const questionType = (rule.question_type ?? 'photo_grid') as ComplianceRule['questionType'];
+          const photos = (photoData ?? [])
             .filter((photo) => photo.rule_id === rule.id)
             .sort((a, b) => a.sort_order - b.sort_order || a.label.localeCompare(b.label))
             .map((photo) => ({
               id: photo.id,
               label: photo.label,
               imageUrl: photo.image_url,
+              optionText: photo.option_text,
               nonCompliant: photo.is_non_compliant,
               reason: photo.reason,
-            })),
-        }))
-        .filter((rule) => rule.photos.length >= 4 && rule.photos.length <= 6);
+            }));
+
+          return {
+          id: rule.id,
+          title: rule.title,
+          rule: rule.rule_text,
+          instruction: rule.instruction,
+          questionType,
+          photos,
+          };
+        })
+        .filter((rule) => {
+          const correctCount = rule.photos.filter((photo) => photo.nonCompliant).length;
+          if (rule.questionType === 'text_choice') {
+            return rule.photos.length >= 2 && correctCount > 0;
+          }
+
+          return rule.photos.length >= 4 && rule.photos.length <= 6 && correctCount > 0;
+        });
 
       setRules(loadedRules);
       setRuleIndex(0);
@@ -103,7 +117,8 @@ export function KnowledgeGate({ studentId, onboardingToken, onComplete, onBack, 
 
   const currentRule = rules[ruleIndex];
   const progressStep = mode === 'complete' ? rules.length : ruleIndex + 1;
-  const currentRuleHasFailedPhoto = currentRule?.photos.some((photo) => failedPhotoIds.has(photo.id)) ?? false;
+  const currentRuleIsTextChoice = currentRule?.questionType === 'text_choice';
+  const currentRuleHasFailedPhoto = !currentRuleIsTextChoice && (currentRule?.photos.some((photo) => failedPhotoIds.has(photo.id)) ?? false);
 
   const changeMode = useCallback((newMode: Mode, dir: 'left' | 'right' | 'up' = 'right') => {
     setSlideDir(dir);
@@ -114,15 +129,15 @@ export function KnowledgeGate({ studentId, onboardingToken, onComplete, onBack, 
     }, 150);
   }, []);
 
-  const togglePhoto = (photoId: string) => {
-    if (failedPhotoIds.has(photoId)) return;
+  const toggleAnswer = (optionId: string) => {
+    if (failedPhotoIds.has(optionId)) return;
 
     setSelected((prev) => {
       const next = new Set(prev);
-      if (next.has(photoId)) {
-        next.delete(photoId);
+      if (next.has(optionId)) {
+        next.delete(optionId);
       } else {
-        next.add(photoId);
+        next.add(optionId);
       }
       return next;
     });
@@ -306,7 +321,9 @@ export function KnowledgeGate({ studentId, onboardingToken, onComplete, onBack, 
           </svg>
         </div>
         <h3 className="text-xl font-bold text-wfd-sage mb-2">Correct!</h3>
-        <p className="text-gray-500 text-sm">All non-compliant photos identified.</p>
+        <p className="text-gray-500 text-sm">
+          {currentRuleIsTextChoice ? 'All correct answer options identified.' : 'All non-compliant photos identified.'}
+        </p>
       </div>
     );
   }
@@ -351,6 +368,7 @@ export function KnowledgeGate({ studentId, onboardingToken, onComplete, onBack, 
         <QuizHeader progressStep={progressStep} attempts={ruleAttempts} totalRules={rules.length} ruleTitle={currentRule.title} mode="feedback" />
         <FeedbackPanel
           photos={currentRule.photos}
+          questionType={currentRule.questionType}
           categories={getFeedbackCategories()}
           attempts={ruleAttempts}
           onReviewRule={() => {
@@ -384,33 +402,64 @@ export function KnowledgeGate({ studentId, onboardingToken, onComplete, onBack, 
         </p>
         <h3 className="text-lg font-bold text-wfd-charcoal">{currentRule.instruction}</h3>
         <p className="mt-1 text-sm text-gray-500">
-          Visually inspect each photo. Tap every photo that shows a policy violation.
+          {currentRuleIsTextChoice
+            ? 'Select every answer option that applies.'
+            : 'Visually inspect each photo. Tap every photo that shows a policy violation.'}
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {currentRule.photos.map((photo) => (
-          <QuizPhotoCard
-            key={photo.id}
-            imageUrl={photo.imageUrl}
-            label={photo.label}
-            reason={photo.reason}
-            isSelected={selected.has(photo.id)}
-            disabled={failedPhotoIds.has(photo.id)}
-            mode="selection"
-            onToggle={() => togglePhoto(photo.id)}
-            onImageError={() => {
-              setSelected((prev) => {
-                if (!prev.has(photo.id)) return prev;
-                const next = new Set(prev);
-                next.delete(photo.id);
-                return next;
-              });
-              setFailedPhotoIds((prev) => new Set(prev).add(photo.id));
-            }}
-          />
-        ))}
-      </div>
+      {currentRuleIsTextChoice ? (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {currentRule.photos.map((option) => {
+            const isSelected = selected.has(option.id);
+            return (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => toggleAnswer(option.id)}
+                className={`rounded-xl border-2 bg-white p-4 text-left shadow-sm transition-all ${
+                  isSelected
+                    ? 'border-wfd-crimson ring-2 ring-wfd-crimson/20'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <span className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-bold ${
+                    isSelected ? 'border-wfd-crimson bg-wfd-crimson text-white' : 'border-gray-300 text-gray-400'
+                  }`}>
+                    {isSelected ? '✓' : ''}
+                  </span>
+                  <span className="text-sm font-semibold text-wfd-charcoal">{option.optionText ?? option.label}</span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {currentRule.photos.map((photo) => (
+            <QuizPhotoCard
+              key={photo.id}
+              imageUrl={photo.imageUrl ?? ''}
+              label={photo.label}
+              reason={photo.reason}
+              isSelected={selected.has(photo.id)}
+              disabled={failedPhotoIds.has(photo.id)}
+              mode="selection"
+              onToggle={() => toggleAnswer(photo.id)}
+              onImageError={() => {
+                setSelected((prev) => {
+                  if (!prev.has(photo.id)) return prev;
+                  const next = new Set(prev);
+                  next.delete(photo.id);
+                  return next;
+                });
+                setFailedPhotoIds((prev) => new Set(prev).add(photo.id));
+              }}
+            />
+          ))}
+        </div>
+      )}
 
       {currentRuleHasFailedPhoto && (
         <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
