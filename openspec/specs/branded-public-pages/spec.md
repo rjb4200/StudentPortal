@@ -26,6 +26,11 @@ The system SHALL provide a crimson hero layout for public-facing pages (`/`, `/l
 - **THEN** the browser navigates directly to the registration form at `/onboarding`
 - **AND** no interstitial intro screen or secondary "Begin Registration" button is displayed
 
+#### Scenario: Direct-to-form flow has no stale intro implementation
+
+- **WHEN** the codebase is searched for onboarding intro interstitial implementation references
+- **THEN** no `OnboardingIntro` component or `onboarding-intro` module remains unless the interstitial flow is intentionally reintroduced through a future spec change
+
 #### Scenario: Mobile stacked layout
 
 - **WHEN** a user visits `/`, `/login`, or `/onboarding` on a screen narrower than 1024px
@@ -81,4 +86,3 @@ The public pages SHALL use EB Garamond (serif) for display text (department labe
 #### Scenario: Sans-serif UI text
 - **WHEN** form labels, input fields, buttons, or links are rendered
 - **THEN** they use the Roboto Condensed sans-serif font family
-
