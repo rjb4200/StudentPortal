@@ -16,6 +16,8 @@ const pageLinks: { href: string; label: string; note?: string }[] = [
   { href: '/preceptor', label: 'Preceptor Dashboard', note: 'coming soon' },
   { href: '/login?reason=blacklisted', label: 'Login (blacklisted)', note: 'inline message test' },
   { href: '/login?reason=expired', label: 'Login (expired)', note: 'inline message test' },
+  { href: '/privacy-policy', label: 'Privacy Policy', note: 'SMS compliance' },
+  { href: '/terms-and-conditions', label: 'Terms & Conditions', note: 'SMS compliance' },
   { href: '/reset-password', label: 'Reset Password' },
   { href: '/api/health', label: 'API: Health Check' },
   { href: '/api/cron/sweep', label: 'API: Cron Sweep', note: 'daily 00:00 UTC' },

@@ -12,17 +12,21 @@ import type { Tables, TablesInsert, TablesUpdate } from '@/lib/supabase/database
 
 type QuizRule = Tables<'quiz_rules'>;
 type QuizPhoto = Tables<'quiz_photos'>;
+type QuestionType = 'photo_grid' | 'text_choice';
 
-type RuleForm = Pick<QuizRule, 'title' | 'rule_text' | 'instruction' | 'sort_order' | 'is_active'>;
+type RuleForm = Pick<QuizRule, 'title' | 'rule_text' | 'instruction' | 'sort_order' | 'is_active'> & {
+  question_type: QuestionType;
+};
 type PhotoForm = Pick<
   QuizPhoto,
-  'label' | 'image_url' | 'is_non_compliant' | 'reason' | 'sort_order' | 'is_active'
+  'label' | 'image_url' | 'option_text' | 'is_non_compliant' | 'reason' | 'sort_order' | 'is_active'
 >;
 
 const emptyRuleForm: RuleForm = {
   title: '',
   rule_text: '',
   instruction: '',
+  question_type: 'photo_grid',
   sort_order: 0,
   is_active: false,
 };
@@ -30,6 +34,7 @@ const emptyRuleForm: RuleForm = {
 const emptyPhotoForm: PhotoForm = {
   label: '',
   image_url: '',
+  option_text: '',
   is_non_compliant: false,
   reason: '',
   sort_order: 0,
@@ -81,6 +86,8 @@ export function QuizConfig() {
 
   const selectedRule = rules.find((rule) => rule.id === selectedRuleId) ?? null;
   const selectedPhotos = photos;
+  const selectedRuleType = (selectedRule?.question_type ?? 'photo_grid') as QuestionType;
+  const selectedRuleUsesTextOptions = selectedRuleType === 'text_choice';
 
   const loading = rulesLoading || (selectedRuleId ? photosLoading : false);
   const displayError = error || rulesError || photosError;
@@ -99,6 +106,7 @@ export function QuizConfig() {
       title: rule.title,
       rule_text: rule.rule_text,
       instruction: rule.instruction,
+      question_type: (rule.question_type ?? 'photo_grid') as QuestionType,
       sort_order: rule.sort_order,
       is_active: rule.is_active,
     });
@@ -117,7 +125,8 @@ export function QuizConfig() {
     setEditingPhotoId(photo.id);
     setPhotoForm({
       label: photo.label,
-      image_url: photo.image_url,
+      image_url: photo.image_url ?? '',
+      option_text: photo.option_text ?? '',
       is_non_compliant: photo.is_non_compliant,
       reason: photo.reason,
       sort_order: photo.sort_order,
@@ -127,11 +136,25 @@ export function QuizConfig() {
     setError(null);
   }
 
-  function validateRuleActivation(ruleId: string, activePhotos: QuizPhoto[]) {
-    if (activePhotos.length < 4) return 'Active rules must have at least 4 active photos.';
-    if (activePhotos.length > 6) return 'Active rules cannot have more than 6 active photos.';
-    if (!activePhotos.some((photo) => photo.is_non_compliant)) {
-      return 'Active rules must have at least one non-compliant photo.';
+  function validateRuleActivation(ruleType: QuestionType, activeOptions: QuizPhoto[]) {
+    if (ruleType === 'text_choice') {
+      if (activeOptions.length < 2) return 'Active text questions must have at least 2 active answer options.';
+      if (activeOptions.some((option) => !(option.option_text ?? option.label).trim())) {
+        return 'Active text answer options must include answer text.';
+      }
+      if (!activeOptions.some((option) => option.is_non_compliant)) {
+        return 'Active text questions must have at least one correct answer option.';
+      }
+      return null;
+    }
+
+    if (activeOptions.length < 4) return 'Active photo rules must have at least 4 active photos.';
+    if (activeOptions.length > 6) return 'Active photo rules cannot have more than 6 active photos.';
+    if (activeOptions.some((option) => !option.image_url?.trim())) {
+      return 'Active photo options must include an image URL.';
+    }
+    if (!activeOptions.some((photo) => photo.is_non_compliant)) {
+      return 'Active photo rules must have at least one non-compliant photo.';
     }
     return null;
   }
@@ -148,7 +171,7 @@ export function QuizConfig() {
 
     if (ruleForm.is_active && editingRuleId) {
       const validationError = validateRuleActivation(
-        editingRuleId,
+        ruleForm.question_type,
         photos.filter((photo) => photo.rule_id === editingRuleId && photo.is_active)
       );
       if (validationError) {
@@ -158,7 +181,7 @@ export function QuizConfig() {
     }
 
     if (ruleForm.is_active && !editingRuleId) {
-      setError('Create the rule as inactive, add 4-6 photos, then activate it.');
+      setError('Create the rule as inactive, add answer options, then activate it.');
       return;
     }
 
@@ -168,6 +191,7 @@ export function QuizConfig() {
       title,
       rule_text: ruleText,
       instruction,
+      question_type: ruleForm.question_type,
       sort_order: Number(ruleForm.sort_order) || 0,
       is_active: ruleForm.is_active,
       updated_at: new Date().toISOString(),
@@ -190,7 +214,7 @@ export function QuizConfig() {
   }
 
   async function deleteRule(rule: QuizRule) {
-    if (!confirm(`Delete quiz rule "${rule.title}" and all of its photos?`)) return;
+    if (!confirm(`Delete quiz rule "${rule.title}" and all of its answer options?`)) return;
 
     setSaving(true);
     setError(null);
@@ -223,24 +247,31 @@ export function QuizConfig() {
 
   async function savePhoto() {
     if (!selectedRuleId || !selectedRule) {
-      setError('Select a rule before adding photos.');
+      setError('Select a rule before adding answer options.');
       return;
     }
 
     const label = photoForm.label.trim();
-    const imageUrl = photoForm.image_url.trim();
+    const imageUrl = photoForm.image_url?.trim() ?? '';
+    const optionText = photoForm.option_text?.trim() ?? '';
     const reason = photoForm.reason.trim();
+    const optionLabel = selectedRuleUsesTextOptions ? optionText : label;
 
-    if (!label || !imageUrl || !reason) {
-      setError('Photo label, image URL, and reason are required.');
+    if (!optionLabel || !reason || (!selectedRuleUsesTextOptions && !imageUrl)) {
+      setError(
+        selectedRuleUsesTextOptions
+          ? 'Answer text and explanation are required.'
+          : 'Photo label, image URL, and reason are required.'
+      );
       return;
     }
 
     const draftPhoto: QuizPhoto = {
       id: editingPhotoId ?? 'draft',
       rule_id: selectedRuleId,
-      label,
-      image_url: imageUrl,
+      label: optionLabel,
+      image_url: selectedRuleUsesTextOptions ? null : imageUrl,
+      option_text: selectedRuleUsesTextOptions ? optionText : null,
       is_non_compliant: photoForm.is_non_compliant,
       reason,
       sort_order: Number(photoForm.sort_order) || 0,
@@ -254,7 +285,7 @@ export function QuizConfig() {
 
     if (selectedRule.is_active) {
       const validationError = validateRuleActivation(
-        selectedRuleId,
+        selectedRuleType,
         nextPhotos.filter((photo) => photo.is_active)
       );
       if (validationError) {
@@ -267,8 +298,9 @@ export function QuizConfig() {
     setError(null);
     const payload: TablesInsert<'quiz_photos'> | TablesUpdate<'quiz_photos'> = {
       rule_id: selectedRuleId,
-      label,
-      image_url: imageUrl,
+      label: optionLabel,
+      image_url: selectedRuleUsesTextOptions ? null : imageUrl,
+      option_text: selectedRuleUsesTextOptions ? optionText : null,
       is_non_compliant: photoForm.is_non_compliant,
       reason,
       sort_order: Number(photoForm.sort_order) || 0,
@@ -295,7 +327,7 @@ export function QuizConfig() {
     const nextPhotos = selectedPhotos.filter((item) => item.id !== photo.id);
     if (selectedRule?.is_active) {
       const validationError = validateRuleActivation(
-        selectedRule.id,
+        selectedRuleType,
         nextPhotos.filter((item) => item.is_active)
       );
       if (validationError) {
@@ -304,7 +336,7 @@ export function QuizConfig() {
       }
     }
 
-    if (!confirm(`Delete photo "${photo.label}"?`)) return;
+    if (!confirm(`Delete answer option "${photo.option_text ?? photo.label}"?`)) return;
 
     setSaving(true);
     setError(null);
@@ -322,6 +354,9 @@ export function QuizConfig() {
   const nonCompliantCount = selectedPhotos.filter(
     (photo) => photo.is_active && photo.is_non_compliant
   ).length;
+  const optionNoun = selectedRuleUsesTextOptions ? 'answer options' : 'photos';
+  const correctLabel = selectedRuleUsesTextOptions ? 'Correct' : 'Non-compliant';
+  const incorrectLabel = selectedRuleUsesTextOptions ? 'Incorrect' : 'Compliant';
 
   return (
     <Card className="p-4">
@@ -329,7 +364,7 @@ export function QuizConfig() {
         <div>
           <h3 className="font-bold text-wfd-charcoal">Onboarding Quiz Configuration</h3>
           <p className="mt-1 text-sm text-gray-500">
-            Manage the rule-by-rule photo quiz students complete during onboarding.
+            Manage the rule-by-rule onboarding quiz students complete during onboarding.
           </p>
         </div>
         <Button type="button" size="sm" variant="secondary" onClick={startNewRule}>
@@ -345,6 +380,7 @@ export function QuizConfig() {
             {rules.map((rule) => {
               const rulePhotos = photos.filter((photo) => photo.rule_id === rule.id);
               const activeCount = rulePhotos.filter((photo) => photo.is_active).length;
+              const ruleType = (rule.question_type ?? 'photo_grid') as QuestionType;
               return (
                 <div key={rule.id} className="flex items-stretch gap-2">
                   <div className="flex items-center">
@@ -368,7 +404,7 @@ export function QuizConfig() {
                       <div>
                         <p className="font-semibold text-wfd-charcoal">{rule.title}</p>
                         <p className="mt-1 text-xs text-gray-500">
-                          Order {rule.sort_order} | {activeCount}/{rulePhotos.length} active photos
+                          Order {rule.sort_order} | {ruleType === 'text_choice' ? 'Text choice' : 'Photo grid'} | {activeCount}/{rulePhotos.length} active options
                         </p>
                       </div>
                       <span
@@ -428,6 +464,19 @@ export function QuizConfig() {
                   value={ruleForm.instruction}
                   onChange={(event) => setRuleForm((form) => ({ ...form, instruction: event.target.value }))}
                 />
+                <label className="block text-sm font-medium text-gray-700">
+                  Question Type
+                  <select
+                    value={ruleForm.question_type}
+                    onChange={(event) =>
+                      setRuleForm((form) => ({ ...form, question_type: event.target.value as QuestionType }))
+                    }
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 outline-none focus:ring-2 focus:ring-wfd-crimson"
+                  >
+                    <option value="photo_grid">Photo grid</option>
+                    <option value="text_choice">Text choice</option>
+                  </select>
+                </label>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Input
                     label="Sort Order"
@@ -466,27 +515,37 @@ export function QuizConfig() {
               <div className="rounded-lg border border-gray-200 p-4">
                 <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <h4 className="font-semibold text-wfd-charcoal">Photos for {selectedRule.title}</h4>
+                    <h4 className="font-semibold text-wfd-charcoal">
+                      {selectedRuleUsesTextOptions ? 'Answer Options' : 'Photos'} for {selectedRule.title}
+                    </h4>
                     <p className="text-xs text-gray-500">
-                      Active photos: {activePhotoCount}. Non-compliant active photos: {nonCompliantCount}.
+                      Active {optionNoun}: {activePhotoCount}. {correctLabel} active {optionNoun}: {nonCompliantCount}.
                     </p>
                   </div>
                   <Button type="button" size="sm" variant="secondary" onClick={startNewPhoto}>
-                    New Photo
+                    {selectedRuleUsesTextOptions ? 'New Answer Option' : 'New Photo'}
                   </Button>
                 </div>
 
                 <div className="mb-4 grid gap-3 md:grid-cols-2">
                   {selectedPhotos.map((photo) => (
                     <div key={photo.id} className="rounded-lg border border-gray-200 p-3">
-                      <img
-                        src={photo.image_url}
-                        alt={photo.label}
-                        className="mb-2 h-28 w-full rounded bg-gray-100 object-cover"
-                        onError={(event) => {
-                          event.currentTarget.style.display = 'none';
-                        }}
-                      />
+                      {selectedRuleUsesTextOptions ? (
+                        <div className="mb-2 rounded bg-gray-50 p-3 text-sm font-medium text-wfd-charcoal">
+                          {photo.option_text ?? photo.label}
+                        </div>
+                      ) : (
+                        photo.image_url && (
+                          <img
+                            src={photo.image_url}
+                            alt={photo.label}
+                            className="mb-2 h-28 w-full rounded bg-gray-100 object-cover"
+                            onError={(event) => {
+                              event.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        )
+                      )}
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-start gap-2">
                           <ReorderButtons
@@ -496,7 +555,9 @@ export function QuizConfig() {
                             canMoveDown={canMovePhotoDown(photo)}
                           />
                           <div>
-                            <p className="text-sm font-semibold text-wfd-charcoal">{photo.label}</p>
+                            <p className="text-sm font-semibold text-wfd-charcoal">
+                              {selectedRuleUsesTextOptions ? photo.option_text ?? photo.label : photo.label}
+                            </p>
                             <p className="text-xs text-gray-500">Order {photo.sort_order}</p>
                           </div>
                         </div>
@@ -505,7 +566,7 @@ export function QuizConfig() {
                             photo.is_non_compliant ? 'bg-wfd-crimson/15 text-wfd-crimson' : 'bg-wfd-sage/15 text-wfd-sage'
                           }`}
                         >
-                          {photo.is_non_compliant ? 'Non-compliant' : 'Compliant'}
+                          {photo.is_non_compliant ? correctLabel : incorrectLabel}
                         </span>
                       </div>
                       <p className="mt-2 text-xs text-gray-600">{photo.reason}</p>
@@ -523,27 +584,39 @@ export function QuizConfig() {
 
                 <div className="rounded-lg bg-gray-50 p-3">
                   <h5 className="mb-3 text-sm font-semibold text-wfd-charcoal">
-                    {editingPhotoId ? 'Edit Photo' : 'Add Photo'}
+                    {editingPhotoId
+                      ? selectedRuleUsesTextOptions ? 'Edit Answer Option' : 'Edit Photo'
+                      : selectedRuleUsesTextOptions ? 'Add Answer Option' : 'Add Photo'}
                   </h5>
                   <div className="space-y-3">
-                    <Input
-                      label="Photo Label"
-                      value={photoForm.label}
-                      onChange={(event) => setPhotoForm((form) => ({ ...form, label: event.target.value }))}
-                    />
-                    <Input
-                      label="Image URL"
-                      value={photoForm.image_url}
-                      onChange={(event) => setPhotoForm((form) => ({ ...form, image_url: event.target.value }))}
-                    />
-                    <div className="flex items-center gap-2">
-                      <label className={`rounded-lg border border-gray-300 px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 transition-colors ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
-                        Choose File
-                        <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" disabled={uploading} />
-                      </label>
-                      {uploading && <span className="text-xs text-gray-500">Uploading...</span>}
-                    </div>
-                    {photoForm.image_url.trim() && (
+                    {selectedRuleUsesTextOptions ? (
+                      <Input
+                        label="Answer Option Text"
+                        value={photoForm.option_text ?? ''}
+                        onChange={(event) => setPhotoForm((form) => ({ ...form, option_text: event.target.value }))}
+                      />
+                    ) : (
+                      <>
+                        <Input
+                          label="Photo Label"
+                          value={photoForm.label}
+                          onChange={(event) => setPhotoForm((form) => ({ ...form, label: event.target.value }))}
+                        />
+                        <Input
+                          label="Image URL"
+                          value={photoForm.image_url ?? ''}
+                          onChange={(event) => setPhotoForm((form) => ({ ...form, image_url: event.target.value }))}
+                        />
+                        <div className="flex items-center gap-2">
+                          <label className={`rounded-lg border border-gray-300 px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 transition-colors ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                            Choose File
+                            <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" disabled={uploading} />
+                          </label>
+                          {uploading && <span className="text-xs text-gray-500">Uploading...</span>}
+                        </div>
+                      </>
+                    )}
+                    {!selectedRuleUsesTextOptions && photoForm.image_url?.trim() && (
                       <img
                         src={photoForm.image_url}
                         alt="Preview"
@@ -576,7 +649,7 @@ export function QuizConfig() {
                           }
                           className="mb-2 h-4 w-4 rounded border-gray-300 text-wfd-crimson"
                         />
-                        <span className="pb-1.5">Non-compliant</span>
+                        <span className="pb-1.5">{correctLabel}</span>
                       </label>
                       <label className="flex items-end gap-2 text-sm font-medium text-gray-700">
                         <input
