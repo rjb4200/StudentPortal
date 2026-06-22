@@ -5,7 +5,7 @@ Crimson hero design system for public-facing pages featuring full-viewport WFD-b
 ## Requirements
 ### Requirement: Crimson hero public page layout
 
-The system SHALL provide a crimson hero layout for public-facing pages (`/`, `/login`, and `/onboarding`) featuring a full-viewport crimson background with a dark radial vignette overlay, the WFD department logo, serif typography for display headings, and a white content card. The layout SHALL be responsive: two-column on desktop for all three pages (branding left, card right). The `/onboarding` layout SHALL use a compact branding pane with a smaller logo to give more space to the multi-field registration form on the right. On mobile (below 1024px), all pages SHALL stack vertically in a single column with a reduced logo size. The layout SHALL include a slim charcoal footer with copyright text.
+The system SHALL provide a crimson hero layout for public-facing pages (`/`, `/login`, `/onboarding`, `/privacy-policy`, and `/terms-and-conditions`) featuring a full-viewport crimson background with a dark radial vignette overlay, the WFD department logo, serif typography for display headings, and a white content card. The layout SHALL be responsive: two-column on desktop for all pages (branding left, card right). The `/onboarding` layout SHALL use a compact branding pane with a smaller logo to give more space to the multi-field registration form on the right. On mobile (below 1024px), all pages SHALL stack vertically in a single column with a reduced logo size. The layout SHALL include a slim charcoal footer with copyright text and links to the privacy policy and terms pages.
 
 #### Scenario: Desktop two-column layout for landing and login
 
@@ -39,8 +39,8 @@ The system SHALL provide a crimson hero layout for public-facing pages (`/`, `/l
 
 #### Scenario: Footer on all public pages
 
-- **WHEN** a user visits `/`, `/login`, or `/onboarding`
-- **THEN** a slim charcoal footer bar is displayed with text "© Winchester Fire Department · Division of EMS"
+- **WHEN** a user visits `/`, `/login`, `/onboarding`, `/privacy-policy`, or `/terms-and-conditions`
+- **THEN** a slim charcoal footer bar is displayed with text "© Winchester Fire Department · Division of EMS" and links to "Privacy Policy" (`/privacy-policy`) and "Terms & Conditions" (`/terms-and-conditions`)
 
 ### Requirement: Branded landing page
 The landing page (`/`) SHALL display a white card containing a "Welcome" heading, a CTA button for "Begin Student Onboarding" linking to `/onboarding`, a CTA button for "Sign In" linking to `/login`, and two secondary action boxes ("New student?" linking to `/onboarding` and "Need help?" with a mailto link).
