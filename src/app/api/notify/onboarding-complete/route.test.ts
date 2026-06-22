@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+vi.mock('server-only', () => ({}));
+
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'anon-key';
 process.env.NEXT_PUBLIC_SITE_URL = 'https://student-portal-chi-woad.vercel.app';

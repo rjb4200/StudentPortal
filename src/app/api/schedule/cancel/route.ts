@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { publicEnv } from '@/lib/env';
 import { sendEmail } from '@/lib/email';
 import { buildShiftCancelledByStudentEmail, buildShiftCancelledByStudentAdminEmail } from '@/lib/email-templates';
+import { cancelPendingScheduleSms } from '@/lib/notifications/sms-queue';
 import { scheduleCancelBody } from '@/lib/validation';
 
 export async function POST(request: NextRequest) {
@@ -70,6 +71,12 @@ export async function POST(request: NextRequest) {
 
   if (updateError) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
+  }
+
+  try {
+    await cancelPendingScheduleSms(adminClient, scheduleId);
+  } catch (e) {
+    console.error('Failed to cancel pending schedule SMS:', e);
   }
 
   const loginUrl = `${publicEnv.SITE_URL}/dashboard`;

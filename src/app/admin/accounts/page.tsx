@@ -22,6 +22,8 @@ function AccountsPageInner() {
   const [adminAccounts, setAdminAccounts] = useState<any[]>([]);
   const [preceptors, setPreceptors] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
+  const [smsSettings, setSmsSettings] = useState<Record<string, string>>({});
+  const [smsLog, setSmsLog] = useState<any[]>([]);
   const [studentSearch, setStudentSearch] = useState('');
 
   const [editing, setEditing] = useState<any>(null);
@@ -57,14 +59,18 @@ function AccountsPageInner() {
 
   async function loadAll() {
     setLoading(true);
-    const [{ data: admins }, { data: precs }, { data: studs }] = await Promise.all([
+    const [{ data: admins }, { data: precs }, { data: studs }, { data: settings }, { data: notifications }] = await Promise.all([
       supabase.from('admin_accounts').select('*').order('full_name'),
       supabase.from('preceptors').select('*').order('full_name'),
       supabase.from('students').select('*').order('full_name'),
+      supabase.from('portal_settings').select('key, value').in('key', ['sms_student_shift_approval_enabled', 'sms_student_shift_reminders_enabled', 'sms_admin_alerts_enabled', 'sms_reminder_send_time']),
+      supabase.from('notification_queue').select('id, recipient_type, phone_number, notification_type, status, error_message, attempt_count, created_at, sent_at').order('created_at', { ascending: false }).limit(10),
     ]);
     setAdminAccounts(admins ?? []);
     setPreceptors(precs ?? []);
     setStudents(studs ?? []);
+    setSmsSettings(Object.fromEntries((settings ?? []).map((s: any) => [s.key, s.value])));
+    setSmsLog(notifications ?? []);
     setLoading(false);
   }
 
@@ -83,7 +89,7 @@ function AccountsPageInner() {
   function startNew(type: 'admin' | 'preceptor') {
     if (type === 'admin') {
       setEditing(null); setEditType('admin');
-      setForm({ full_name: '', email: '', notify_onboarding_complete: true, notify_evaluation_flagged: true, notify_daily_report: false, is_active: true });
+      setForm({ full_name: '', email: '', phone: '', sms_opt_in: false, sms_verified: false, notify_onboarding_complete: true, notify_evaluation_flagged: true, notify_daily_report: false, notify_sms_onboarding_complete: false, notify_sms_evaluation_flagged: false, notify_sms_schedule_requests: false, is_active: true });
       setFormPassword('');
     } else {
       setEditing(null); setEditType('preceptor');
@@ -101,6 +107,8 @@ function AccountsPageInner() {
         full_name: form.full_name, email: form.email, phone: form.phone || null,
         school_name: form.school_name, instructor_name: form.instructor_name,
         instructor_contact: form.instructor_contact, status: form.status,
+        sms_opt_in: form.sms_opt_in || false,
+        sms_verified: form.sms_verified || false,
         is_blacklisted: form.is_blacklisted,
         is_test_record: form.is_test_record,
         auth_user_id: form.auth_user_id || null,
@@ -137,6 +145,12 @@ function AccountsPageInner() {
         notify_onboarding_complete: form.notify_onboarding_complete,
         notify_evaluation_flagged: form.notify_evaluation_flagged,
         notify_daily_report: form.notify_daily_report,
+        phone: form.phone || null,
+        sms_opt_in: form.sms_opt_in || false,
+        sms_verified: form.sms_verified || false,
+        notify_sms_onboarding_complete: form.notify_sms_onboarding_complete || false,
+        notify_sms_evaluation_flagged: form.notify_sms_evaluation_flagged || false,
+        notify_sms_schedule_requests: form.notify_sms_schedule_requests || false,
         updated_at: new Date().toISOString(),
       };
       if (authUserId) payload.auth_user_id = authUserId;
@@ -189,6 +203,20 @@ function AccountsPageInner() {
     }
 
     setSaving(false); cancelEdit(); await loadAll();
+  }
+
+  async function saveSmsSettings() {
+    setSaving(true); setMessage(null);
+    const rows = [
+      ['sms_student_shift_approval_enabled', smsSettings.sms_student_shift_approval_enabled === 'true' ? 'true' : 'false'],
+      ['sms_student_shift_reminders_enabled', smsSettings.sms_student_shift_reminders_enabled === 'true' ? 'true' : 'false'],
+      ['sms_admin_alerts_enabled', smsSettings.sms_admin_alerts_enabled === 'true' ? 'true' : 'false'],
+      ['sms_reminder_send_time', smsSettings.sms_reminder_send_time || '07:00'],
+    ].map(([key, value]) => ({ key, value, updated_at: new Date().toISOString() }));
+    const { error } = await supabase.from('portal_settings').upsert(rows);
+    setMessage(error ? `Error: ${error.message}` : 'SMS settings saved.');
+    setSaving(false);
+    await loadAll();
   }
 
   async function resetTestStudent(row: any) {
@@ -290,6 +318,10 @@ function AccountsPageInner() {
               <Input label={`Password ${editing ? '(leave blank to keep)' : ''}`} type="password" value={formPassword} onChange={e => setFormPassword(e.target.value)} />
             )}
 
+            {editType === 'admin' && (
+              <Input label="SMS Phone" value={form.phone || ''} onChange={e => setForm({...form, phone: e.target.value})} />
+            )}
+
             {editType === 'student' && (
               <>
                 <Input label="Phone" value={form.phone || ''} onChange={e => setForm({...form, phone: e.target.value})} />
@@ -310,6 +342,8 @@ function AccountsPageInner() {
                 <div className="flex items-end gap-6 pb-2">
                   <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.is_blacklisted || false} onChange={e => setForm({...form, is_blacklisted: e.target.checked})} className="h-4 w-4" /> Blacklisted</label>
                   <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.is_test_record || false} onChange={e => setForm({...form, is_test_record: e.target.checked})} className="h-4 w-4" /> Test record</label>
+                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.sms_opt_in || false} onChange={e => setForm({...form, sms_opt_in: e.target.checked})} className="h-4 w-4" /> SMS opt-in</label>
+                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.sms_verified || false} onChange={e => setForm({...form, sms_verified: e.target.checked})} className="h-4 w-4" /> SMS verified</label>
                   <Input label="No-Shows" type="number" value={form.no_show_count ?? 0} onChange={e => setForm({...form, no_show_count: Number(e.target.value)})} />
                 </div>
               </>
@@ -343,10 +377,19 @@ function AccountsPageInner() {
             )}
 
             {editType === 'admin' && (
-              <div className="flex items-end gap-4 pb-2 col-span-2">
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.notify_onboarding_complete || false} onChange={e => setForm({...form, notify_onboarding_complete: e.target.checked})} className="h-4 w-4" /> Onboarding alerts</label>
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.notify_evaluation_flagged || false} onChange={e => setForm({...form, notify_evaluation_flagged: e.target.checked})} className="h-4 w-4" /> Evaluation alerts</label>
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.notify_daily_report || false} onChange={e => setForm({...form, notify_daily_report: e.target.checked})} className="h-4 w-4" /> Daily report</label>
+              <div className="space-y-3 pb-2 col-span-2">
+                <div className="flex flex-wrap items-end gap-4">
+                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.notify_onboarding_complete || false} onChange={e => setForm({...form, notify_onboarding_complete: e.target.checked})} className="h-4 w-4" /> Email onboarding alerts</label>
+                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.notify_evaluation_flagged || false} onChange={e => setForm({...form, notify_evaluation_flagged: e.target.checked})} className="h-4 w-4" /> Email evaluation alerts</label>
+                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.notify_daily_report || false} onChange={e => setForm({...form, notify_daily_report: e.target.checked})} className="h-4 w-4" /> Daily report</label>
+                </div>
+                <div className="flex flex-wrap items-end gap-4 rounded-lg bg-gray-50 p-3">
+                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.sms_opt_in || false} onChange={e => setForm({...form, sms_opt_in: e.target.checked})} className="h-4 w-4" /> SMS opt-in</label>
+                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.sms_verified || false} onChange={e => setForm({...form, sms_verified: e.target.checked})} className="h-4 w-4" /> SMS verified</label>
+                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.notify_sms_onboarding_complete || false} onChange={e => setForm({...form, notify_sms_onboarding_complete: e.target.checked})} className="h-4 w-4" /> SMS onboarding</label>
+                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.notify_sms_evaluation_flagged || false} onChange={e => setForm({...form, notify_sms_evaluation_flagged: e.target.checked})} className="h-4 w-4" /> SMS evaluations</label>
+                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.notify_sms_schedule_requests || false} onChange={e => setForm({...form, notify_sms_schedule_requests: e.target.checked})} className="h-4 w-4" /> SMS schedule alerts</label>
+                </div>
               </div>
             )}
           </div>
@@ -359,6 +402,39 @@ function AccountsPageInner() {
         </div>
       ) : (
         <>
+          {message && <div className="rounded-lg border border-green-200 bg-green-50 p-2 text-sm text-green-800">{message}</div>}
+          <Card>
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-lg font-bold text-wfd-charcoal">SMS Settings</h2>
+                <p className="text-sm text-gray-500">Global Twilio SMS controls. Recipients must also be opted in.</p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={smsSettings.sms_student_shift_approval_enabled === 'true'} onChange={e => setSmsSettings({...smsSettings, sms_student_shift_approval_enabled: e.target.checked ? 'true' : 'false'})} className="h-4 w-4" /> Student shift approval SMS</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={smsSettings.sms_student_shift_reminders_enabled === 'true'} onChange={e => setSmsSettings({...smsSettings, sms_student_shift_reminders_enabled: e.target.checked ? 'true' : 'false'})} className="h-4 w-4" /> Day-before shift reminders</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={smsSettings.sms_admin_alerts_enabled === 'true'} onChange={e => setSmsSettings({...smsSettings, sms_admin_alerts_enabled: e.target.checked ? 'true' : 'false'})} className="h-4 w-4" /> Admin SMS alerts</label>
+                <Input label="Reminder send time" value={smsSettings.sms_reminder_send_time || '07:00'} onChange={e => setSmsSettings({...smsSettings, sms_reminder_send_time: e.target.value})} />
+              </div>
+              <Button size="sm" onClick={saveSmsSettings} loading={saving}>Save SMS Settings</Button>
+            </div>
+          </Card>
+
+          <Card>
+            <div className="space-y-3">
+              <h2 className="text-lg font-bold text-wfd-charcoal">Recent SMS Delivery</h2>
+              {smsLog.length === 0 ? <p className="text-sm text-gray-500">No SMS delivery records yet.</p> : smsLog.map((row) => (
+                <div key={row.id} className="rounded-lg border border-gray-200 p-3 text-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="font-medium">{row.notification_type} <Badge variant={row.status === 'sent' ? 'green' : row.status === 'failed' ? 'crimson' : row.status === 'cancelled' ? 'gray' : 'gold'}>{row.status}</Badge></p>
+                    <p className="text-xs text-gray-500">Attempts: {row.attempt_count ?? 0}</p>
+                  </div>
+                  <p className="text-xs text-gray-500">{row.recipient_type} — {row.phone_number} — {new Date(row.created_at).toLocaleString()}</p>
+                  {row.error_message && <p className="mt-1 text-xs text-red-600">{row.error_message}</p>}
+                </div>
+              ))}
+            </div>
+          </Card>
+
           <div className="flex gap-2 border-b border-gray-200">
             {(['admins', 'preceptors', 'students'] as Tab[]).map(t => (
               <button key={t} onClick={() => setTab(t)} className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px capitalize ${tab === t ? 'border-wfd-crimson text-wfd-crimson' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>

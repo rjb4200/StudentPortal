@@ -25,6 +25,12 @@ export type Database = {
           notify_daily_report: boolean
           notify_evaluation_flagged: boolean
           notify_onboarding_complete: boolean
+          notify_sms_evaluation_flagged: boolean
+          notify_sms_onboarding_complete: boolean
+          notify_sms_schedule_requests: boolean
+          phone: string | null
+          sms_opt_in: boolean
+          sms_verified: boolean
           updated_at: string
         }
         Insert: {
@@ -37,6 +43,12 @@ export type Database = {
           notify_daily_report?: boolean
           notify_evaluation_flagged?: boolean
           notify_onboarding_complete?: boolean
+          notify_sms_evaluation_flagged?: boolean
+          notify_sms_onboarding_complete?: boolean
+          notify_sms_schedule_requests?: boolean
+          phone?: string | null
+          sms_opt_in?: boolean
+          sms_verified?: boolean
           updated_at?: string
         }
         Update: {
@@ -49,6 +61,12 @@ export type Database = {
           notify_daily_report?: boolean
           notify_evaluation_flagged?: boolean
           notify_onboarding_complete?: boolean
+          notify_sms_evaluation_flagged?: boolean
+          notify_sms_onboarding_complete?: boolean
+          notify_sms_schedule_requests?: boolean
+          phone?: string | null
+          sms_opt_in?: boolean
+          sms_verified?: boolean
           updated_at?: string
         }
         Relationships: []
@@ -650,6 +668,77 @@ export type Database = {
           },
         ]
       }
+      notification_queue: {
+        Row: {
+          attempt_count: number
+          channel: string
+          created_at: string
+          error_message: string | null
+          id: string
+          last_attempt_at: string | null
+          message_body: string
+          notification_type: string
+          phone_number: string
+          provider: string
+          provider_message_id: string | null
+          recipient_id: string | null
+          recipient_type: string
+          schedule_id: string | null
+          send_at: string
+          sent_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempt_count?: number
+          channel?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          message_body: string
+          notification_type: string
+          phone_number: string
+          provider?: string
+          provider_message_id?: string | null
+          recipient_id?: string | null
+          recipient_type: string
+          schedule_id?: string | null
+          send_at?: string
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempt_count?: number
+          channel?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          message_body?: string
+          notification_type?: string
+          phone_number?: string
+          provider?: string
+          provider_message_id?: string | null
+          recipient_id?: string | null
+          recipient_type?: string
+          schedule_id?: string | null
+          send_at?: string
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_queue_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       schedules: {
         Row: {
           cancel_note: string | null
@@ -793,6 +882,8 @@ export type Database = {
           school_name: string
           signature_ip: string | null
           signature_timestamp: string | null
+          sms_opt_in: boolean
+          sms_verified: boolean
           status: Database["public"]["Enums"]["student_status"]
         }
         Insert: {
@@ -815,6 +906,8 @@ export type Database = {
           school_name: string
           signature_ip?: string | null
           signature_timestamp?: string | null
+          sms_opt_in?: boolean
+          sms_verified?: boolean
           status?: Database["public"]["Enums"]["student_status"]
         }
         Update: {
@@ -837,6 +930,8 @@ export type Database = {
           school_name?: string
           signature_ip?: string | null
           signature_timestamp?: string | null
+          sms_opt_in?: boolean
+          sms_verified?: boolean
           status?: Database["public"]["Enums"]["student_status"]
         }
         Relationships: []

@@ -21,6 +21,9 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY     # public anon key
 NEXT_PUBLIC_SITE_URL              # canonical public app URL, e.g. https://student-portal-chi-woad.vercel.app
 SUPABASE_SERVICE_ROLE_KEY         # secret — server-only, used by admin client
 RESEND_API_KEY                    # email (Resend)
+TWILIO_ACCOUNT_SID                # SMS (Twilio) — server-only
+TWILIO_AUTH_TOKEN                 # SMS (Twilio) — server-only secret
+TWILIO_PHONE_NUMBER               # SMS sender phone number
 ```
 
 ## Auth URLs

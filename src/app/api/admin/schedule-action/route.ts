@@ -5,6 +5,7 @@ import { canAccessAdmin } from '@/lib/roles';
 import { publicEnv } from '@/lib/env';
 import { sendEmail } from '@/lib/email';
 import { buildShiftApprovedEmail, buildShiftCancelledByAdminEmail, buildShiftRejectedEmail } from '@/lib/email-templates';
+import { cancelPendingScheduleSms, queueShiftApprovalSmsNotifications } from '@/lib/notifications/sms-queue';
 import { scheduleActionBody } from '@/lib/validation';
 
 export async function POST(request: NextRequest) {
@@ -70,7 +71,7 @@ export async function POST(request: NextRequest) {
   if (!isProcessingStudentCancellation) {
     const { data: student } = await adminClient
       .from('students')
-      .select('email, full_name')
+      .select('id, email, full_name, phone, sms_opt_in')
       .eq('id', schedule.student_id)
       .single();
 
@@ -101,6 +102,34 @@ export async function POST(request: NextRequest) {
           html: result.html,
         });
       } catch {}
+
+      if (action === 'approved') {
+        try {
+          const smsResults = await queueShiftApprovalSmsNotifications(adminClient, {
+            student,
+            schedule,
+            dateStr,
+            timeDisplay,
+          });
+          for (const smsResult of smsResults) {
+            if (!smsResult.ok) console.error('Failed to queue shift approval SMS:', smsResult.error);
+          }
+        } catch (e) {
+          console.error('Failed to queue shift approval SMS:', e);
+        }
+      } else if (action === 'rejected' || action === 'cancelled') {
+        try {
+          await cancelPendingScheduleSms(adminClient, scheduleId);
+        } catch (e) {
+          console.error('Failed to cancel pending schedule SMS:', e);
+        }
+      }
+    }
+  } else {
+    try {
+      await cancelPendingScheduleSms(adminClient, scheduleId);
+    } catch (e) {
+      console.error('Failed to cancel pending schedule SMS:', e);
     }
   }
 

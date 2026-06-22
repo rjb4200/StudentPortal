@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { publicEnv } from '@/lib/env';
 import { sendEmail } from '@/lib/email';
 import { buildFlaggedEvaluationEmail } from '@/lib/email-templates';
+import { queueAdminSmsAlerts } from '@/lib/notifications/sms-queue';
 
 export async function POST(request: NextRequest) {
   const cookieHeader = request.headers.get('cookie') || '';
@@ -62,6 +63,19 @@ export async function POST(request: NextRequest) {
         subject,
         html,
       });
+    }
+
+    try {
+      const smsResults = await queueAdminSmsAlerts(adminClient, {
+        notificationType: 'admin_flagged_evaluation',
+        messageBody: `WFD EMS Student Portal: A flagged evaluation was submitted by ${student.full_name}. Review in the admin portal.`,
+        preferenceColumn: 'notify_sms_evaluation_flagged',
+      });
+      for (const smsResult of smsResults) {
+        if (!smsResult.ok) console.error('Failed to queue flagged evaluation admin SMS:', smsResult.error);
+      }
+    } catch (e) {
+      console.error('Failed to queue flagged evaluation admin SMS:', e);
     }
 
     return NextResponse.json({ success: true });

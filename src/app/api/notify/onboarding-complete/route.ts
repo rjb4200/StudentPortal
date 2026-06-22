@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendEmail } from '@/lib/email';
 import { buildOnboardingCompleteStudentEmail, buildOnboardingCompleteAdminEmail } from '@/lib/email-templates';
+import { queueAdminSmsAlerts } from '@/lib/notifications/sms-queue';
 import { publicEnv } from '@/lib/env';
 import { generateTemporaryPin, hashOnboardingToken } from '@/lib/onboarding-session';
 import { onboardingCompleteBody } from '@/lib/validation';
@@ -140,6 +141,19 @@ export async function POST(request: NextRequest) {
     try {
       await sendEmail({ to: admins.map((a: any) => a.email), subject, html });
     } catch {}
+  }
+
+  try {
+    const smsResults = await queueAdminSmsAlerts(supabase, {
+      notificationType: 'admin_onboarding_complete',
+      messageBody: `WFD EMS Student Portal: New student onboarding completed for ${student.full_name}. Review in the admin portal.`,
+      preferenceColumn: 'notify_sms_onboarding_complete',
+    });
+    for (const smsResult of smsResults) {
+      if (!smsResult.ok) console.error('Failed to queue onboarding admin SMS:', smsResult.error);
+    }
+  } catch (e) {
+    console.error('Failed to queue onboarding admin SMS:', e);
   }
 
   {
