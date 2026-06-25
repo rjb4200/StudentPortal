@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import type { Metadata } from "next";
 import "./globals.css";
 
-const PUBLIC_PATHS = ['/', '/onboarding', '/login', '/reset-password', '/privacy-policy', '/terms-and-conditions'];
+const PUBLIC_PATHS = ['/', '/onboarding', '/instructor-registration', '/login', '/reset-password', '/privacy-policy', '/terms-and-conditions'];
 
 function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some(
