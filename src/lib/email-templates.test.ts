@@ -80,6 +80,25 @@ describe('buildOnboardingCompleteAdminEmail', () => {
     expect(result.html).not.toContain('Evil <x>');
     expect(result.html).not.toContain('"admin"@test.com');
   });
+
+  it('renders selected class context when available', () => {
+    const result = buildOnboardingCompleteAdminEmail({
+      full_name: 'Student One',
+      email: 'student@example.com',
+      school_name: 'Legacy School',
+      class_name: 'Summer Cohort',
+      class_start_date: '2026-07-01',
+      ride_time_end_date: '2026-08-01',
+      site_name: 'Training Site A',
+      selected_instructor_name: 'Jane Instructor',
+      selected_instructor_contact: 'jane@example.com',
+    });
+
+    expect(result.html).toContain('Training Site A');
+    expect(result.html).toContain('Summer Cohort');
+    expect(result.html).toContain('Jane Instructor');
+    expect(result.html).toContain('jane@example.com');
+  });
 });
 
 describe('buildShiftCancelledByStudentEmail', () => {

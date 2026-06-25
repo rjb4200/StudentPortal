@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
   }
   const { studentId, onboardingToken } = parsed.data;
 
-  const supabase = createAdminClient();
+  const supabase = createAdminClient() as any;
 
   const { data: session, error: sessionError } = await supabase
     .from('onboarding_sessions')
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
 
   const { data: student } = await supabase
     .from('students')
-    .select('id, auth_user_id, full_name, email, school_name, status, is_blacklisted, onboarding_completed_at, legal_signature')
+    .select('id, auth_user_id, full_name, email, school_name, instructor_name, instructor_contact, status, is_blacklisted, onboarding_completed_at, legal_signature, training_classes(name, class_start_date, ride_time_end_date, training_sites(name, organization_name), instructors(first_name, last_name, email, mobile_phone, business_phone))')
     .eq('id', studentId)
     .single();
 
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const { data: existing } = await supabase.auth.admin.listUsers();
-    let authMatch = existing?.users?.find((u) => u.email?.toLowerCase() === student.email.toLowerCase());
+    let authMatch = existing?.users?.find((u: { email?: string | null }) => u.email?.toLowerCase() === student.email.toLowerCase());
 
     if (!authMatch) {
       tempPassword = generateTemporaryPin();
@@ -132,10 +132,21 @@ export async function POST(request: NextRequest) {
     .eq('notify_onboarding_complete', true);
 
   if (admins?.length) {
+    const trainingClass = Array.isArray(student.training_classes) ? student.training_classes[0] : student.training_classes;
+    const trainingSite = Array.isArray(trainingClass?.training_sites) ? trainingClass.training_sites[0] : trainingClass?.training_sites;
+    const instructor = Array.isArray(trainingClass?.instructors) ? trainingClass.instructors[0] : trainingClass?.instructors;
     const { subject, html } = buildOnboardingCompleteAdminEmail({
       full_name: student.full_name,
       email: student.email,
       school_name: student.school_name,
+      instructor_name: student.instructor_name,
+      instructor_contact: student.instructor_contact,
+      class_name: trainingClass?.name ?? null,
+      class_start_date: trainingClass?.class_start_date ?? null,
+      ride_time_end_date: trainingClass?.ride_time_end_date ?? null,
+      site_name: trainingSite?.name ?? trainingSite?.organization_name ?? null,
+      selected_instructor_name: instructor ? `${instructor.first_name ?? ''} ${instructor.last_name ?? ''}`.trim() : null,
+      selected_instructor_contact: instructor?.email ?? instructor?.mobile_phone ?? instructor?.business_phone ?? null,
     });
     try {
       await sendEmail({ to: admins.map((a: any) => a.email), subject, html });

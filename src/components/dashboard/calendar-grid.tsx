@@ -28,9 +28,11 @@ interface Schedule {
 interface CalendarGridProps {
   schedules: Schedule[];
   onDateClick: (date: string) => void;
+  classStartDate?: string | null;
+  rideTimeEndDate?: string | null;
 }
 
-export function CalendarGrid({ schedules, onDateClick }: CalendarGridProps) {
+export function CalendarGrid({ schedules, onDateClick, classStartDate, rideTimeEndDate }: CalendarGridProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   const monthStart = startOfMonth(currentMonth);
@@ -104,16 +106,18 @@ export function CalendarGrid({ schedules, onDateClick }: CalendarGridProps) {
           const past = isPast(day) && !isToday(day);
           const inMonth = isSameMonth(day, currentMonth);
           const today = isToday(day);
+          const outsideClassWindow = !!classStartDate && !!rideTimeEndDate && (dateStr < classStartDate || dateStr > rideTimeEndDate);
+          const disabled = past || outsideClassWindow;
 
           return (
             <button
               key={dateStr}
               onClick={() => onDateClick(dateStr)}
-              disabled={past}
-              title={past && !schedule ? 'Past dates are unavailable for scheduling' : undefined}
+              disabled={disabled}
+              title={outsideClassWindow ? 'Outside your class ride-time window' : past && !schedule ? 'Past dates are unavailable for scheduling' : undefined}
               className={`aspect-square flex flex-col items-center justify-center rounded-lg text-sm transition-colors
                 ${!inMonth ? 'text-gray-300' : ''}
-                ${past ? 'text-gray-300 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-100'}
+                ${disabled ? 'bg-gray-50 text-gray-300 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-100'}
                 ${today ? 'ring-2 ring-wfd-crimson ring-offset-1' : ''}
                 ${getCellStyle(day, schedule)}
               `}
@@ -154,7 +158,7 @@ export function CalendarGrid({ schedules, onDateClick }: CalendarGridProps) {
           <span className="w-3 h-3 rounded bg-gray-100" /> Rejected
         </span>
         <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded bg-white border border-gray-200" /> Unavailable
+          <span className="w-3 h-3 rounded bg-gray-50 border border-gray-200" /> Unavailable
         </span>
       </div>
     </div>

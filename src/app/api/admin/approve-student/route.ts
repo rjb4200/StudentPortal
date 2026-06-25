@@ -25,11 +25,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Student ID required' }, { status: 400 });
   }
 
-  const adminClient = createAdminClient();
+  const adminClient = createAdminClient() as any;
 
   const { data: student, error: studentError } = await adminClient
     .from('students')
-    .select('email, full_name, status, onboarding_completed_at')
+    .select('email, full_name, status, onboarding_completed_at, training_classes(ride_time_end_date)')
     .eq('id', studentId)
     .single();
 
@@ -40,11 +40,16 @@ export async function POST(request: NextRequest) {
   if (student.status !== 'pending') return NextResponse.json({ success: true, message: 'Already approved' });
   if (!student.onboarding_completed_at) return NextResponse.json({ error: 'Student has not completed onboarding.' }, { status: 400 });
 
+  const trainingClass = Array.isArray(student.training_classes) ? student.training_classes[0] : student.training_classes;
+  const accessUntil = trainingClass?.ride_time_end_date
+    ? new Date(`${trainingClass.ride_time_end_date}T23:59:59.999`).toISOString()
+    : new Date(Date.now() + 120 * 24 * 60 * 60 * 1000).toISOString();
+
   const { error: updateError } = await adminClient
     .from('students')
     .update({
       status: 'certified',
-      access_until: new Date(Date.now() + 120 * 24 * 60 * 60 * 1000).toISOString(),
+      access_until: accessUntil,
     })
     .eq('id', studentId);
 

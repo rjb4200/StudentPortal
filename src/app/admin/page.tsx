@@ -5,10 +5,11 @@ import { createClient } from '@/lib/supabase/client';
 import { DailyOps } from '@/components/admin/daily-ops';
 import { PreceptorAnalytics } from '@/components/admin/preceptor-analytics';
 import { MaintenanceArchive } from '@/components/admin/maintenance-archive';
+import { RegistryManagement } from '@/components/admin/registry-management';
 import { canAccessAdmin } from '@/lib/roles';
 import Link from 'next/link';
 
-type Tab = 'daily' | 'analytics' | 'maintenance';
+type Tab = 'daily' | 'registry' | 'analytics' | 'maintenance';
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<Tab>('daily');
@@ -44,6 +45,7 @@ export default function AdminPage() {
 
   const tabs: { key: Tab; label: string }[] = [
     { key: 'daily', label: 'Daily Operations' },
+    { key: 'registry', label: 'Registry' },
     { key: 'analytics', label: 'Preceptor Analytics' },
     { key: 'maintenance', label: 'Maintenance & Archive' },
   ];
@@ -105,6 +107,7 @@ export default function AdminPage() {
       </div>
 
       {activeTab === 'daily' && <DailyOps />}
+      {activeTab === 'registry' && <RegistryManagement />}
       {activeTab === 'analytics' && <PreceptorAnalytics />}
       {activeTab === 'maintenance' && <MaintenanceArchive />}
     </div>

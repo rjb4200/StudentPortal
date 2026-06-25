@@ -29,6 +29,19 @@ function getExpirationCountdown(accessUntil: string | null | undefined) {
   };
 }
 
+function getStudentClass(student: any) {
+  return Array.isArray(student?.training_classes) ? student.training_classes[0] : student?.training_classes;
+}
+
+function getStudentClassLabel(student: any) {
+  const trainingClass = getStudentClass(student);
+  if (!trainingClass) return `${student.school_name ?? ''} — ${student.instructor_name ?? ''}`.trim();
+  const site = Array.isArray(trainingClass.training_sites) ? trainingClass.training_sites[0] : trainingClass.training_sites;
+  const instructor = Array.isArray(trainingClass.instructors) ? trainingClass.instructors[0] : trainingClass.instructors;
+  const instructorName = instructor ? `${instructor.first_name ?? ''} ${instructor.last_name ?? ''}`.trim() : '';
+  return [site?.name, trainingClass.name, instructorName].filter(Boolean).join(' — ');
+}
+
 export function DailyOps() {
   const [pendingStudents, setPendingStudents] = useState<any[]>([]);
   const [schedules, setSchedules] = useState<any[]>([]);
@@ -43,12 +56,14 @@ export function DailyOps() {
   const [broadcasting, setBroadcasting] = useState(false);
   const [showBroadcast, setShowBroadcast] = useState(false);
   const [quizFlags, setQuizFlags] = useState<any[]>([]);
+  const [registryItems, setRegistryItems] = useState<any[]>([]);
+  const [registryActioning, setRegistryActioning] = useState<string | null>(null);
   const [acknowledgingFlag, setAcknowledgingFlag] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [scheduleActionError, setScheduleActionError] = useState<string | null>(null);
 
-  const supabase = createClient();
+  const supabase = createClient() as any;
 
   useEffect(() => {
     loadAll();
@@ -60,17 +75,28 @@ export function DailyOps() {
       { data: allStudents },
       { data: allSchedules },
       { data: quizFlagsData },
+      { data: pendingSites },
+      { data: pendingInstructors },
+      { data: pendingClasses },
     ] = await Promise.all([
-      supabase.from('students').select('*').eq('status', 'pending').not('onboarding_completed_at', 'is', null).order('created_at', { ascending: false }),
-      supabase.from('students').select('*').order('created_at', { ascending: false }),
-      supabase.from('schedules').select('*, students!inner(full_name, email)').order('created_at', { ascending: false }),
+      supabase.from('students').select('*, training_classes(name, class_start_date, ride_time_end_date, training_sites(name), instructors(first_name, last_name))').eq('status', 'pending').not('onboarding_completed_at', 'is', null).order('created_at', { ascending: false }),
+      supabase.from('students').select('*, training_classes(name, class_start_date, ride_time_end_date, training_sites(name), instructors(first_name, last_name))').order('created_at', { ascending: false }),
+      supabase.from('schedules').select('*, students!inner(full_name, email, training_classes(name, class_start_date, ride_time_end_date))').order('created_at', { ascending: false }),
       supabase.from('quiz_flags').select('*').eq('acknowledged', false).order('created_at', { ascending: false }),
+      supabase.from('training_sites').select('*').eq('status', 'pending').order('created_at', { ascending: false }),
+      supabase.from('instructors').select('*, training_sites(name)').eq('status', 'pending').order('created_at', { ascending: false }),
+      supabase.from('training_classes').select('*, training_sites(name), instructors(first_name, last_name)').eq('status', 'pending').order('created_at', { ascending: false }),
     ]);
 
     setPendingStudents(pending ?? []);
     setStudents(allStudents ?? []);
     setSchedules(allSchedules ?? []);
     setQuizFlags(quizFlagsData ?? []);
+    setRegistryItems([
+      ...(pendingSites ?? []).map((item: any) => ({ ...item, registryTable: 'training_sites', registryLabel: 'Site' })),
+      ...(pendingInstructors ?? []).map((item: any) => ({ ...item, registryTable: 'instructors', registryLabel: 'Instructor' })),
+      ...(pendingClasses ?? []).map((item: any) => ({ ...item, registryTable: 'training_classes', registryLabel: 'Class' })),
+    ]);
   };
 
   const handleApprove = async (student: any) => {
@@ -124,6 +150,26 @@ export function DailyOps() {
       await loadAll();
     } catch (e) {
       setScheduleActionError(e instanceof Error ? e.message : 'Schedule action failed. Please try again.');
+    }
+  };
+
+  const handleRegistryAction = async (item: any, status: 'active' | 'rejected') => {
+    setRegistryActioning(item.id);
+    try {
+      const response = await fetch('/api/admin/registry-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ table: item.registryTable, id: item.id, status }),
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok || data?.success !== true) {
+        throw new Error(data?.error || 'Registry action failed.');
+      }
+      await loadAll();
+    } catch (e) {
+      setScheduleActionError(e instanceof Error ? e.message : 'Registry action failed. Please try again.');
+    } finally {
+      setRegistryActioning(null);
     }
   };
 
@@ -245,7 +291,7 @@ export function DailyOps() {
   const pendingSchedules = schedules.filter((s: any) => s.status === 'pending');
   const cancelRequests = schedules.filter((s: any) => s.status === 'cancelled' && s.cancelled_by === 'student');
   const rosterStudents = students.filter((s: any) => s.status === 'certified');
-  const totalActions = pendingStudents.length + pendingSchedules.length + cancelRequests.length + quizFlags.length;
+  const totalActions = pendingStudents.length + pendingSchedules.length + cancelRequests.length + quizFlags.length + registryItems.length;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -279,7 +325,7 @@ export function DailyOps() {
                   <span className="shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full bg-wfd-sage/10 text-wfd-sage">Approval</span>
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{s.full_name}</p>
-                    <p className="text-xs text-gray-500">{s.school_name} — {s.instructor_name}</p>
+                    <p className="text-xs text-gray-500">{getStudentClassLabel(s)}</p>
                   </div>
                 </div>
                 <Button
@@ -292,6 +338,35 @@ export function DailyOps() {
                 </Button>
               </div>
             ))}
+            {registryItems.map((item) => {
+              const site = Array.isArray(item.training_sites) ? item.training_sites[0] : item.training_sites;
+              const title = item.registryTable === 'training_sites'
+                ? item.name
+                : item.registryTable === 'instructors'
+                  ? `${item.first_name} ${item.last_name}`
+                  : item.name;
+              const detail = item.registryTable === 'training_classes'
+                ? `${site?.name ?? 'Training site'} - ${item.class_start_date} to ${item.ride_time_end_date}`
+                : item.registryTable === 'instructors'
+                  ? `${site?.name ?? 'Training site'} - ${item.email}`
+                  : `${item.organization_name} - ${item.city}, ${item.state}`;
+
+              return (
+                <div key={`registry-${item.registryTable}-${item.id}`} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <span className="shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">{item.registryLabel}</span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{title}</p>
+                      <p className="text-xs text-gray-500 truncate">{detail}</p>
+                    </div>
+                  </div>
+                  <div className="ml-3 flex flex-shrink-0 gap-2">
+                    <Button size="sm" onClick={() => handleRegistryAction(item, 'active')} loading={registryActioning === item.id}>Approve</Button>
+                    <Button size="sm" variant="danger" onClick={() => handleRegistryAction(item, 'rejected')} loading={registryActioning === item.id}>Reject</Button>
+                  </div>
+                </div>
+              );
+            })}
             {scheduleActionError && (
               <p className="text-xs text-red-600 bg-red-50 rounded-lg px-2 py-1">{scheduleActionError}</p>
             )}
@@ -307,6 +382,11 @@ export function DailyOps() {
                         ? ` — ${to24Hour(s.start_time)}–${to24Hour(s.end_time)}`
                         : ` — ${s.shift_type}`}
                     </p>
+                    {s.students?.training_classes && (
+                      <p className="text-xs text-gray-400">
+                        Window: {s.students.training_classes.class_start_date} to {s.students.training_classes.ride_time_end_date}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="flex gap-2 items-center">
@@ -441,19 +521,24 @@ export function DailyOps() {
             <tbody>
               {rosterStudents.map((s) => {
                 const expirationCountdown = getExpirationCountdown(s.access_until);
+                const trainingClass = getStudentClass(s);
+                const expirationTitle = trainingClass && expirationCountdown
+                  ? `${expirationCountdown.title}; class ${trainingClass.name} ride-time ends ${trainingClass.ride_time_end_date}`
+                  : expirationCountdown?.title;
 
                 return (
                   <tr key={s.id} className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="py-2 px-3">
                       <a href={`/admin/accounts?edit=${s.id}`} className="font-medium text-wfd-crimson hover:underline">{s.full_name}</a>
                       <p className="text-xs text-gray-400">{s.email}</p>
+                      {trainingClass && <p className="text-xs text-gray-400">{getStudentClassLabel(s)}</p>}
                     </td>
                     <td className="py-2 px-3">
                       <Badge variant={s.status === 'certified' ? 'green' : s.status === 'pending' ? 'gold' : 'gray'}>
                         {s.status}
                       </Badge>
                       {expirationCountdown && (
-                        <span title={expirationCountdown.title}>
+                        <span title={expirationTitle}>
                           <Badge variant={expirationCountdown.variant} className="ml-1">
                             {expirationCountdown.label}
                           </Badge>

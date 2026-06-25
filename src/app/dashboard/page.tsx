@@ -58,8 +58,9 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [welcomeMsg, setWelcomeMsg] = useState<{ title: string; body: string } | null>(null);
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
 
-  const supabase = createClient();
+  const supabase = createClient() as any;
 
   useEffect(() => {
     loadData();
@@ -71,7 +72,7 @@ export default function DashboardPage() {
 
     const { data: student } = await supabase
       .from('students')
-      .select('*')
+      .select('*, training_classes(class_start_date, ride_time_end_date, name)')
       .eq('auth_user_id', user.id)
       .single();
 
@@ -95,6 +96,13 @@ export default function DashboardPage() {
   const isPending = student?.status === 'pending';
   const isCertified = student?.status === 'certified';
   const today = new Date().toISOString().split('T')[0];
+  const trainingClass = Array.isArray(student?.training_classes) ? student.training_classes[0] : student?.training_classes;
+  const classStartDate = trainingClass?.class_start_date ?? null;
+  const rideTimeEndDate = trainingClass?.ride_time_end_date ?? null;
+  const isDateInClassWindow = (date: string) => {
+    if (!classStartDate || !rideTimeEndDate) return true;
+    return date >= classStartDate && date <= rideTimeEndDate;
+  };
   const activeSchedules = schedules.filter((s) => s.status !== 'cancelled' && s.status !== 'rejected');
   const pendingSchedules = schedules.filter((s) => s.status === 'pending');
   const futureApproved = schedules
@@ -103,8 +111,14 @@ export default function DashboardPage() {
   const nextShift = futureApproved[0] ?? null;
 
   const openScheduleRequest = () => {
+    const initialDate = isDateInClassWindow(today) ? today : classStartDate;
+    if (!initialDate || !isDateInClassWindow(initialDate)) {
+      setScheduleError('Scheduling is unavailable because your class ride-time window is not active.');
+      return;
+    }
+    setScheduleError(null);
     setActiveSection('schedule');
-    setSelectedDate(today);
+    setSelectedDate(initialDate);
     setShowShiftModal(true);
   };
 
@@ -185,6 +199,11 @@ export default function DashboardPage() {
       return;
     }
     if (date < today) return;
+    if (!isDateInClassWindow(date)) {
+      setScheduleError('That date is outside your class ride-time window.');
+      return;
+    }
+    setScheduleError(null);
     setSelectedDate(date);
     setShowShiftModal(true);
   };
@@ -199,22 +218,20 @@ export default function DashboardPage() {
   const handleShiftSubmit = async (shiftType: 'full' | 'day' | 'custom', startTime: string, endTime: string) => {
     if (!selectedDate || !student || !isCertified) return;
 
-    const { data: schedule } = await supabase
-      .from('schedules')
-      .insert({
-        student_id: student.id,
-        date: selectedDate,
-        shift_type: shiftType,
-        start_time: startTime,
-        end_time: endTime,
-        status: 'pending',
-      })
-      .select()
-      .single();
+    setScheduleError(null);
+    const response = await fetch('/api/schedule/request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ date: selectedDate, shiftType, startTime, endTime }),
+    });
+    const result = await response.json().catch(() => null);
 
-    if (schedule) {
-      setSchedules((prev) => [...prev, schedule as Schedule]);
+    if (!response.ok || result?.success !== true) {
+      setScheduleError(result?.error || 'Unable to submit schedule request.');
+      return;
     }
+
+    setSchedules((prev) => [...prev, result.schedule as Schedule]);
     setShowShiftModal(false);
     setSelectedDate(null);
   };
@@ -268,6 +285,11 @@ export default function DashboardPage() {
               </div>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-white/90 sm:text-base">{commandState.body}</p>
               <p className="mt-2 text-sm text-white/75">{student?.full_name} • {student?.school_name}</p>
+              {classStartDate && rideTimeEndDate && (
+                <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-white/70">
+                  Class window: {formatDate(classStartDate)} to {formatDate(rideTimeEndDate)}
+                </p>
+              )}
             </div>
             <div className="flex w-full flex-col gap-3 sm:w-auto sm:min-w-56">
               <button
@@ -370,7 +392,9 @@ export default function DashboardPage() {
           <div className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-xl font-black text-wfd-charcoal">Schedule Your Clinical Shifts</h2>
-              <p className="text-sm text-gray-500">Use the main button or click a future date on the calendar.</p>
+              <p className="text-sm text-gray-500">
+                Use the main button or click a future date on the calendar{classStartDate && rideTimeEndDate ? ` between ${formatDate(classStartDate)} and ${formatDate(rideTimeEndDate)}.` : '.'}
+              </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <button
@@ -389,6 +413,10 @@ export default function DashboardPage() {
             </div>
           </div>
 
+          {scheduleError && (
+            <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{scheduleError}</p>
+          )}
+
           {activeSchedules.length === 0 && (
             <Card className="border-wfd-crimson/20 bg-wfd-crimson/5 p-5 text-center">
               <h3 className="text-lg font-black text-wfd-charcoal">No shifts scheduled yet</h3>
@@ -398,7 +426,7 @@ export default function DashboardPage() {
           )}
 
           {viewMode === 'grid' ? (
-            <CalendarGrid schedules={schedules} onDateClick={handleDateClick} />
+            <CalendarGrid schedules={schedules} onDateClick={handleDateClick} classStartDate={classStartDate} rideTimeEndDate={rideTimeEndDate} />
           ) : (
             <ShiftList
               schedules={schedules}

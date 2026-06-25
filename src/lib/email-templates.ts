@@ -49,9 +49,31 @@ export function buildOnboardingCompleteAdminEmail(params: {
   full_name: string;
   email: string;
   school_name: string;
+  instructor_name?: string | null;
+  instructor_contact?: string | null;
+  class_name?: string | null;
+  class_start_date?: string | null;
+  ride_time_end_date?: string | null;
+  site_name?: string | null;
+  selected_instructor_name?: string | null;
+  selected_instructor_contact?: string | null;
 }): EmailContent {
   const { full_name, email, school_name } = params;
-  const bodyHtml = `<p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:16px;line-height:1.6;text-align:center;">New student completed onboarding: ${escHtml(full_name)} (${escHtml(email)}) from ${escHtml(school_name)}</p>
+  const classContext = params.class_name
+    ? `<div style="margin:20px auto;padding:16px 18px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;max-width:440px;">
+        <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Site:</strong> ${escHtml(params.site_name ?? school_name)}</p>
+        <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Class:</strong> ${escHtml(params.class_name)}</p>
+        <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Window:</strong> ${escHtml(params.class_start_date ?? 'Unknown')} to ${escHtml(params.ride_time_end_date ?? 'Unknown')}</p>
+        <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Instructor:</strong> ${escHtml(params.selected_instructor_name ?? params.instructor_name ?? 'Unknown')}</p>
+        <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Instructor Contact:</strong> ${escHtml(params.selected_instructor_contact ?? params.instructor_contact ?? 'Unknown')}</p>
+      </div>`
+    : `<div style="margin:20px auto;padding:16px 18px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;max-width:440px;">
+        <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>School/Site:</strong> ${escHtml(school_name)}</p>
+        <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Instructor:</strong> ${escHtml(params.instructor_name ?? 'Unknown')}</p>
+        <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Instructor Contact:</strong> ${escHtml(params.instructor_contact ?? 'Unknown')}</p>
+      </div>`;
+  const bodyHtml = `<p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:16px;line-height:1.6;text-align:center;">New student completed onboarding: ${escHtml(full_name)} (${escHtml(email)})</p>
+      ${classContext}
       <p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:16px;line-height:1.6;text-align:center;">Review and approve in the admin portal.</p>`;
   return {
     subject: 'New Student Onboarding Complete',

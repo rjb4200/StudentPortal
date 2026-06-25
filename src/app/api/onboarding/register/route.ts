@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createOnboardingSession } from '@/lib/onboarding-session';
-import { onboardingRegistrationBody, phoneSchema } from '@/lib/validation';
+import { onboardingRegistrationWithClassBody, phoneSchema } from '@/lib/validation';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const parsed = onboardingRegistrationBody.safeParse(body);
+    const parsed = onboardingRegistrationWithClassBody.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json({ success: false, error: parsed.error.issues[0].message }, { status: 400 });
     }
 
-    const { fullName, email, phone, schoolName, instructorName, instructorContact } = parsed.data;
+    const { fullName, email, phone, schoolName, instructorName, instructorContact, trainingClassId } = parsed.data;
     const normalizedPhone = phone?.trim() ?? '';
     if (normalizedPhone) {
       const phoneResult = phoneSchema.safeParse(normalizedPhone);
@@ -30,6 +30,7 @@ export async function POST(request: NextRequest) {
         p_school_name: schoolName,
         p_instructor_name: instructorName,
         p_instructor_contact: instructorContact,
+        p_training_class_id: trainingClassId,
       }
     );
 

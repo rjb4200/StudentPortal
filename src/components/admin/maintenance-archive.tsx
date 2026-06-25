@@ -61,7 +61,7 @@ export function MaintenanceArchive() {
   const handleMasterExport = async () => {
     setExporting(true);
     try {
-      const tables = ['students', 'preceptors', 'schedules', 'evaluations', 'admin_notes', 'messages', 'audit_log'];
+      const tables = ['students', 'training_sites', 'instructors', 'training_classes', 'preceptors', 'schedules', 'evaluations', 'admin_notes', 'messages', 'audit_log'];
       const results: Record<string, any[]> = {};
 
       for (const table of tables) {
@@ -84,7 +84,7 @@ export function MaintenanceArchive() {
   };
 
   const handlePurge = async () => {
-    if (!confirm('WARNING: This will permanently delete ALL student data (students, schedules, evaluations, messages, notes). Preceptors and audit logs will be preserved. Are you sure?')) {
+    if (!confirm('WARNING: This will permanently delete ALL student data (students, schedules, evaluations, messages, notes). Preceptors, audit logs, and instructor/site/class registry records will be preserved. Are you sure?')) {
       return;
     }
     if (!confirm('FINAL WARNING: This action cannot be undone. Proceed?')) {
@@ -140,7 +140,7 @@ export function MaintenanceArchive() {
       <Card className="p-4">
         <h3 className="font-bold text-wfd-charcoal mb-4">Master Export</h3>
         <p className="text-sm text-gray-500 mb-4">
-          Download all data from all tables as a combined JSON export file.
+          Download all student, schedule, evaluation, message, preceptor, audit, instructor, training site, and training class data as a combined JSON export file.
         </p>
         <Button
           variant="secondary"
@@ -208,7 +208,7 @@ export function MaintenanceArchive() {
         <h3 className="font-bold text-wfd-crimson mb-4">Purge Data</h3>
         <p className="text-sm text-gray-500 mb-4">
           Delete all student data (students, schedules, evaluations, messages, notes).
-          Preceptors and audit logs will be preserved. You must download the master export first.
+          Preceptors, audit logs, and instructor/site/class registry records are intentionally preserved to avoid orphaning future class setup. You must download the master export first.
         </p>
         {!exported ? (
           <p className="text-sm text-wfd-gold font-medium">

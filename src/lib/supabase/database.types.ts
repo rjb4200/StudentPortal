@@ -187,6 +187,74 @@ export type Database = {
           },
         ]
       }
+      instructors: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          business_phone: string | null
+          contact_instructions: string | null
+          created_at: string
+          credentials: string
+          email: string
+          first_name: string
+          id: string
+          last_name: string
+          mobile_phone: string
+          preferred_contact_hours: string
+          preferred_contact_method: string
+          status: Database["public"]["Enums"]["registry_status"]
+          title: string
+          training_site_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          business_phone?: string | null
+          contact_instructions?: string | null
+          created_at?: string
+          credentials: string
+          email: string
+          first_name: string
+          id?: string
+          last_name: string
+          mobile_phone: string
+          preferred_contact_hours: string
+          preferred_contact_method: string
+          status?: Database["public"]["Enums"]["registry_status"]
+          title: string
+          training_site_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          business_phone?: string | null
+          contact_instructions?: string | null
+          created_at?: string
+          credentials?: string
+          email?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          mobile_phone?: string
+          preferred_contact_hours?: string
+          preferred_contact_method?: string
+          status?: Database["public"]["Enums"]["registry_status"]
+          title?: string
+          training_site_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instructors_training_site_id_fkey"
+            columns: ["training_site_id"]
+            isOneToOne: false
+            referencedRelation: "training_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       legal_documents: {
         Row: {
           body_text: string
@@ -787,6 +855,7 @@ export type Database = {
           full_name: string
           id: string
           instructor_contact: string
+          instructor_id: string | null
           instructor_name: string
           is_blacklisted: boolean
           is_test_record: boolean | null
@@ -800,6 +869,8 @@ export type Database = {
           signature_ip: string | null
           signature_timestamp: string | null
           status: Database["public"]["Enums"]["student_status"]
+          training_class_id: string | null
+          training_site_id: string | null
         }
         Insert: {
           access_until?: string | null
@@ -809,6 +880,7 @@ export type Database = {
           full_name: string
           id?: string
           instructor_contact: string
+          instructor_id?: string | null
           instructor_name: string
           is_blacklisted?: boolean
           is_test_record?: boolean | null
@@ -822,6 +894,8 @@ export type Database = {
           signature_ip?: string | null
           signature_timestamp?: string | null
           status?: Database["public"]["Enums"]["student_status"]
+          training_class_id?: string | null
+          training_site_id?: string | null
         }
         Update: {
           access_until?: string | null
@@ -831,6 +905,7 @@ export type Database = {
           full_name?: string
           id?: string
           instructor_contact?: string
+          instructor_id?: string | null
           instructor_name?: string
           is_blacklisted?: boolean
           is_test_record?: boolean | null
@@ -844,6 +919,138 @@ export type Database = {
           signature_ip?: string | null
           signature_timestamp?: string | null
           status?: Database["public"]["Enums"]["student_status"]
+          training_class_id?: string | null
+          training_site_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "students_instructor_id_fkey"
+            columns: ["instructor_id"]
+            isOneToOne: false
+            referencedRelation: "instructors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "students_training_class_id_fkey"
+            columns: ["training_class_id"]
+            isOneToOne: false
+            referencedRelation: "training_classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "students_training_site_id_fkey"
+            columns: ["training_site_id"]
+            isOneToOne: false
+            referencedRelation: "training_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_classes: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          class_start_date: string
+          created_at: string
+          id: string
+          instructor_id: string
+          name: string
+          notes: string | null
+          ride_time_end_date: string
+          status: Database["public"]["Enums"]["registry_status"]
+          training_site_id: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          class_start_date: string
+          created_at?: string
+          id?: string
+          instructor_id: string
+          name: string
+          notes?: string | null
+          ride_time_end_date: string
+          status?: Database["public"]["Enums"]["registry_status"]
+          training_site_id: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          class_start_date?: string
+          created_at?: string
+          id?: string
+          instructor_id?: string
+          name?: string
+          notes?: string | null
+          ride_time_end_date?: string
+          status?: Database["public"]["Enums"]["registry_status"]
+          training_site_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_classes_instructor_id_fkey"
+            columns: ["instructor_id"]
+            isOneToOne: false
+            referencedRelation: "instructors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_classes_training_site_id_fkey"
+            columns: ["training_site_id"]
+            isOneToOne: false
+            referencedRelation: "training_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_sites: {
+        Row: {
+          address: string
+          approved_at: string | null
+          approved_by: string | null
+          city: string
+          created_at: string
+          id: string
+          main_phone: string | null
+          name: string
+          organization_name: string
+          state: string
+          status: Database["public"]["Enums"]["registry_status"]
+          updated_at: string
+          zip_code: string
+        }
+        Insert: {
+          address: string
+          approved_at?: string | null
+          approved_by?: string | null
+          city: string
+          created_at?: string
+          id?: string
+          main_phone?: string | null
+          name: string
+          organization_name: string
+          state: string
+          status?: Database["public"]["Enums"]["registry_status"]
+          updated_at?: string
+          zip_code: string
+        }
+        Update: {
+          address?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          city?: string
+          created_at?: string
+          id?: string
+          main_phone?: string | null
+          name?: string
+          organization_name?: string
+          state?: string
+          status?: Database["public"]["Enums"]["registry_status"]
+          updated_at?: string
+          zip_code?: string
         }
         Relationships: []
       }
@@ -853,21 +1060,40 @@ export type Database = {
     }
     Functions: {
       refresh_pgrst_schema: { Args: never; Returns: undefined }
-      register_onboarding_student: {
-        Args: {
-          p_email: string
-          p_full_name: string
-          p_instructor_contact: string
-          p_instructor_name: string
-          p_phone: string
-          p_school_name: string
-        }
-        Returns: string
-      }
+      register_onboarding_student:
+        | {
+            Args: {
+              p_email: string
+              p_full_name: string
+              p_instructor_contact: string
+              p_instructor_name: string
+              p_phone: string
+              p_school_name: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_email: string
+              p_full_name: string
+              p_instructor_contact: string
+              p_instructor_name: string
+              p_phone: string
+              p_school_name: string
+              p_training_class_id: string
+            }
+            Returns: string
+          }
     }
     Enums: {
       message_sender: "student" | "admin"
       note_priority: "normal" | "high_accessibility"
+      registry_status:
+        | "pending"
+        | "active"
+        | "rejected"
+        | "suspended"
+        | "archived"
       schedule_status: "pending" | "approved" | "rejected" | "cancelled"
       shift_type: "full" | "day" | "night" | "custom"
       station_unit:
@@ -1004,6 +1230,13 @@ export const Constants = {
     Enums: {
       message_sender: ["student", "admin"],
       note_priority: ["normal", "high_accessibility"],
+      registry_status: [
+        "pending",
+        "active",
+        "rejected",
+        "suspended",
+        "archived",
+      ],
       schedule_status: ["pending", "approved", "rejected", "cancelled"],
       shift_type: ["full", "day", "night", "custom"],
       station_unit: [

@@ -36,13 +36,13 @@ export default function PublicHomePage() {
           <span className="block font-semibold text-wfd-charcoal">New student?</span>
           <span className="block text-xs text-gray-500">Request portal access</span>
         </Link>
-        <a
-          href="mailto:jbrown@winchesterky.com"
+        <Link
+          href="/instructor-registration"
           className="rounded-lg border border-gray-200 p-3 text-center text-sm hover:border-wfd-crimson/30 transition-colors"
         >
-          <span className="block font-semibold text-wfd-charcoal">Need help?</span>
-          <span className="block text-xs text-gray-500">Contact EMS staff</span>
-        </a>
+          <span className="block font-semibold text-wfd-charcoal">Register as Instructor</span>
+          <span className="block text-xs text-gray-500">Submit class details</span>
+        </Link>
       </div>
     </div>
   );

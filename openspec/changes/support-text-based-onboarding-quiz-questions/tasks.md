@@ -27,6 +27,6 @@
 ## 5. Verification
 
 - [x] 5.1 Run `npm run build`
-- [ ] 5.2 Verify an existing photo-grid rule still loads, scores, retries, and blocks submission on image failure
-- [ ] 5.3 Verify a text-choice rule can be configured, activated, answered incorrectly with feedback, retried, and completed
-- [ ] 5.4 Verify mixed photo-grid and text-choice rules appear in configured order during onboarding
+- [x] 5.2 Verify an existing photo-grid rule still loads, scores, retries, and blocks submission on image failure
+- [x] 5.3 Verify a text-choice rule can be configured, activated, answered incorrectly with feedback, retried, and completed
+- [x] 5.4 Verify mixed photo-grid and text-choice rules appear in configured order during onboarding

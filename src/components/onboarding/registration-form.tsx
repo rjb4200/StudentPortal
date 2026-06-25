@@ -15,10 +15,22 @@ interface RegistrationFormProps {
 
 type RegField = Tables<'registration_fields'>;
 
+type TrainingClassOption = {
+  id: string;
+  label: string;
+  siteName: string;
+  instructorName: string;
+  classStartDate: string;
+  rideTimeEndDate: string;
+};
+
 const BUILT_IN_FIELD_KEYS = [
   'full_name',
   'email',
   'phone',
+];
+
+const LEGACY_CLASS_DERIVED_FIELD_KEYS = [
   'school_name',
   'instructor_name',
   'instructor_contact',
@@ -31,6 +43,7 @@ export function RegistrationForm({ onComplete, onBack, helpEmail }: Registration
   const [loadingFields, setLoadingFields] = useState(true);
   const [error, setError] = useState('');
   const [fields, setFields] = useState<RegField[]>([]);
+  const [trainingClasses, setTrainingClasses] = useState<TrainingClassOption[]>([]);
   const [form, setForm] = useState<Record<string, string>>({
     full_name: '',
     email: '',
@@ -42,14 +55,24 @@ export function RegistrationForm({ onComplete, onBack, helpEmail }: Registration
 
   useEffect(() => {
     async function loadFields() {
-      const supabase = createClient();
-      const { data } = await supabase
-        .from('registration_fields')
-        .select('*')
-        .eq('is_active', true)
-        .order('sort_order');
+      const supabase = createClient() as any;
+      const [{ data }, classResponse] = await Promise.all([
+        supabase
+          .from('registration_fields')
+          .select('*')
+          .eq('is_active', true)
+          .order('sort_order'),
+        fetch('/api/training-classes/options'),
+      ]);
 
-      const sorted = (data ?? []).sort((a, b) => {
+      const classPayload = await classResponse.json().catch(() => null);
+      setTrainingClasses(classPayload?.success ? classPayload.options ?? [] : []);
+
+      const visibleFields = ((data ?? []) as RegField[]).filter(
+        (field) => !LEGACY_CLASS_DERIVED_FIELD_KEYS.includes(field.field_key)
+      );
+
+      const sorted = visibleFields.sort((a: RegField, b: RegField) => {
         const aIsBuiltIn = BUILT_IN_FIELD_KEYS.includes(a.field_key);
         const bIsBuiltIn = BUILT_IN_FIELD_KEYS.includes(b.field_key);
         if (aIsBuiltIn && bIsBuiltIn) {
@@ -105,8 +128,15 @@ export function RegistrationForm({ onComplete, onBack, helpEmail }: Registration
       }
     }
 
+    const trainingClassId = getFieldValue(form, 'training_class_id');
+    if (!trainingClassId) {
+      setError('Select your training site and class.');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const supabase = createClient();
+      const supabase = createClient() as any;
       const res = await fetch('/api/onboarding/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -117,6 +147,7 @@ export function RegistrationForm({ onComplete, onBack, helpEmail }: Registration
           schoolName: getFieldValue(form, 'school_name'),
           instructorName: getFieldValue(form, 'instructor_name'),
           instructorContact: getFieldValue(form, 'instructor_contact'),
+          trainingClassId,
         }),
       });
       const registration = await res.json();
@@ -226,6 +257,29 @@ export function RegistrationForm({ onComplete, onBack, helpEmail }: Registration
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {fields.map(renderField)}
         </div>
+
+        <label className="block text-sm font-medium text-gray-700">
+          Training site and class<span className="text-red-500 ml-1">*</span>
+          <select
+            required
+            value={form.training_class_id ?? ''}
+            onChange={(e) => updateValue('training_class_id', e.target.value)}
+            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 outline-none focus:ring-2 focus:ring-wfd-crimson"
+          >
+            <option value="">Select your active class...</option>
+            {trainingClasses.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label} ({option.classStartDate} to {option.rideTimeEndDate})
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {trainingClasses.length === 0 && (
+          <p className="rounded-lg border border-wfd-gold/30 bg-wfd-gold/10 p-3 text-sm text-wfd-charcoal">
+            No active classes are currently available for registration. Contact your instructor or EMS staff for help.
+          </p>
+        )}
 
         {error && (
           <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800">
