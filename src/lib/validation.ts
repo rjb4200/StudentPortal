@@ -65,37 +65,52 @@ export const onboardingRegistrationWithClassBody = onboardingRegistrationBody.ex
   trainingClassId: uuidSchema,
 });
 
+const instructorDetailsSchema = z.object({
+  firstName: nameSchema,
+  lastName: nameSchema,
+  email: emailSchema,
+  mobilePhone: phoneSchema,
+  businessPhone: optionalTextSchema(30),
+  credentials: textSchema(200).min(1),
+  title: textSchema(120).min(1),
+  preferredContactMethod: z.enum(['email', 'mobile_phone', 'business_phone']),
+  preferredContactHours: textSchema(120).min(1),
+  contactInstructions: optionalTextSchema(1000),
+});
+
+const trainingSiteDetailsSchema = z.object({
+  name: textSchema(160).min(1),
+  organizationName: textSchema(160).min(1),
+  address: textSchema(200).min(1),
+  city: textSchema(100).min(1),
+  state: textSchema(40).min(1),
+  zipCode: textSchema(20).min(1),
+  mainPhone: optionalTextSchema(30),
+});
+
+const trainingClassDetailsSchema = z.object({
+  name: textSchema(160).min(1),
+  classStartDate: dateOnlySchema,
+  rideTimeEndDate: dateOnlySchema,
+  notes: optionalTextSchema(1000),
+});
+
 export const instructorRegistrationBody = z.object({
-  instructor: z.object({
-    firstName: nameSchema,
-    lastName: nameSchema,
-    email: emailSchema,
-    mobilePhone: phoneSchema,
-    businessPhone: optionalTextSchema(30),
-    credentials: textSchema(200).min(1),
-    title: textSchema(120).min(1),
-    preferredContactMethod: z.enum(['email', 'mobile_phone', 'business_phone']),
-    preferredContactHours: textSchema(120).min(1),
-    contactInstructions: optionalTextSchema(1000),
-  }),
-  site: z.object({
-    name: textSchema(160).min(1),
-    organizationName: textSchema(160).min(1),
-    address: textSchema(200).min(1),
-    city: textSchema(100).min(1),
-    state: textSchema(40).min(1),
-    zipCode: textSchema(20).min(1),
-    mainPhone: optionalTextSchema(30),
-  }),
-  class: z.object({
-    name: textSchema(160).min(1),
-    classStartDate: dateOnlySchema,
-    rideTimeEndDate: dateOnlySchema,
-    notes: optionalTextSchema(1000),
-  }),
+  site: z.discriminatedUnion('mode', [
+    z.object({ mode: z.literal('existing'), trainingSiteId: uuidSchema }),
+    trainingSiteDetailsSchema.extend({ mode: z.literal('new') }),
+  ]),
+  instructor: z.discriminatedUnion('mode', [
+    z.object({ mode: z.literal('existing'), instructorId: uuidSchema }),
+    instructorDetailsSchema.extend({ mode: z.literal('new') }),
+  ]),
+  class: trainingClassDetailsSchema,
 }).refine((value) => value.class.rideTimeEndDate >= value.class.classStartDate, {
   message: 'Ride-time end date must be on or after class start date',
   path: ['class', 'rideTimeEndDate'],
+}).refine((value) => !(value.site.mode === 'new' && value.instructor.mode === 'existing'), {
+  message: 'Register a new instructor when registering a new TEI.',
+  path: ['instructor'],
 });
 
 export const registryStatusBody = z.object({
@@ -108,32 +123,15 @@ export const adminRegistryUpsertBody = z.discriminatedUnion('table', [
   z.object({
     table: z.literal('training_sites'),
     id: uuidSchema.optional(),
-    data: z.object({
-      name: textSchema(160).min(1),
-      organizationName: textSchema(160).min(1),
-      address: textSchema(200).min(1),
-      city: textSchema(100).min(1),
-      state: textSchema(40).min(1),
-      zipCode: textSchema(20).min(1),
-      mainPhone: optionalTextSchema(30),
+    data: trainingSiteDetailsSchema.extend({
       status: z.enum(['pending', 'active', 'rejected', 'suspended', 'archived']).optional(),
     }),
   }),
   z.object({
     table: z.literal('instructors'),
     id: uuidSchema.optional(),
-    data: z.object({
-      trainingSiteId: uuidSchema.optional().or(z.literal('')),
-      firstName: nameSchema,
-      lastName: nameSchema,
-      email: emailSchema,
-      mobilePhone: phoneSchema,
-      businessPhone: optionalTextSchema(30),
-      credentials: textSchema(200).min(1),
-      title: textSchema(120).min(1),
-      preferredContactMethod: z.enum(['email', 'mobile_phone', 'business_phone']),
-      preferredContactHours: textSchema(120).min(1),
-      contactInstructions: optionalTextSchema(1000),
+    data: instructorDetailsSchema.extend({
+      trainingSiteId: uuidSchema,
       status: z.enum(['pending', 'active', 'rejected', 'suspended', 'archived']).optional(),
     }),
   }),
