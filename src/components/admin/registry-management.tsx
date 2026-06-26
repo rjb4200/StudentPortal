@@ -173,6 +173,18 @@ export function RegistryManagement() {
   };
 
   const studentsForClass = (classId: string) => students.filter((student) => student.training_class_id === classId);
+  const instructorBelongsToSite = (instructorId: string, trainingSiteId: string) => instructors.some((instructor) => instructor.id === instructorId && instructor.training_site_id === trainingSiteId);
+  const classInstructorOptions = classForm.trainingSiteId
+    ? instructors.filter((instructor) => instructor.training_site_id === classForm.trainingSiteId)
+    : [];
+
+  const handleClassSiteChange = (trainingSiteId: string) => {
+    setClassForm((current) => ({
+      ...current,
+      trainingSiteId,
+      instructorId: current.instructorId && instructorBelongsToSite(current.instructorId, trainingSiteId) ? current.instructorId : '',
+    }));
+  };
 
   return (
     <div className="space-y-6">
@@ -210,14 +222,17 @@ export function RegistryManagement() {
       <Card className="p-4">
         <h2 className="text-lg font-black text-wfd-charcoal">Create Class</h2>
         <form onSubmit={handleCreateClass} className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-4">
-          <Select label="Training site" required value={classForm.trainingSiteId} onChange={(value) => setClassForm({ ...classForm, trainingSiteId: value })} options={sites.map((site) => ({ value: site.id, label: site.name }))} />
-          <Select label="Instructor" required value={classForm.instructorId} onChange={(value) => setClassForm({ ...classForm, instructorId: value })} options={instructors.map((instructor) => ({ value: instructor.id, label: `${instructor.first_name} ${instructor.last_name}` }))} />
+          <Select label="Training site" required value={classForm.trainingSiteId} onChange={handleClassSiteChange} options={sites.map((site) => ({ value: site.id, label: site.name }))} />
+          <Select label="Instructor" required value={classForm.instructorId} onChange={(value) => setClassForm({ ...classForm, instructorId: value })} options={classInstructorOptions.map((instructor) => ({ value: instructor.id, label: `${instructor.first_name} ${instructor.last_name}` }))} />
           <Input label="Class name" required value={classForm.name} onChange={(e) => setClassForm({ ...classForm, name: e.target.value })} />
           <Input label="Class start" type="date" required value={classForm.classStartDate} onChange={(e) => setClassForm({ ...classForm, classStartDate: e.target.value })} />
           <Input label="Ride-time end" type="date" required value={classForm.rideTimeEndDate} onChange={(e) => setClassForm({ ...classForm, rideTimeEndDate: e.target.value })} />
           <Input label="Notes" value={classForm.notes} onChange={(e) => setClassForm({ ...classForm, notes: e.target.value })} />
           <Button type="submit" loading={saving === 'class-create'} className="self-end">Create Active Class</Button>
         </form>
+        {classForm.trainingSiteId && classInstructorOptions.length === 0 && (
+          <p className="mt-3 text-sm text-gray-500">No instructors are assigned to the selected training site.</p>
+        )}
       </Card>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
