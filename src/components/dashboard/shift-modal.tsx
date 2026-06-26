@@ -1,23 +1,46 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { START_TIME_OPTIONS, END_TIME_OPTIONS } from '@/lib/time-formats';
+
+interface Schedule {
+  id: string;
+  date: string;
+  shift_type: string;
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled';
+  start_time?: string | null;
+  end_time?: string | null;
+}
 
 interface ShiftModalProps {
   open: boolean;
   onClose: () => void;
   date: string | null;
+  schedules: Schedule[];
+  classStartDate?: string | null;
+  rideTimeEndDate?: string | null;
+  onDateChange?: (date: string) => void;
   onSubmit: (shiftType: 'full' | 'day' | 'custom', startTime: string, endTime: string) => void;
 }
 
 const CUSTOM_DEFAULT_START = '7:00 AM';
 
-export function ShiftModal({ open, onClose, date, onSubmit }: ShiftModalProps) {
+export function ShiftModal({ open, onClose, date, schedules, classStartDate, rideTimeEndDate, onDateChange, onSubmit }: ShiftModalProps) {
   const [selected, setSelected] = useState<'full' | 'day' | 'custom'>('full');
   const [customStart, setCustomStart] = useState(CUSTOM_DEFAULT_START);
   const [customEnd, setCustomEnd] = useState('7:00 PM');
+  const [selectedDate, setSelectedDate] = useState(date || '');
+
+  useEffect(() => {
+    if (date) setSelectedDate(date);
+  }, [date]);
+
+  const handleDateChange = (value: string) => {
+    setSelectedDate(value);
+    onDateChange?.(value);
+  };
 
   const handleSubmit = () => {
     if (selected === 'day') {
@@ -35,7 +58,19 @@ export function ShiftModal({ open, onClose, date, onSubmit }: ShiftModalProps) {
   const showNag = selected === 'custom' && customStart !== CUSTOM_DEFAULT_START;
 
   return (
-    <Modal open={open} onClose={onClose} title={`Request Shift — ${date || ''}`}>
+    <Modal open={open} onClose={onClose} title="Request Shift">
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+        <input
+          type="date"
+          value={selectedDate}
+          min={classStartDate ?? undefined}
+          max={rideTimeEndDate ?? undefined}
+          onChange={(e) => handleDateChange(e.target.value)}
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 outline-none focus:ring-2 focus:ring-wfd-crimson focus:border-transparent"
+        />
+      </div>
+
       <div className="space-y-3 mb-6">
         <label
           className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${

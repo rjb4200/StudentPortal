@@ -409,7 +409,6 @@ export default function DashboardPage() {
               >
                 List
               </button>
-              <Button onClick={openScheduleRequest}>Schedule a Shift</Button>
             </div>
           </div>
 
@@ -472,6 +471,10 @@ export default function DashboardPage() {
           setSelectedDate(null);
         }}
         date={selectedDate}
+        schedules={schedules}
+        classStartDate={classStartDate}
+        rideTimeEndDate={rideTimeEndDate}
+        onDateChange={setSelectedDate}
         onSubmit={handleShiftSubmit}
       />
 
