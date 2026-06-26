@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     };
   } else if (table === 'instructors') {
     payload = {
-      training_site_id: data.trainingSiteId || null,
+      training_site_id: data.trainingSiteId,
       first_name: data.firstName,
       last_name: data.lastName,
       email: data.email,
@@ -58,6 +58,20 @@ export async function POST(request: NextRequest) {
       status: data.status ?? 'active',
     };
   } else {
+    const { data: instructor, error: instructorError } = await adminClient
+      .from('instructors')
+      .select('id, training_site_id')
+      .eq('id', data.instructorId)
+      .single();
+
+    if (instructorError || !instructor) {
+      return NextResponse.json({ error: 'Selected instructor was not found.' }, { status: 400 });
+    }
+
+    if (instructor.training_site_id !== data.trainingSiteId) {
+      return NextResponse.json({ error: 'Selected instructor does not belong to the selected training site.' }, { status: 400 });
+    }
+
     payload = {
       training_site_id: data.trainingSiteId,
       instructor_id: data.instructorId,
@@ -81,7 +95,8 @@ export async function POST(request: NextRequest) {
   const { data: row, error } = await query;
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const status = error.code === '23505' ? 409 : 500;
+    return NextResponse.json({ error: error.message }, { status });
   }
 
   return NextResponse.json({ success: true, row });
