@@ -78,13 +78,6 @@ export default function AdminPage() {
               >
                 Account Management
               </Link>
-              <Link
-                href="/admin/dev"
-                className="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-50"
-                onClick={() => setMenuOpen(false)}
-              >
-                Dev Nav
-              </Link>
             </div>
           )}
         </div>
