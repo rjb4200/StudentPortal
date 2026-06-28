@@ -8,6 +8,7 @@ import type { Tables } from '@/lib/supabase/database.types';
 
 interface LegalWaiverProps {
   studentId: string;
+  onboardingToken: string;
   onComplete: () => void;
   onBack?: () => void;
   helpEmail?: string;
@@ -15,7 +16,7 @@ interface LegalWaiverProps {
 
 type LegalDoc = Tables<'legal_documents'>;
 
-export function LegalWaiver({ studentId, onComplete, onBack, helpEmail }: LegalWaiverProps) {
+export function LegalWaiver({ studentId, onboardingToken, onComplete, onBack, helpEmail }: LegalWaiverProps) {
   const [docs, setDocs] = useState<LegalDoc[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(true);
   const [fullName, setFullName] = useState('');
@@ -97,6 +98,7 @@ export function LegalWaiver({ studentId, onComplete, onBack, helpEmail }: LegalW
       body: JSON.stringify({
         studentId,
         fullName: fullName.trim(),
+        onboardingToken,
         agreedDocumentIds: Array.from(agreed),
       }),
     });

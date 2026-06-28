@@ -153,8 +153,8 @@ export default function OnboardingPage() {
       stepContent = <RegistrationForm onComplete={handleRegistrationComplete} helpEmail={helpEmail} />;
       break;
     case 2:
-      stepContent = studentId ? (
-        <LegalWaiver studentId={studentId} onComplete={handleLegalComplete} onBack={handleBack} helpEmail={helpEmail} />
+      stepContent = studentId && onboardingToken ? (
+        <LegalWaiver studentId={studentId} onboardingToken={onboardingToken} onComplete={handleLegalComplete} onBack={handleBack} helpEmail={helpEmail} />
       ) : null;
       break;
     case 3:

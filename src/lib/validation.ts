@@ -10,6 +10,7 @@ const optionalTextSchema = (maxLen: number) => z.string().trim().max(maxLen).opt
 export const legalSignatureBody = z.object({
   studentId: uuidSchema,
   fullName: nameSchema,
+  onboardingToken: z.string().min(32).max(256),
   agreedDocumentIds: z.array(uuidSchema).min(1),
 });
 
