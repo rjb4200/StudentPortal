@@ -5,7 +5,7 @@ Server-side legal signature capture with real IP detection, server-accurate time
 
 ## Requirements
 ### Requirement: Server-side legal signature capture
-The system SHALL provide a server-side API route `POST /api/onboarding/legal-signature` that accepts `studentId`, `fullName`, and `agreedDocumentIds`. The route SHALL capture the real client IP address from the `x-forwarded-for` request header, use server-time for the timestamp, and SHALL NOT rely on client-supplied IP or timestamp values.
+The system SHALL provide a server-side API route `POST /api/onboarding/legal-signature` that accepts `studentId`, `fullName`, `agreedDocumentIds`, and `onboardingToken`. The route SHALL verify the `onboardingToken` against the student's active onboarding session before recording signatures. The route SHALL capture the real client IP address from the `x-forwarded-for` request header, use server-time for the timestamp, and SHALL NOT rely on client-supplied IP or timestamp values.
 
 #### Scenario: Real IP captured from x-forwarded-for
 - **WHEN** a student submits their legal signature and the request includes an `x-forwarded-for` header
@@ -20,6 +20,15 @@ The system SHALL provide a server-side API route `POST /api/onboarding/legal-sig
 - **WHEN** a student submits their legal signature
 - **THEN** the stored `signature_timestamp` is the server's `new Date().toISOString()`, not the client's system clock
 
+#### Scenario: Onboarding token required
+- **WHEN** a student submits their legal signature
+- **THEN** the API route verifies the `onboardingToken` against the student's active `onboarding_sessions` record using `hashOnboardingToken()`
+- **AND** if the session does not exist, is expired, or is already completed, the route returns 403
+
+#### Scenario: Rejected without valid token
+- **WHEN** a caller submits a legal signature with an invalid or missing `onboardingToken`
+- **THEN** the API route returns 403 with a message directing the student to restart registration
+
 ### Requirement: Per-document acceptance recording
 The system SHALL record which specific legal documents a student accepted in a `student_legal_acceptances` table. Each row SHALL link a student to a document with the acceptance timestamp. The system SHALL NOT lose per-document acceptance data after submission.
 
@@ -32,7 +41,12 @@ The system SHALL record which specific legal documents a student accepted in a `
 - **THEN** acceptance records are created for the new student row, independent of prior acceptances on the old row
 
 ### Requirement: student_legal_acceptances table
-The system SHALL maintain a `student_legal_acceptances` table with columns `id` (uuid PK), `student_id` (FK to students), `document_id` (FK to legal_documents), and `accepted_at` (timestamptz). The table SHALL enforce uniqueness on `(student_id, document_id)` and cascade deletes when students or documents are removed.
+The system SHALL maintain a `student_legal_acceptances` table with columns `id` (uuid PK), `student_id` (FK to students), `document_id` (FK to legal_documents), and `accepted_at` (timestamptz). The table SHALL enforce uniqueness on `(student_id, document_id)` and cascade deletes when students or documents are removed. The table SHALL have Row Level Security enabled to block direct PostgREST access; all writes SHALL go through the server-side API route using the admin client.
+
+#### Scenario: RLS enabled on student_legal_acceptances
+- **WHEN** a direct PostgREST query is made against `student_legal_acceptances` via the anon or authenticated role
+- **THEN** the query returns no rows because RLS is enabled with no permissive policies
+- **AND** the server-side API route continues to write via the service role
 
 #### Scenario: Cascade delete on student removal
 - **WHEN** a student row is deleted
