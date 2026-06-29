@@ -46,6 +46,7 @@ describe('onboardingRegistrationWithClassBody', () => {
 describe('instructorRegistrationBody', () => {
   const valid = {
     instructor: {
+      mode: 'new' as const,
       firstName: 'Jane',
       lastName: 'Instructor',
       email: 'jane@example.com',
@@ -58,6 +59,7 @@ describe('instructorRegistrationBody', () => {
       contactInstructions: '',
     },
     site: {
+      mode: 'new' as const,
       name: 'Site A',
       organizationName: 'School A',
       address: '1 Main St',

@@ -7,3 +7,29 @@
 body {
   font-family: 'Roboto Condensed', system-ui, sans-serif;
 }
+
+@media print {
+  body {
+    background: white !important;
+  }
+  .no-print,
+  .print\:hidden {
+    display: none !important;
+  }
+  .print\:border-none {
+    border: none !important;
+  }
+  .print\:p-0 {
+    padding: 0 !important;
+  }
+  [class*="max-h-0"] {
+    max-height: none !important;
+    opacity: 1 !important;
+  }
+  .print\:shadow-none {
+    box-shadow: none !important;
+  }
+  .print\:bg-white {
+    background: white !important;
+  }
+}
