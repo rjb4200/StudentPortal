@@ -42,12 +42,7 @@ export function LegalDocumentsSection({
   const [printing, setPrinting] = useState(false);
 
   if (acceptances.length === 0) {
-    return (
-      <div className="border border-gray-200 rounded-lg p-4">
-        <h3 className="font-semibold text-wfd-charcoal mb-2">Signed Legal Documents</h3>
-        <p className="text-sm text-gray-400">No signed legal documents</p>
-      </div>
-    );
+    return <p className="text-sm text-gray-400 py-2">No signed legal documents</p>;
   }
 
   function logAction(action: string) {
@@ -75,59 +70,54 @@ export function LegalDocumentsSection({
 
   return (
     <>
-      <div className="border border-gray-200 rounded-lg p-4 print:border-none print:p-0">
-        <h3 className="font-semibold text-wfd-charcoal mb-3">Signed Legal Documents</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-200 text-left">
-                <th className="py-2 px-3 font-medium text-gray-500">Document</th>
-                <th className="py-2 px-3 font-medium text-gray-500">Status</th>
-                <th className="py-2 px-3 font-medium text-gray-500">Signed Date</th>
-                <th className="py-2 px-3 font-medium text-gray-500 print:hidden">Actions</th>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b-2 border-wfd-crimson/20 text-left">
+              <th className="py-2.5 px-3 font-semibold text-wfd-crimson/80 text-xs uppercase tracking-wide">Document</th>
+              <th className="py-2.5 px-3 font-semibold text-wfd-crimson/80 text-xs uppercase tracking-wide">Status</th>
+              <th className="py-2.5 px-3 font-semibold text-wfd-crimson/80 text-xs uppercase tracking-wide">Signed Date</th>
+              <th className="py-2.5 px-3 font-semibold text-wfd-crimson/80 text-xs uppercase tracking-wide print:hidden">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {acceptances.map((acc) => (
+              <tr key={acc.id} className="border-b border-gray-100 even:bg-gray-50/30">
+                <td className="py-2.5 px-3 font-semibold text-wfd-charcoal">
+                  {acc.legal_documents?.title || 'Unknown'}
+                </td>
+                <td className="py-2.5 px-3">
+                  <Badge variant="green">Signed</Badge>
+                </td>
+                <td className="py-2.5 px-3 text-gray-500 text-xs">
+                  {formatDate(acc.accepted_at)}
+                </td>
+                <td className="py-2.5 px-3 print:hidden">
+                  <div className="flex gap-1">
+                    <Button size="sm" variant="secondary" onClick={() => handleView(acc)}>View</Button>
+                    <Button size="sm" variant="secondary" onClick={() => handlePrint(acc)}>Print</Button>
+                  </div>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {acceptances.map((acc) => (
-                <tr key={acc.id} className="border-b border-gray-100">
-                  <td className="py-2 px-3 font-medium text-wfd-charcoal">
-                    {acc.legal_documents?.title || 'Unknown'}
-                  </td>
-                  <td className="py-2 px-3">
-                    <Badge variant="green">Signed</Badge>
-                  </td>
-                  <td className="py-2 px-3 text-gray-500 text-xs">
-                    {formatDate(acc.accepted_at)}
-                  </td>
-                  <td className="py-2 px-3 print:hidden">
-                    <div className="flex gap-1">
-                      <Button size="sm" variant="secondary" onClick={() => handleView(acc)}>
-                        View
-                      </Button>
-                      <Button size="sm" variant="secondary" onClick={() => handlePrint(acc)}>
-                        Print
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <p className="text-xs text-gray-400 mt-2">
-          Signed as: {studentName} &middot; IP: {signatureIp || 'N/A'} &middot; {signatureTimestamp ? formatDate(signatureTimestamp) : 'N/A'}
-        </p>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="mt-3 pt-3 border-t border-gray-200 flex items-center gap-4 text-xs text-gray-500 flex-wrap">
+        <span className="font-semibold text-wfd-charcoal">Signed as: {studentName}</span>
+        <span>IP: {signatureIp || 'N/A'}</span>
+        {signatureTimestamp && <span>{formatDate(signatureTimestamp)}</span>}
       </div>
 
       {viewDoc && !printing && (
         <Modal open={true} title={viewDoc.legal_documents?.title || 'Document'} onClose={() => setViewDoc(null)}>
-          <div className="prose prose-sm max-w-none text-gray-700 whitespace-pre-wrap text-sm">
+          <div className="text-gray-700 whitespace-pre-wrap text-sm leading-relaxed">
             {viewDoc.legal_documents?.body_text}
           </div>
           <div className="mt-4 pt-4 border-t border-gray-200 text-xs text-gray-500 space-y-1">
-            <p><strong>Signed by:</strong> {studentName}</p>
-            <p><strong>Signed on:</strong> {formatDate(viewDoc.accepted_at)}</p>
-            {signatureIp && <p><strong>IP Address:</strong> {signatureIp}</p>}
+            <p><strong className="text-wfd-charcoal">Signed by:</strong> {studentName}</p>
+            <p><strong className="text-wfd-charcoal">Signed on:</strong> {formatDate(viewDoc.accepted_at)}</p>
+            {signatureIp && <p><strong className="text-wfd-charcoal">IP Address:</strong> {signatureIp}</p>}
           </div>
         </Modal>
       )}

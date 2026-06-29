@@ -73,3 +73,14 @@
 - [ ] 11.6 Verify audit log entries are created on document view and print
 - [x] 11.7 Run `npm run build` to verify no compilation errors
 - [x] 11.8 Run `npm run test` to verify no regressions — 39/39 passing, pre-existing validation test fixed
+
+## 12. Styling and Completeness Polish
+
+- [x] 12.1 Add missing instructor fields — mobile_phone, title, credentials, preferred_contact_method, preferred_contact_hours, contact_instructions
+- [x] 12.2 Wrap Legal Documents section in Disclosure with collapsed summary showing count
+- [x] 12.3 Wrap Admin Notes section in Disclosure with collapsed summary showing count
+- [x] 12.4 Wrap Onboarding Test section in Disclosure with collapsed summary showing status
+- [x] 12.5 Wrap Ride History section in Disclosure with collapsed summary showing count/breakdown
+- [x] 12.6 Upgrade styling — more white space, crimson accent bar on summary card, colored left-border accents on disclosure headers, white backgrounds, status-driven section accents, looser spacing
+- [x] 12.7 Verify class_start_date and ride_time_end_date fields (already in training_classes query)
+- [x] 12.8 Rebuild and verify — passes, 39/39 tests

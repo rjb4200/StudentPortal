@@ -20,16 +20,16 @@ export function Disclosure({
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <div className={`border border-gray-200 rounded-lg ${className}`}>
+    <div className={`bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow transition-shadow ${className}`}>
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 transition-colors rounded-t-lg"
+        className="w-full flex items-center justify-between px-5 py-3.5 text-left hover:bg-gray-50/80 transition-colors rounded-t-lg"
       >
         <div className="flex-1 min-w-0">
-          <span className="font-semibold text-wfd-charcoal">{title}</span>
+          <span className="font-semibold text-base text-wfd-charcoal">{title}</span>
           {!open && summary && (
-            <span className="ml-2 text-xs text-gray-500 truncate">{summary}</span>
+            <span className="ml-2 text-sm text-gray-400 font-normal truncate">{summary}</span>
           )}
         </div>
         <svg
@@ -43,10 +43,10 @@ export function Disclosure({
       </button>
       <div
         className={`overflow-hidden transition-all duration-200 ease-in-out ${
-          open ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
+          open ? 'max-h-[4000px] opacity-100' : 'max-h-0 opacity-0'
         }`}
       >
-        <div className="px-4 py-3 border-t border-gray-200">{children}</div>
+        <div className="px-5 py-4 border-t border-gray-100">{children}</div>
       </div>
     </div>
   );

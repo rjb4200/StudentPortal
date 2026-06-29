@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 
 interface AdminNote {
   id: string;
@@ -69,11 +68,8 @@ export function AdminNotesSection({ notes: initialNotes, studentId }: AdminNotes
   }
 
   return (
-    <div className="border border-gray-200 rounded-lg p-4 print:border-none print:p-0">
-      <h3 className="font-semibold text-wfd-charcoal mb-3">Admin Notes</h3>
-
-      {/* Add Note Form */}
-      <div className="mb-4 p-3 bg-gray-50 rounded-lg print:hidden">
+    <>
+      <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200 print:hidden">
         <div className="flex flex-col sm:flex-row gap-2">
           <div className="flex-1">
             <textarea
@@ -88,7 +84,7 @@ export function AdminNotesSection({ notes: initialNotes, studentId }: AdminNotes
             <select
               value={priority}
               onChange={(e) => setPriority(e.target.value as 'normal' | 'high_accessibility')}
-              className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900"
+              className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white"
             >
               <option value="normal">Normal</option>
               <option value="high_accessibility">High Priority</option>
@@ -100,26 +96,25 @@ export function AdminNotesSection({ notes: initialNotes, studentId }: AdminNotes
         </div>
       </div>
 
-      {/* Notes List */}
       {notes.length === 0 ? (
-        <p className="text-sm text-gray-400">No admin notes</p>
+        <p className="text-sm text-gray-400 py-2">No admin notes</p>
       ) : (
         <div className="space-y-2">
           {notes.map((note) => (
-            <div key={note.id} className="flex items-start justify-between gap-3 p-3 bg-gray-50 rounded-lg text-sm">
+            <div key={note.id} className="flex items-start justify-between gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100 text-sm hover:border-gray-200 transition-colors">
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-center gap-2 mb-1.5">
                   <Badge variant={note.priority === 'high_accessibility' ? 'orange' : 'blue'}>
                     {note.priority === 'high_accessibility' ? 'High' : 'Normal'}
                   </Badge>
                   <span className="text-xs text-gray-400">{formatDate(note.created_at)}</span>
                 </div>
-                <p className="text-wfd-charcoal whitespace-pre-wrap">{note.note_text}</p>
+                <p className="text-wfd-charcoal whitespace-pre-wrap leading-relaxed">{note.note_text}</p>
               </div>
               <button
                 onClick={() => deleteNote(note.id)}
                 disabled={deleting === note.id}
-                className="text-xs text-gray-400 hover:text-red-500 transition-colors flex-shrink-0 print:hidden"
+                className="text-xs text-gray-400 hover:text-red-500 transition-colors flex-shrink-0 print:hidden font-medium"
               >
                 {deleting === note.id ? '...' : 'Delete'}
               </button>
@@ -127,6 +122,6 @@ export function AdminNotesSection({ notes: initialNotes, studentId }: AdminNotes
           ))}
         </div>
       )}
-    </div>
+    </>
   );
 }
