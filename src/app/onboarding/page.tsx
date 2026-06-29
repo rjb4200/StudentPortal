@@ -21,6 +21,11 @@ interface WfdOnboardingSession {
 
 const SAVE_KEY = 'wfd_onboarding_session';
 
+function getLinkedClassIdFromUrl() {
+  if (typeof window === 'undefined') return null;
+  return new URLSearchParams(window.location.search).get('class')?.trim() || null;
+}
+
 function saveSession(studentId: string | null, onboardingToken: string | null, currentStep: number, email: string) {
   if (typeof window === 'undefined') return;
   try {
@@ -65,6 +70,7 @@ function clearSession() {
 }
 
 export default function OnboardingPage() {
+  const [linkedClassId] = useState<string | null>(() => getLinkedClassIdFromUrl());
   const [showResumeBanner, setShowResumeBanner] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [studentId, setStudentId] = useState<string | null>(null);
@@ -91,11 +97,12 @@ export default function OnboardingPage() {
   }, []);
 
   useEffect(() => {
+    if (linkedClassId) return;
     const saved = loadSession();
     if (saved) {
       setShowResumeBanner(true);
     }
-  }, []);
+  }, [linkedClassId]);
 
   const handleResume = useCallback(() => {
     const saved = loadSession();
@@ -150,7 +157,7 @@ export default function OnboardingPage() {
   let stepContent: React.ReactNode = null;
   switch (currentStep) {
     case 1:
-      stepContent = <RegistrationForm onComplete={handleRegistrationComplete} helpEmail={helpEmail} />;
+      stepContent = <RegistrationForm onComplete={handleRegistrationComplete} helpEmail={helpEmail} linkedClassId={linkedClassId} />;
       break;
     case 2:
       stepContent = studentId && onboardingToken ? (

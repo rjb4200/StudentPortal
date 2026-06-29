@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'anon-key';
-process.env.NEXT_PUBLIC_SITE_URL = 'https://student-portal-chi-woad.vercel.app';
+process.env.NEXT_PUBLIC_SITE_URL = 'https://studentportal.winchesterfireems.com/';
 process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role-key';
 
 let mockState: any;
@@ -67,6 +67,7 @@ beforeEach(() => {
   mockState = {
     updates: [],
     trainingClass: {
+      id: '11111111-1111-4111-8111-111111111111',
       status: 'pending',
       name: 'Summer EMT',
       class_start_date: '2026-07-01',
@@ -93,6 +94,7 @@ describe('POST /api/admin/registry-status', () => {
     expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({
       to: 'jane@example.com',
       subject: 'Class Approved — WFD EMS Student Portal',
+      html: expect.stringContaining('https://studentportal.winchesterfireems.com/onboarding?class=11111111-1111-4111-8111-111111111111'),
     }));
   });
 

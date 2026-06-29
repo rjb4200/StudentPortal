@@ -19,6 +19,24 @@ When an admin approves a student, the system SHALL attempt to send the student a
 - **THEN** the student status is updated to `certified` and the API returns `{ success: true }`
 - **AND** the email failure is logged
 
+### Requirement: Instructor class approval email includes student registration link
+When an admin approves a class, the system SHALL attempt to send the associated instructor a WFD-branded class approval email that includes a class-specific student registration link. The link SHALL use the canonical production site URL and the approved class id so the instructor can forward it to students for class-specific onboarding. Email delivery SHALL remain best-effort; class approval SHALL succeed regardless of email delivery outcome.
+
+#### Scenario: Class approval email contains registration link
+- **WHEN** an admin approves a pending class
+- **THEN** the system attempts to send the associated instructor an email with subject "Class Approved — WFD EMS Student Portal"
+- **AND** the email contains a student registration link in the form `https://studentportal.winchesterfireems.com/onboarding?class=<training_class_id>`
+- **AND** the email explains that the instructor can share the link with students for that class
+
+#### Scenario: Already active class does not send duplicate link email
+- **WHEN** an admin approves a class that is already active
+- **THEN** the system does not send a duplicate class approval email
+
+#### Scenario: Class approval succeeds if link email fails
+- **WHEN** an admin approves a class and the instructor approval email cannot be delivered
+- **THEN** the class status update still succeeds
+- **AND** the email delivery failure is logged
+
 ### Requirement: Schedule approved email
 When an admin approves a scheduled shift day, the system SHALL attempt to send the student a WFD-branded email with the date, shift type, and a link to their dashboard. The schedule update and email delivery SHALL happen in a single server-side API route. The schedule update SHALL succeed even if email delivery fails.
 

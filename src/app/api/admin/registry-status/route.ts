@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
   const { table, id, status } = parsed.data;
   const adminClient = createAdminClient() as any;
   let classApprovalEmail: {
+    classId: string;
     instructorEmail: string;
     instructorName: string;
     className: string;
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
   if (table === 'training_classes' && status === 'active') {
     const { data: existingClass, error: existingClassError } = await adminClient
       .from('training_classes')
-      .select('status, name, class_start_date, ride_time_end_date, instructors(first_name, last_name, email), training_sites(name)')
+      .select('id, status, name, class_start_date, ride_time_end_date, instructors(first_name, last_name, email), training_sites(name)')
       .eq('id', id)
       .single();
 
@@ -56,6 +57,7 @@ export async function POST(request: NextRequest) {
       const site = firstRelation(existingClass.training_sites);
       if (instructor?.email) {
         classApprovalEmail = {
+          classId: existingClass.id,
           instructorEmail: instructor.email,
           instructorName: `${instructor.first_name ?? ''} ${instructor.last_name ?? ''}`.trim() || 'Instructor',
           className: existingClass.name,
@@ -85,6 +87,7 @@ export async function POST(request: NextRequest) {
       class_start_date: classApprovalEmail.classStartDate,
       ride_time_end_date: classApprovalEmail.rideTimeEndDate,
       site_name: classApprovalEmail.siteName,
+      registration_url: `${publicEnv.SITE_URL}/onboarding?class=${encodeURIComponent(classApprovalEmail.classId)}`,
     });
     const emailResult = await sendEmail({ to: classApprovalEmail.instructorEmail, subject, html });
     if (!emailResult.ok) {

@@ -5,12 +5,14 @@ import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { emailSchema, phoneSchema } from '@/lib/validation';
+import { getLinkedTrainingClass } from '@/lib/training-class-link';
 import type { Tables } from '@/lib/supabase/database.types';
 
 interface RegistrationFormProps {
   onComplete: (studentId: string, onboardingToken: string) => void;
   onBack?: () => void;
   helpEmail?: string;
+  linkedClassId?: string | null;
 }
 
 type RegField = Tables<'registration_fields'>;
@@ -38,7 +40,7 @@ const LEGACY_CLASS_DERIVED_FIELD_KEYS = [
 
 const getFieldValue = (form: Record<string, string>, key: string) => (form[key] ?? '').trim();
 
-export function RegistrationForm({ onComplete, onBack, helpEmail }: RegistrationFormProps) {
+export function RegistrationForm({ onComplete, onBack, helpEmail, linkedClassId }: RegistrationFormProps) {
   const [loading, setLoading] = useState(false);
   const [loadingFields, setLoadingFields] = useState(true);
   const [error, setError] = useState('');
@@ -66,7 +68,8 @@ export function RegistrationForm({ onComplete, onBack, helpEmail }: Registration
       ]);
 
       const classPayload = await classResponse.json().catch(() => null);
-      setTrainingClasses(classPayload?.success ? classPayload.options ?? [] : []);
+      const classOptions = classPayload?.success ? classPayload.options ?? [] : [];
+      setTrainingClasses(classOptions);
 
       const visibleFields = ((data ?? []) as RegField[]).filter(
         (field) => !LEGACY_CLASS_DERIVED_FIELD_KEYS.includes(field.field_key)
@@ -97,11 +100,15 @@ export function RegistrationForm({ onComplete, onBack, helpEmail }: Registration
       for (const f of sorted) {
         if (!initial[f.field_key]) initial[f.field_key] = '';
       }
-      setForm(initial);
+      const linkedClass = getLinkedTrainingClass(classOptions, linkedClassId);
+      setForm({
+        ...initial,
+        training_class_id: linkedClass?.id ?? '',
+      });
       setLoadingFields(false);
     }
     loadFields();
-  }, []);
+  }, [linkedClassId]);
 
   const updateValue = (field_key: string, value: string) =>
     setForm((prev) => ({ ...prev, [field_key]: value }));
@@ -248,6 +255,9 @@ export function RegistrationForm({ onComplete, onBack, helpEmail }: Registration
     );
   };
 
+  const linkedTrainingClass = getLinkedTrainingClass(trainingClasses, linkedClassId);
+  const hasClassLink = Boolean(linkedClassId);
+
   return (
     <div>
       <h2 className="text-xl font-bold text-wfd-charcoal mb-1 pb-2 border-b-2 border-wfd-crimson">Student Registration</h2>
@@ -262,9 +272,10 @@ export function RegistrationForm({ onComplete, onBack, helpEmail }: Registration
           Training site and class<span className="text-red-500 ml-1">*</span>
           <select
             required
+            disabled={Boolean(linkedTrainingClass)}
             value={form.training_class_id ?? ''}
             onChange={(e) => updateValue('training_class_id', e.target.value)}
-            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 outline-none focus:ring-2 focus:ring-wfd-crimson"
+            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 outline-none focus:ring-2 focus:ring-wfd-crimson disabled:bg-gray-100 disabled:text-gray-700"
           >
             <option value="">Select your active class...</option>
             {trainingClasses.map((option) => (
@@ -274,6 +285,18 @@ export function RegistrationForm({ onComplete, onBack, helpEmail }: Registration
             ))}
           </select>
         </label>
+
+        {linkedTrainingClass && (
+          <p className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+            This registration link is tied to {linkedTrainingClass.label}. Your class has been preselected for you.
+          </p>
+        )}
+
+        {hasClassLink && !linkedTrainingClass && (
+          <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+            This class registration link is not currently available. The class may not be active yet, may have expired, or may no longer be approved. Contact your instructor or EMS staff for help.
+          </p>
+        )}
 
         {trainingClasses.length === 0 && (
           <p className="rounded-lg border border-wfd-gold/30 bg-wfd-gold/10 p-3 text-sm text-wfd-charcoal">

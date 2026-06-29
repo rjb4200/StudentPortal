@@ -110,6 +110,7 @@ describe('buildInstructorClassApprovedEmail', () => {
       class_start_date: '2026-07-01',
       ride_time_end_date: '2026-08-01',
       site_name: 'Training Site A',
+      registration_url: 'https://studentportal.winchesterfireems.com/onboarding?class=11111111-1111-4111-8111-111111111111',
     });
 
     expect(result.subject).toBe('Class Approved — WFD EMS Student Portal');
@@ -120,6 +121,9 @@ describe('buildInstructorClassApprovedEmail', () => {
     expect(result.html).toContain('2026-07-01');
     expect(result.html).toContain('2026-08-01');
     expect(result.html).toContain('Training Site A');
+    expect(result.html).toContain('Student Registration Link');
+    expect(result.html).toContain('https://studentportal.winchesterfireems.com/onboarding?class=11111111-1111-4111-8111-111111111111');
+    expect(result.html).toContain('Share this link with students for this class');
   });
 
   it('escapes instructor and class details', () => {
@@ -129,11 +133,13 @@ describe('buildInstructorClassApprovedEmail', () => {
       class_start_date: '2026-07-01',
       ride_time_end_date: '2026-08-01',
       site_name: `Site <A>`,
+      registration_url: `https://studentportal.winchesterfireems.com/onboarding?class=<bad>&name="x"`,
     });
 
     expect(result.html).toContain('Jane &lt;script&gt;');
     expect(result.html).toContain('Class &quot;A&quot; &amp; B');
     expect(result.html).toContain('Site &lt;A&gt;');
+    expect(result.html).toContain('class=&lt;bad&gt;&amp;name=&quot;x&quot;');
     expect(result.html).not.toContain('Jane <script>');
   });
 });

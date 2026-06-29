@@ -87,7 +87,14 @@ export function buildInstructorClassApprovedEmail(params: {
   class_start_date: string;
   ride_time_end_date: string;
   site_name?: string | null;
+  registration_url?: string | null;
 }): EmailContent {
+  const registrationLink = params.registration_url
+    ? `<div style="margin:28px 0;text-align:center;">
+        <a href="${escHtml(params.registration_url)}" style="display:inline-block;background:#A40104;color:#ffffff;text-decoration:none;font-size:16px;font-weight:800;padding:15px 30px;border-radius:10px;box-shadow:0 4px 12px rgba(164,1,4,0.25);">Student Registration Link</a>
+      </div>
+      <p style="margin:0 auto 20px auto;max-width:500px;color:#4b5563;font-size:14px;line-height:1.6;text-align:center;">Share this link with students for this class. Students who use it will have this class preselected during registration.</p>`
+    : '';
   const bodyHtml = `<p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:16px;line-height:1.6;text-align:center;">Hi ${escHtml(params.instructor_name)}, your class has been <strong>approved</strong> in the WFD EMS Student Portal.</p>
       <div style="margin:20px auto;padding:16px 18px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;max-width:440px;">
         ${params.site_name ? `<p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Training Site:</strong> ${escHtml(params.site_name)}</p>` : ''}
@@ -95,6 +102,7 @@ export function buildInstructorClassApprovedEmail(params: {
         <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Class Start:</strong> ${escHtml(params.class_start_date)}</p>
         <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Ride-Time End:</strong> ${escHtml(params.ride_time_end_date)}</p>
       </div>
+      ${registrationLink}
       <p style="margin:0 auto 20px auto;max-width:500px;color:#4b5563;font-size:14px;line-height:1.6;text-align:center;">Students can register once the class start date has been reached and may schedule ride time through the approved ride-time end date.</p>`;
   return {
     subject: 'Class Approved — WFD EMS Student Portal',
