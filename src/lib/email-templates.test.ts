@@ -3,6 +3,7 @@ import {
   buildStudentApprovalEmail,
   buildOnboardingCompleteStudentEmail,
   buildOnboardingCompleteAdminEmail,
+  buildInstructorClassApprovedEmail,
   buildShiftCancelledByStudentEmail,
   buildShiftCancelledByStudentAdminEmail,
   buildShiftApprovedEmail,
@@ -98,6 +99,42 @@ describe('buildOnboardingCompleteAdminEmail', () => {
     expect(result.html).toContain('Summer Cohort');
     expect(result.html).toContain('Jane Instructor');
     expect(result.html).toContain('jane@example.com');
+  });
+});
+
+describe('buildInstructorClassApprovedEmail', () => {
+  it('renders class approval details with WFD email styling', () => {
+    const result = buildInstructorClassApprovedEmail({
+      instructor_name: 'Jane Instructor',
+      class_name: 'Summer EMT',
+      class_start_date: '2026-07-01',
+      ride_time_end_date: '2026-08-01',
+      site_name: 'Training Site A',
+    });
+
+    expect(result.subject).toBe('Class Approved — WFD EMS Student Portal');
+    expect(result.html).toContain('Class Approved');
+    expect(result.html).toContain('Winchester Fire Department');
+    expect(result.html).toContain('Jane Instructor');
+    expect(result.html).toContain('Summer EMT');
+    expect(result.html).toContain('2026-07-01');
+    expect(result.html).toContain('2026-08-01');
+    expect(result.html).toContain('Training Site A');
+  });
+
+  it('escapes instructor and class details', () => {
+    const result = buildInstructorClassApprovedEmail({
+      instructor_name: `Jane <script>`,
+      class_name: `Class "A" & B`,
+      class_start_date: '2026-07-01',
+      ride_time_end_date: '2026-08-01',
+      site_name: `Site <A>`,
+    });
+
+    expect(result.html).toContain('Jane &lt;script&gt;');
+    expect(result.html).toContain('Class &quot;A&quot; &amp; B');
+    expect(result.html).toContain('Site &lt;A&gt;');
+    expect(result.html).not.toContain('Jane <script>');
   });
 });
 

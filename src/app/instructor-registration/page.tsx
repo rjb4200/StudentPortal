@@ -214,7 +214,7 @@ export default function InstructorRegistrationPage() {
         <div className="rounded-xl border border-wfd-sage/30 bg-wfd-sage/10 p-5 text-center">
           <h2 className="text-xl font-bold text-wfd-charcoal">Registration Submitted</h2>
           <p className="mt-2 text-sm leading-6 text-gray-600">
-            Your TEI, instructor, and class information has been submitted for admin review. Students will not see this class until it is approved.
+            Your TEI, instructor, and class information has been submitted for admin review. Students cannot register until the class is approved and the class start date has been reached. You will receive an email when the class is approved.
           </p>
         </div>
         <Link href="/" className="block text-center text-sm font-semibold text-wfd-crimson hover:underline">
@@ -401,10 +401,19 @@ export default function InstructorRegistrationPage() {
               <p><span className="font-bold">TEI:</span> {siteMode === 'existing' ? selectedSite?.name : siteForm.name}</p>
               <p><span className="font-bold">Instructor:</span> {instructorMode === 'existing' ? `${selectedInstructor?.first_name ?? ''} ${selectedInstructor?.last_name ?? ''}`.trim() : `${instructorForm.firstName} ${instructorForm.lastName}`.trim()}</p>
             </div>
+            <div className="rounded-lg border border-wfd-gold/30 bg-wfd-gold/10 p-3 text-sm leading-6 text-wfd-charcoal">
+              Student access is controlled by the class start date, portal admin approval, and ride-time end date. Verify these dates carefully before submitting because they determine when students can register, schedule ride time, and access the portal.
+            </div>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <Input label="Class name" required value={classForm.name} onChange={(e) => updateClass('name', e.target.value)} />
-              <Input label="Beginning-of-class date" type="date" required value={classForm.classStartDate} onChange={(e) => updateClass('classStartDate', e.target.value)} />
-              <Input label="End-of-ride-time date" type="date" required value={classForm.rideTimeEndDate} onChange={(e) => updateClass('rideTimeEndDate', e.target.value)} />
+              <div>
+                <Input label="Beginning-of-class date" type="date" required value={classForm.classStartDate} onChange={(e) => updateClass('classStartDate', e.target.value)} />
+                <p className="mt-1 text-xs leading-5 text-gray-500">Students cannot register before this date, and portal admin approval is also required.</p>
+              </div>
+              <div>
+                <Input label="End-of-ride-time date" type="date" required value={classForm.rideTimeEndDate} onChange={(e) => updateClass('rideTimeEndDate', e.target.value)} />
+                <p className="mt-1 text-xs leading-5 text-gray-500">Students may only schedule and ride during the approved ride-time period. Portal access expires after this date.</p>
+              </div>
             </div>
             <label className="block text-sm font-medium text-gray-700">
               Class notes/instructions (optional)
