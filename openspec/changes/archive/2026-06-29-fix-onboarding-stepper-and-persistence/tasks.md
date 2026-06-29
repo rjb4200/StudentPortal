@@ -29,9 +29,9 @@
 
 - [x] 4.1 Run `npm run build` and confirm zero errors
 - [x] 4.2 Run `npm run test` and confirm all existing tests pass
-- [ ] 4.3 Manually verify: fresh onboarding shows intro hero, then 5-step stepper after clicking Begin Registration
-- [ ] 4.4 Manually verify: all 5 steps appear in the stepper, including "Submitted" as step 5 with 100% progress
-- [ ] 4.5 Manually verify: refreshing the browser mid-onboarding shows the resume banner and correctly restores the saved step
-- [ ] 4.6 Manually verify: "Start Over" clears localStorage and returns to intro hero
-- [ ] 4.7 Manually verify: completing all steps (reaching step 5) clears the session from localStorage
-- [ ] 4.8 Manually verify: mobile viewport shows compact stepper bar instead of 5 circles
+- [x] 4.3 Manually verify: fresh onboarding shows intro hero, then 5-step stepper after clicking Begin Registration
+- [x] 4.4 Manually verify: all 5 steps appear in the stepper, including "Submitted" as step 5 with 100% progress
+- [x] 4.5 Manually verify: refreshing the browser mid-onboarding shows the resume banner and correctly restores the saved step
+- [x] 4.6 Manually verify: "Start Over" clears localStorage and returns to intro hero
+- [x] 4.7 Manually verify: completing all steps (reaching step 5) clears the session from localStorage
+- [x] 4.8 Manually verify: mobile viewport shows compact stepper bar instead of 5 circles

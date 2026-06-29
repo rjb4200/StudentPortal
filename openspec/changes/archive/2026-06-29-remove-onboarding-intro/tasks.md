@@ -16,8 +16,8 @@
 
 - [x] 3.1 Run `npm run build` and confirm zero errors
 - [x] 3.2 Run `npm run test` and confirm all existing tests pass
-- [ ] 3.3 Manually verify `/onboarding` with no saved session opens directly to step 1 registration with the 5-step stepper visible
-- [ ] 3.4 Manually verify a valid saved session still shows the resume prompt before step content
-- [ ] 3.5 Manually verify Resume restores the saved step and displays the stepper
-- [ ] 3.6 Manually verify Start Over clears `wfd_onboarding_session` and displays step 1 registration with the stepper visible
-- [ ] 3.7 Manually verify mobile viewport still shows the compact mobile stepper bar on step 1
+- [x] 3.3 Manually verify `/onboarding` with no saved session opens directly to step 1 registration with the 5-step stepper visible
+- [x] 3.4 Manually verify a valid saved session still shows the resume prompt before step content
+- [x] 3.5 Manually verify Resume restores the saved step and displays the stepper
+- [x] 3.6 Manually verify Start Over clears `wfd_onboarding_session` and displays step 1 registration with the stepper visible
+- [x] 3.7 Manually verify mobile viewport still shows the compact mobile stepper bar on step 1
