@@ -7,6 +7,7 @@ import { LegalWaiver } from '@/components/onboarding/legal-waiver';
 import { ResourceLibrary } from '@/components/onboarding/resource-library';
 import { KnowledgeGate } from '@/components/onboarding/knowledge-gate';
 import { OnboardingComplete } from '@/components/onboarding/onboarding-complete';
+import { OnboardingIntro } from '@/components/onboarding/onboarding-intro';
 import { OnboardingStepper } from '@/components/onboarding/onboarding-stepper';
 import { OnboardingStepperMobile } from '@/components/onboarding/onboarding-stepper-mobile';
 import { SaveResumeBanner } from '@/components/onboarding/save-resume-banner';
@@ -66,6 +67,7 @@ function clearSession() {
 
 export default function OnboardingPage() {
   const [showResumeBanner, setShowResumeBanner] = useState(false);
+  const [showIntro, setShowIntro] = useState(true);
   const [currentStep, setCurrentStep] = useState(1);
   const [studentId, setStudentId] = useState<string | null>(null);
   const [onboardingToken, setOnboardingToken] = useState<string | null>(null);
@@ -104,6 +106,7 @@ export default function OnboardingPage() {
     setOnboardingToken(saved.onboardingToken ?? null);
     setStudentEmail(saved.email);
     setCurrentStep(saved.currentStep);
+    setShowIntro(false);
     setShowResumeBanner(false);
   }, []);
 
@@ -114,6 +117,11 @@ export default function OnboardingPage() {
     setStudentId(null);
     setOnboardingToken(null);
     setStudentEmail('');
+    setShowIntro(true);
+  }, []);
+
+  const handleBegin = useCallback(() => {
+    setShowIntro(false);
   }, []);
 
   const handleRegistrationComplete = useCallback(
@@ -145,6 +153,10 @@ export default function OnboardingPage() {
 
   if (showResumeBanner) {
     return <SaveResumeBanner onResume={handleResume} onStartOver={handleStartOver} />;
+  }
+
+  if (showIntro) {
+    return <OnboardingIntro onBegin={handleBegin} />;
   }
 
   let stepContent: React.ReactNode = null;

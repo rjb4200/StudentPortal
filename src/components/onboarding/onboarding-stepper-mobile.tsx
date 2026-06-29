@@ -9,7 +9,7 @@ const steps = [
   { step: 2, label: 'Legal' },
   { step: 3, label: 'Resources' },
   { step: 4, label: 'Review' },
-  { step: 5, label: 'Complete' },
+  { step: 5, label: 'Submitted' },
 ];
 
 export function OnboardingStepperMobile({ currentStep }: StepperMobileProps) {
