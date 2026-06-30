@@ -31,6 +31,7 @@ export const onboardingCompleteBody = z.object({
 export const createAuthUserBody = z.object({
   email: emailSchema,
   password: z.string().min(6).max(128),
+  role: z.enum(['admin', 'preceptor']),
 });
 
 const adminReasonSchema = textSchema(500).min(3, 'Reason must be at least 3 characters');

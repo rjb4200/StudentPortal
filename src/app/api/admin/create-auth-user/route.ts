@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
   }
-  const { email, password } = parsed.data;
+  const { email, password, role } = parsed.data;
 
   const adminClient = createAdminClient();
 
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     email,
     password,
     email_confirm: true,
-    user_metadata: { role: 'admin' },
+    app_metadata: { role },
   });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });

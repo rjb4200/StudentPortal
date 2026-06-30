@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
         email: student.email,
         password: tempPassword,
         email_confirm: true,
-        user_metadata: { role: 'student' },
+        app_metadata: { role: 'student' },
       });
 
       if (createError || !created?.user) {

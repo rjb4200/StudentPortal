@@ -1,13 +1,13 @@
 type UserLike = {
-  user_metadata?: {
+  app_metadata?: {
     role?: unknown;
   } | null;
 } | null | undefined;
 
 export function getUserRole(userOrRole: UserLike | unknown): string | null {
   if (typeof userOrRole === 'string') return userOrRole;
-  if (typeof userOrRole === 'object' && userOrRole && 'user_metadata' in userOrRole) {
-    const role = (userOrRole as UserLike)?.user_metadata?.role;
+  if (typeof userOrRole === 'object' && userOrRole && 'app_metadata' in userOrRole) {
+    const role = (userOrRole as UserLike)?.app_metadata?.role;
     return typeof role === 'string' ? role : null;
   }
   return null;

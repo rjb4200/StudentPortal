@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
         email: student.email,
         password: String(Math.floor(100000 + Math.random() * 900000)),
         email_confirm: true,
-        user_metadata: { role: 'student' },
+        app_metadata: { role: 'student' },
       });
       if (recreateError) {
         console.error(`CRITICAL: Failed to recreate auth user after failed student delete. Orphan auth user ID: ${student.auth_user_id}`);

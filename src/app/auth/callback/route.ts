@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { publicEnv } from '@/lib/env';
+import { canAccessAdmin } from '@/lib/roles';
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
@@ -30,7 +31,7 @@ export async function GET(request: NextRequest) {
     if (!error) {
       const { data: { user } } = await supabase.auth.getUser();
 
-      if (user?.user_metadata?.role === 'admin') {
+      if (canAccessAdmin(user)) {
         return NextResponse.redirect(`${origin}/admin`);
       }
 
