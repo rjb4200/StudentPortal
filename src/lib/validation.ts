@@ -33,8 +33,19 @@ export const createAuthUserBody = z.object({
   password: z.string().min(6).max(128),
 });
 
+const adminReasonSchema = textSchema(500).min(3, 'Reason must be at least 3 characters');
+
 export const deleteStudentBody = z.object({
   studentId: uuidSchema,
+  context: z.enum(['abandoned-registration']).optional(),
+  reason: adminReasonSchema.optional(),
+});
+
+export const maintenancePurgeBody = z.object({
+  exportConfirmed: z.literal(true, { error: 'Master export confirmation is required' }),
+  dryRunReviewed: z.literal(true, { error: 'Dry-run review is required' }),
+  confirmation: z.literal('PURGE STUDENT DATA', { error: 'Type PURGE STUDENT DATA to confirm' }),
+  reason: adminReasonSchema,
 });
 
 export const scheduleCancelBody = z.object({

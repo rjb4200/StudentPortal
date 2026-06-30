@@ -1,8 +1,5 @@
-# safe-student-removal Specification
+## MODIFIED Requirements
 
-## Purpose
-TBD - created by archiving change fix-student-removal-error-handling. Update Purpose after archive.
-## Requirements
 ### Requirement: Server-side student deletion with error reporting
 
 The system SHALL provide a server-side API route (`POST /api/admin/delete-student`) for permanent student deletion. The route SHALL use the service-role admin client and require admin authentication. The route SHALL require a non-empty admin reason for abandoned-registration cleanup deletion requests. The route SHALL delete the student's Supabase Auth user (if linked via `auth_user_id`) before deleting the student record. If auth deletion fails, the route SHALL abort and return an error without deleting the student record. If student record deletion fails after successful auth deletion, the route SHALL attempt to recreate the auth user and return an error. The route SHALL record successful abandoned-registration cleanup deletions in the audit log with performer, reason, and student identity context. The route SHALL return `{ success: true }` on complete success or `{ error: string }` on any failure.
@@ -65,17 +62,3 @@ Admin-facing deletion UIs SHALL display error messages when a deletion operation
 
 - **WHEN** an admin submits an abandoned-registration deletion
 - **THEN** the interface displays a pending state until the API succeeds or fails
-
-### Requirement: RLS DELETE policy on students table
-
-The `students` table SHALL have an RLS DELETE policy allowing admin users to delete rows based on JWT `user_metadata.role = 'admin'`.
-
-#### Scenario: Admin deletes student via service-role client
-
-- **WHEN** the server-side deletion route uses the admin client to delete a student row
-- **THEN** the deletion succeeds regardless of RLS (service role bypasses RLS)
-
-#### Scenario: Non-admin cannot delete student rows
-
-- **WHEN** a client-side DELETE is attempted on the students table without admin JWT
-- **THEN** the deletion is blocked by RLS

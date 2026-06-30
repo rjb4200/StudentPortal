@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { auditLog } from '@/lib/audit';
 import { canAccessAdmin } from '@/lib/roles';
 import { publicEnv } from '@/lib/env';
 import { deleteStudentBody } from '@/lib/validation';
@@ -15,7 +16,7 @@ export async function POST(request: NextRequest) {
   );
 
   const { data: { user } } = await authClient.auth.getUser();
-  if (!canAccessAdmin(user)) {
+  if (!user || !canAccessAdmin(user)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
@@ -24,18 +25,25 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
   }
-  const { studentId } = parsed.data;
+  const { studentId, context, reason } = parsed.data;
+  if (context === 'abandoned-registration' && !reason) {
+    return NextResponse.json({ error: 'Reason is required for abandoned registration deletion' }, { status: 400 });
+  }
 
   const adminClient = createAdminClient();
 
   const { data: student, error: studentError } = await adminClient
     .from('students')
-    .select('id, auth_user_id, email')
+    .select('id, auth_user_id, email, full_name, status, onboarding_completed_at')
     .eq('id', studentId)
     .single();
 
   if (studentError || !student) {
     return NextResponse.json({ error: 'Student not found' }, { status: 404 });
+  }
+
+  if (context === 'abandoned-registration' && (student.status !== 'pending' || student.onboarding_completed_at)) {
+    return NextResponse.json({ error: 'Only incomplete pending registrations can be deleted from cleanup' }, { status: 400 });
   }
 
   if (student.auth_user_id) {
@@ -65,6 +73,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: `Failed to delete student record but auth user was recreated. ${dbDeleteError.message}` }, { status: 500 });
     }
     return NextResponse.json({ error: `Failed to delete student record: ${dbDeleteError.message}` }, { status: 500 });
+  }
+
+  if (context === 'abandoned-registration' && reason) {
+    await auditLog(
+      `Abandoned registration deleted; student="${student.full_name || student.email}"; email="${student.email}"; reason="${reason}"`,
+      user.email || user.id || 'unknown'
+    );
   }
 
   return NextResponse.json({ success: true });

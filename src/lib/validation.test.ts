@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   adminRegistryUpsertBody,
   classDateRangeSchema,
+  deleteStudentBody,
   instructorRegistrationBody,
+  maintenancePurgeBody,
   onboardingRegistrationWithClassBody,
   scheduleCreateBody,
 } from '@/lib/validation';
@@ -119,6 +121,45 @@ describe('adminRegistryUpsertBody', () => {
         rideTimeEndDate: '2026-07-01',
         notes: '',
       },
+    }).success).toBe(false);
+  });
+});
+
+describe('maintenance safety validation', () => {
+  it('requires deliberate purge confirmation and reason', () => {
+    expect(maintenancePurgeBody.safeParse({
+      exportConfirmed: true,
+      dryRunReviewed: true,
+      confirmation: 'PURGE STUDENT DATA',
+      reason: 'End of cohort cleanup after export.',
+    }).success).toBe(true);
+
+    expect(maintenancePurgeBody.safeParse({
+      exportConfirmed: true,
+      dryRunReviewed: true,
+      confirmation: 'PURGE',
+      reason: 'End of cohort cleanup after export.',
+    }).success).toBe(false);
+
+    expect(maintenancePurgeBody.safeParse({
+      exportConfirmed: true,
+      dryRunReviewed: true,
+      confirmation: 'PURGE STUDENT DATA',
+      reason: '',
+    }).success).toBe(false);
+  });
+
+  it('accepts reason-aware abandoned registration deletion payloads', () => {
+    expect(deleteStudentBody.safeParse({
+      studentId: uuid,
+      context: 'abandoned-registration',
+      reason: 'Duplicate incomplete registration.',
+    }).success).toBe(true);
+
+    expect(deleteStudentBody.safeParse({
+      studentId: uuid,
+      context: 'unexpected-context',
+      reason: 'Duplicate incomplete registration.',
     }).success).toBe(false);
   });
 });
