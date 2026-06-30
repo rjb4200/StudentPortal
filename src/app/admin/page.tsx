@@ -79,6 +79,13 @@ export default function AdminPage() {
                 Account Management
               </Link>
               <Link
+                href="/admin/system"
+                className="block px-4 py-2 text-sm text-gray-700 hover:bg-wfd-charcoal/5"
+                onClick={() => setMenuOpen(false)}
+              >
+                System Health
+              </Link>
+              <Link
                 href="/admin/dev"
                 className="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-50"
                 onClick={() => setMenuOpen(false)}
