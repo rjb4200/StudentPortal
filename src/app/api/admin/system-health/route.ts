@@ -36,29 +36,20 @@ async function countRows(supabase: ReturnType<typeof createAdminClient>, table: 
 }
 
 async function getStorageUsage(supabase: ReturnType<typeof createAdminClient>) {
-  const { data, error } = await (supabase as any)
-    .schema('storage')
-    .from('objects')
-    .select('bucket_id, metadata');
+  const { data, error } = await (supabase as any).rpc('get_storage_usage_summary');
 
   if (error) throw new Error(error.message);
 
-  const buckets = new Map<string, { bucketId: string; objectCount: number; bytes: number }>();
+  const buckets = (data ?? []).map((row: any) => ({
+    bucketId: row.bucket_id ?? 'unknown',
+    objectCount: Number(row.object_count ?? 0),
+    bytes: Number(row.bytes ?? 0),
+  }));
 
-  for (const object of data ?? []) {
-    const bucketId = object.bucket_id ?? 'unknown';
-    const current = buckets.get(bucketId) ?? { bucketId, objectCount: 0, bytes: 0 };
-    const size = Number(object.metadata?.size ?? 0);
-    current.objectCount += 1;
-    current.bytes += Number.isFinite(size) ? size : 0;
-    buckets.set(bucketId, current);
-  }
-
-  const rows = Array.from(buckets.values()).sort((a, b) => a.bucketId.localeCompare(b.bucketId));
   return {
-    buckets: rows,
-    objectCount: rows.reduce((sum, bucket) => sum + bucket.objectCount, 0),
-    bytes: rows.reduce((sum, bucket) => sum + bucket.bytes, 0),
+    buckets,
+    objectCount: buckets.reduce((sum: number, bucket: { objectCount: number }) => sum + bucket.objectCount, 0),
+    bytes: buckets.reduce((sum: number, bucket: { bytes: number }) => sum + bucket.bytes, 0),
   };
 }
 
