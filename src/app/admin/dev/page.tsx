@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { AdminNavigation } from '@/components/admin/admin-navigation';
 import { canAccessAdmin } from '@/lib/roles';
 import Link from 'next/link';
 
@@ -46,11 +47,7 @@ export default function DevPage() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <div className="flex items-center gap-4 mb-6">
-        <Link href="/admin" className="text-sm text-wfd-crimson hover:underline">
-          ← Admin Command Center
-        </Link>
-      </div>
+      <AdminNavigation />
 
       <h1 className="text-2xl font-bold text-wfd-charcoal mb-1">Dev Navigation</h1>
       <p className="text-sm text-gray-500 mb-6">Temporary page for browsing all routes during development.</p>

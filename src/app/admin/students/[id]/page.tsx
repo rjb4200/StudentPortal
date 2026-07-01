@@ -10,6 +10,7 @@ import { OnboardingTestSection } from '@/components/admin/student-profile/onboar
 import { RideHistorySection } from '@/components/admin/student-profile/ride-history-section';
 import { PrintPacketButton } from '@/components/admin/student-profile/print-packet-button';
 import { CopyButton } from '@/components/admin/student-profile/copy-button';
+import { AdminNavigation } from '@/components/admin/admin-navigation';
 
 export default async function StudentProfilePage({
   params,
@@ -87,17 +88,13 @@ export default async function StudentProfilePage({
   return (
     <div className="min-h-screen bg-white print:bg-white">
       <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
-        {/* Top bar */}
-        <div className="flex items-center justify-between">
-          <Link href="/admin" className="text-sm text-wfd-crimson hover:underline print:hidden">
-            &larr; Back to Admin Command Center
-          </Link>
-          <div className="flex items-center gap-3">
-            <PrintPacketButton />
-            <a href={`/admin/accounts?edit=${student.id}`} className="text-sm text-wfd-crimson hover:underline print:hidden">
-              Edit Student
-            </a>
-          </div>
+        <AdminNavigation printHidden />
+
+        <div className="flex items-center justify-end gap-3 print:hidden">
+          <PrintPacketButton />
+          <a href={`/admin/accounts?edit=${student.id}`} className="text-sm text-wfd-crimson hover:underline">
+            Edit Student
+          </a>
         </div>
 
         {warnings.length > 0 && <CompletenessWarnings warnings={warnings} />}

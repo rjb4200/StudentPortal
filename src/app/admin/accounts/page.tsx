@@ -6,8 +6,8 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { AdminNavigation } from '@/components/admin/admin-navigation';
 import { canAccessAdmin } from '@/lib/roles';
-import Link from 'next/link';
 
 type Tab = 'admins' | 'preceptors' | 'students';
 
@@ -272,9 +272,7 @@ function AccountsPageInner() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Link href="/admin" className="text-sm text-wfd-crimson hover:underline">← Back to Admin Command Center</Link>
-      </div>
+      <AdminNavigation />
       <h1 className="text-2xl font-bold text-wfd-charcoal">Account Management</h1>
 
       {editing || editType ? (

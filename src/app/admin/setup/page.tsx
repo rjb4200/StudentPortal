@@ -9,8 +9,8 @@ import { ResourceLibraryConfig } from '@/components/admin/resource-library-confi
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { AdminNavigation } from '@/components/admin/admin-navigation';
 import { canAccessAdmin } from '@/lib/roles';
-import Link from 'next/link';
 
 export default function SetupPage() {
   const supabase = createClient();
@@ -147,11 +147,7 @@ export default function SetupPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Link href="/admin" className="text-sm text-wfd-crimson hover:underline">
-          ← Back to Admin Command Center
-        </Link>
-      </div>
+      <AdminNavigation />
       <h1 className="text-2xl font-bold text-wfd-charcoal">Onboarding Setup</h1>
       <p className="text-gray-500 -mt-3">Configure the student onboarding experience. Changes appear immediately.</p>
 

@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { AdminNavigation } from '@/components/admin/admin-navigation';
 
 type Status = 'healthy' | 'warning' | 'attention' | 'unknown';
 
@@ -129,12 +129,10 @@ export default function SystemHealthPage() {
 
   return (
     <div className="space-y-6">
+      <AdminNavigation />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <Link href="/admin" className="text-sm text-wfd-crimson hover:underline">
-            ← Back to Admin Command Center
-          </Link>
-          <h1 className="mt-3 text-2xl font-bold text-wfd-charcoal">System Health</h1>
+          <h1 className="text-2xl font-bold text-wfd-charcoal">System Health</h1>
           <p className="text-sm text-gray-500">Operational status, configuration checks, and daily sweep telemetry.</p>
         </div>
         <Button type="button" variant="secondary" onClick={loadHealth} loading={loading}>
