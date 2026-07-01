@@ -31,7 +31,7 @@ The system SHALL use a Supabase PostgreSQL database with the following tables, e
 - **THEN** the row represents a completed onboarding awaiting admin approval
 
 ### Requirement: Row Level Security on all tables
-All tables SHALL have RLS enabled. Student policies SHALL restrict read/write to rows where an `auth.uid()` check matches `students.auth_user_id` for the relevant enrollment row. Admin policies SHALL grant full `ALL` access via an admin role check in auth metadata.
+All tables SHALL have RLS enabled. Student policies SHALL restrict read/write to rows where an `auth.uid()` check matches `students.auth_user_id` for the relevant enrollment row. Admin policies SHALL grant full `ALL` access via a protected admin role check in Supabase Auth app metadata.
 
 #### Scenario: RLS enforcement on students table
 - **WHEN** a student queries the students table without admin role
@@ -42,8 +42,12 @@ All tables SHALL have RLS enabled. Student policies SHALL restrict read/write to
 - **THEN** only evaluations where `student_id` references a student row whose `auth_user_id` matches their authenticated UUID are returned
 
 #### Scenario: Admin bypass RLS
-- **WHEN** a user with admin role metadata queries any table
+- **WHEN** a user with `app_metadata.role = 'admin'` queries an admin-managed table
 - **THEN** all rows are returned regardless of student ownership
+
+#### Scenario: User metadata does not bypass RLS
+- **WHEN** a user has `user_metadata.role = 'admin'` but lacks `app_metadata.role = 'admin'`
+- **THEN** admin RLS policies do not grant full table access
 
 ### Requirement: Daily cron sweep for account expiration
 A scheduled function SHALL run daily to identify students whose `access_until` timestamp has passed and update their status to `'expired'` unless they are already `archived`. The function SHALL preserve relevant data before expiring accounts. Each cron sweep execution SHALL record durable system job run history with job name, success or failure status, start and finish timestamps, duration, summary metadata, and failure message when applicable.

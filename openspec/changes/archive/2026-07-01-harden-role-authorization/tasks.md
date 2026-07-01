@@ -22,5 +22,5 @@
 - [x] 4.1 Run `npm run test`.
 - [x] 4.2 Run `npm run build`.
 - [x] 4.3 Run Supabase security advisors and verify `rls_references_user_metadata` findings are removed for project RLS policies.
-- [ ] 4.4 Smoke-test admin login/access after refreshing the admin session.
+- [x] 4.4 Smoke-test admin login/access after refreshing the admin session.
 - [x] 4.5 Document that admins/preceptors should sign out and back in after deployment if their current session has stale JWT claims.
