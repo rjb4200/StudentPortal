@@ -41,8 +41,7 @@ class_mous
 ├── representative_signature (text)
 ├── representative_signed_at (timestamptz)
 ├── mou_body_snapshot (text)
-├── wfems_signer_name (text, from portal_settings at time of wfems signature)
-├── wfems_signer_title (text)
+├── wfems_signed_by (FK to admin_accounts)
 ├── wfems_signed_at (timestamptz)
 ├── pdf_generated_at (timestamptz)
 ├── created_at (timestamptz)
@@ -51,17 +50,13 @@ class_mous
 
 Alternatives: store in `training_classes` directly (muddles class data with agreement data); store only field values without body snapshot (loses the exact agreement text if the template changes later).
 
-### Decision: Store WFEMS signer details in `portal_settings`
+### Decision: Tie WFEMS signature to admin account identity
 
-Three new portal setting keys:
+The WFEMS signer is selected from active admin accounts at signing time. The `class_mous` table stores a `wfems_signed_by` FK referencing `admin_accounts`. The signer's name, rank, and email are captured from the admin account row at the moment of signing and stored as snapshot fields on the MOU record. This provides a clear audit trail and legally sufficient identification.
 
-- `mou_wfems_signer_name` (default: `James Brown`)
-- `mou_wfems_signer_title` (default: `EMS Major`)
-- `mou_wfems_signer_organization` (default: `Winchester Fire/EMS`)
+`admin_accounts` gains a `rank` column (e.g. "EMS Major", "Deputy Chief") that is required for new accounts and editable for existing ones.
 
-These are editable by admins through the existing portal settings mechanism or through a dedicated settings section.
-
-Alternatives: hard-code the signer (not configurable without code change); store in a separate table (unnecessary for three key-value pairs).
+Alternatives: free-text signer fields from portal_settings (weak identity, no audit trail); hard-coded signer name (inflexible).
 
 ### Decision: Generate PDF using `jspdf` on the server
 
@@ -115,6 +110,12 @@ MOU items appear in the "Action Required" card alongside existing item types. Th
 
 MOU status does NOT affect the existing class approval workflow. Class approval and MOU signature are independent actions.
 
+### Decision: Auto-fill MOU template before presenting to instructor
+
+The MOU template body stored in `portal_settings` uses `{{placeholder}}` tags. Before displaying to the instructor in step 4, all tags are replaced with real values from the registration form (organization name, class name, dates, representative details). Dates like `effective_date` default to one day after today. Unsigned fields like `wfems_signed_at` show "[Pending WFEMS signature]". The body snapshot stored at signing time is the fully rendered version with no placeholders remaining.
+
+Alternatives: show raw template (confusing to instructors); use a different placeholder syntax (same effect, different syntax).
+
 ## Risks / Trade-offs
 
 - `jspdf` letterhead rendering may differ from the actual department letterhead PDF provided → Mitigation: store the letterhead as an image in Supabase Storage and use it as a background/image in the PDF; admins can replace it.
@@ -125,5 +126,3 @@ MOU status does NOT affect the existing class approval workflow. Class approval 
 ## Open Questions
 
 - Should the letterhead image be stored in Supabase Storage (`branding` bucket already exists) with a known filename, or embedded as a base64 portal setting?
-- Should the admin account table get a new `notify_class_mou` column, or should existing `notify_onboarding_complete` be reused for class-related notifications?
-- Should the completed MOU PDF be cached/stored in Supabase Storage after first generation, or always regenerated on demand?

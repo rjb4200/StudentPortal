@@ -26,6 +26,7 @@ export type Database = {
           notify_daily_report: boolean
           notify_evaluation_flagged: boolean
           notify_onboarding_complete: boolean
+          rank: string | null
           updated_at: string
         }
         Insert: {
@@ -39,6 +40,7 @@ export type Database = {
           notify_daily_report?: boolean
           notify_evaluation_flagged?: boolean
           notify_onboarding_complete?: boolean
+          rank?: string | null
           updated_at?: string
         }
         Update: {
@@ -52,6 +54,7 @@ export type Database = {
           notify_daily_report?: boolean
           notify_evaluation_flagged?: boolean
           notify_onboarding_complete?: boolean
+          rank?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -71,8 +74,7 @@ export type Database = {
           training_organization_name: string
           updated_at: string
           wfems_signed_at: string | null
-          wfems_signer_name: string | null
-          wfems_signer_title: string | null
+          wfems_signed_by: string | null
         }
         Insert: {
           created_at?: string
@@ -88,8 +90,7 @@ export type Database = {
           training_organization_name?: string
           updated_at?: string
           wfems_signed_at?: string | null
-          wfems_signer_name?: string | null
-          wfems_signer_title?: string | null
+          wfems_signed_by?: string | null
         }
         Update: {
           created_at?: string
@@ -105,8 +106,7 @@ export type Database = {
           training_organization_name?: string
           updated_at?: string
           wfems_signed_at?: string | null
-          wfems_signer_name?: string | null
-          wfems_signer_title?: string | null
+          wfems_signed_by?: string | null
         }
         Relationships: [
           {
@@ -114,6 +114,13 @@ export type Database = {
             columns: ["training_class_id"]
             isOneToOne: true
             referencedRelation: "training_classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_mous_wfems_signed_by_fkey"
+            columns: ["wfems_signed_by"]
+            isOneToOne: false
+            referencedRelation: "admin_accounts"
             referencedColumns: ["id"]
           },
         ]

@@ -301,15 +301,13 @@ export function DailyOps() {
   const handleWfemsSign = async (mouId: string) => {
     setSigningMou(mouId);
     try {
-      const { data: settings } = await supabase.from('portal_settings').select('key, value').in('key', ['mou_wfems_signer_name', 'mou_wfems_signer_title']);
-      const signer: Record<string, string> = {};
-      for (const row of settings ?? []) { signer[row.key] = row.value; }
-      const signerName = signer.mou_wfems_signer_name ?? 'James Brown';
-      const signerTitle = signer.mou_wfems_signer_title ?? 'EMS Major';
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: admin } = await supabase.from('admin_accounts').select('id, full_name, rank').eq('auth_user_id', user.id).single();
+      if (!admin) return;
 
       await supabase.from('class_mous').update({
-        wfems_signer_name: signerName,
-        wfems_signer_title: signerTitle,
+        wfems_signed_by: admin.id,
         wfems_signed_at: new Date().toISOString(),
       }).eq('id', mouId);
 

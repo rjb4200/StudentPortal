@@ -24,7 +24,7 @@ export default function MouPrintPage() {
       const supabase = createClient() as any;
       const { data, error: mouError } = await supabase
         .from('class_mous')
-        .select('*, training_classes!inner(id, name, class_start_date, ride_time_end_date, training_sites!inner(name, organization_name), instructors!inner(first_name, last_name, email))')
+        .select('*, training_classes!inner(id, name, class_start_date, ride_time_end_date, training_sites!inner(name, organization_name), instructors!inner(first_name, last_name, email)), admin_accounts!wfems_signed_by(full_name, rank)')
         .eq('training_class_id', classId)
         .single();
 
@@ -64,6 +64,7 @@ export default function MouPrintPage() {
   const tc = Array.isArray(mou.training_classes) ? mou.training_classes[0] : mou.training_classes;
   const site = Array.isArray(tc?.training_sites) ? tc.training_sites[0] : tc?.training_sites;
   const instructor = Array.isArray(tc?.instructors) ? tc.instructors[0] : tc?.instructors;
+  const adminSigner = Array.isArray(mou.admin_accounts) ? mou.admin_accounts[0] : mou.admin_accounts;
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
@@ -117,8 +118,8 @@ export default function MouPrintPage() {
             <div>
               <p className="font-bold text-wfd-charcoal uppercase text-xs tracking-wide">Winchester Fire/EMS</p>
               <div className="mt-4 border-b border-gray-400 pb-1">
-                <p className="font-bold text-wfd-charcoal text-lg">{mou.wfems_signer_name || 'James Brown'}</p>
-                <p className="text-sm text-gray-500">{mou.wfems_signer_title || 'EMS Major'}</p>
+                <p className="font-bold text-wfd-charcoal text-lg">{adminSigner?.full_name || 'Winchester Fire/EMS'}</p>
+                <p className="text-sm text-gray-500">{adminSigner?.rank || ''}</p>
               </div>
               <p className="mt-2 text-xs text-gray-400">Signed: {formatDate(mou.wfems_signed_at)}</p>
             </div>

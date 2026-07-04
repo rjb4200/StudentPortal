@@ -172,7 +172,33 @@ export default function InstructorRegistrationPage() {
     try {
       const response = await fetch('/api/settings?key=mou_template_body');
       const payload = await response.json().catch(() => null);
-      if (payload?.value) setMouBody(payload.value);
+      if (payload?.value) {
+        const repName = instructorMode === 'existing'
+          ? `${selectedInstructor?.first_name ?? ''} ${selectedInstructor?.last_name ?? ''}`.trim()
+          : `${instructorForm.firstName} ${instructorForm.lastName}`.trim();
+        const repTitle = instructorMode === 'existing' ? (selectedInstructor?.title ?? '') : instructorForm.title;
+        const orgName = siteMode === 'existing'
+          ? (selectedSite?.organization_name ?? '')
+          : siteForm.organizationName;
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const effDate = tomorrow.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+        const signedDate = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+        const rendered = payload.value
+          .replace(/\{\{effective_date\}\}/g, effDate)
+          .replace(/\{\{training_organization_name\}\}/g, orgName)
+          .replace(/\{\{class_name\}\}/g, classForm.name)
+          .replace(/\{\{class_start_date\}\}/g, classForm.classStartDate)
+          .replace(/\{\{ride_time_end_date\}\}/g, classForm.rideTimeEndDate)
+          .replace(/\{\{representative_name\}\}/g, repName)
+          .replace(/\{\{representative_title\}\}/g, repTitle)
+          .replace(/\{\{representative_signed_at\}\}/g, signedDate)
+          .replace(/\{\{wfems_signer_name\}\}/g, '[Pending WFEMS signature]')
+          .replace(/\{\{wfems_signer_title\}\}/g, '')
+          .replace(/\{\{wfems_signed_at\}\}/g, '[Pending WFEMS signature]');
+        setMouBody(rendered);
+      }
     } catch {}
     setLoadingMou(false);
     const repName = instructorMode === 'existing'

@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
 
   const { data: mou, error: mouError } = await adminClient
     .from('class_mous')
-    .select('*, training_classes!inner(id, name, class_start_date, ride_time_end_date, training_sites!inner(name, organization_name), instructors!inner(first_name, last_name, email))')
+    .select('*, training_classes!inner(id, name, class_start_date, ride_time_end_date, training_sites!inner(name, organization_name), instructors!inner(first_name, last_name, email)), admin_accounts!wfems_signed_by(full_name, rank)')
     .eq('id', mouId)
     .single();
 
@@ -163,7 +163,10 @@ export async function GET(request: NextRequest) {
   doc.setFontSize(10);
   doc.setTextColor(28, 28, 30);
   doc.setFont('helvetica', 'bold');
-  doc.text(`${mou.wfems_signer_name || 'James Brown'}, ${mou.wfems_signer_title || 'EMS Major'}`, 20, y);
+  const adminSigner = Array.isArray(mou.admin_accounts) ? mou.admin_accounts[0] : mou.admin_accounts;
+  const signerName = adminSigner?.full_name ?? 'Winchester Fire/EMS';
+  const signerRank = adminSigner?.rank ?? '';
+  doc.text(`${signerName}${signerRank ? `, ${signerRank}` : ''}`, 20, y);
   y += 4;
   doc.setFontSize(8);
   doc.setTextColor(100, 100, 100);

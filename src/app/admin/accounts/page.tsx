@@ -83,7 +83,7 @@ function AccountsPageInner() {
   function startNew(type: 'admin' | 'preceptor') {
     if (type === 'admin') {
       setEditing(null); setEditType('admin');
-      setForm({ full_name: '', email: '', notify_onboarding_complete: true, notify_evaluation_flagged: true, notify_daily_report: false, is_active: true });
+      setForm({ full_name: '', email: '', rank: '', notify_onboarding_complete: true, notify_evaluation_flagged: true, notify_daily_report: false, notify_class_mou: false, is_active: true });
       setFormPassword('');
     } else {
       setEditing(null); setEditType('preceptor');
@@ -114,6 +114,7 @@ function AccountsPageInner() {
 
     if (editType === 'admin') {
       if (!form.full_name.trim() || !form.email.trim()) { setMessage('Name and email required.'); setSaving(false); return; }
+      if (!form.rank?.trim()) { setMessage('Rank is required.'); setSaving(false); return; }
 
       let authUserId = editing?.auth_user_id;
       if (!authUserId && !editing) {
@@ -133,10 +134,11 @@ function AccountsPageInner() {
       }
 
       const payload: any = {
-        full_name: form.full_name.trim(), email: form.email.trim(), is_active: form.is_active,
+        full_name: form.full_name.trim(), email: form.email.trim(), rank: form.rank.trim(), is_active: form.is_active,
         notify_onboarding_complete: form.notify_onboarding_complete,
         notify_evaluation_flagged: form.notify_evaluation_flagged,
         notify_daily_report: form.notify_daily_report,
+        notify_class_mou: form.notify_class_mou,
         updated_at: new Date().toISOString(),
       };
       if (authUserId) payload.auth_user_id = authUserId;
@@ -345,7 +347,11 @@ function AccountsPageInner() {
                 <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.notify_onboarding_complete || false} onChange={e => setForm({...form, notify_onboarding_complete: e.target.checked})} className="h-4 w-4" /> Onboarding alerts</label>
                 <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.notify_evaluation_flagged || false} onChange={e => setForm({...form, notify_evaluation_flagged: e.target.checked})} className="h-4 w-4" /> Evaluation alerts</label>
                 <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.notify_daily_report || false} onChange={e => setForm({...form, notify_daily_report: e.target.checked})} className="h-4 w-4" /> Daily report</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.notify_class_mou || false} onChange={e => setForm({...form, notify_class_mou: e.target.checked})} className="h-4 w-4" /> MOU alerts</label>
               </div>
+            )}
+            {(editType === 'admin' || editType === 'preceptor') && (
+              <Input label={`Rank ${editType === 'admin' ? '(required)' : ''}`} value={form.rank || ''} onChange={e => setForm({...form, rank: e.target.value})} />
             )}
           </div>
           <div className="mt-4 flex gap-2">
@@ -381,7 +387,7 @@ function AccountsPageInner() {
                 <div key={a.id} className="flex items-center justify-between rounded-lg border border-gray-200 p-3">
                   <div className="min-w-0">
                     <p className="font-medium truncate">{a.full_name}</p>
-                    <p className="text-xs text-gray-500">{a.email} {!a.is_active && <span className="text-orange-600">(inactive)</span>}</p>
+                    <p className="text-xs text-gray-500">{a.email}{a.rank ? ` — ${a.rank}` : ''} {!a.is_active && <span className="text-orange-600">(inactive)</span>}</p>
                   </div>
                   <div className="flex gap-1 shrink-0">
                     <Button size="sm" variant="secondary" onClick={() => startEdit(a, 'admin')}>Edit</Button>

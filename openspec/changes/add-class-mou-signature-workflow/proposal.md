@@ -9,6 +9,9 @@ Instructors need a completed MOU for each registered class. This is currently ha
 - Store the WFEMS signer defaults (name, title, organization) as admin-configurable portal settings.
 - Add MOU items to the admin Daily Ops action queue that are informational and do not block class approval.
 - Generate a completed MOU as a PDF on department letterhead after both parties sign.
+- Tie the WFEMS signature to a specific admin account identity rather than free-text fields, for legal completeness.
+- Add a `rank` field to admin accounts and expose the `notify_class_mou` toggle in Account Management.
+- Auto-fill the MOU template body with actual registration values before presenting it to the instructor, replacing all `{{placeholder}}` tags with real data.
 - Email the completed MOU PDF as an attachment to the instructor and to subscribed admin accounts.
 - Retain completed MOU records for later admin printing and download through a printable admin route.
 

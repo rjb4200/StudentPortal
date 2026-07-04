@@ -37,27 +37,53 @@ The instructor registration workflow SHALL include a mandatory fourth step where
 - **WHEN** an instructor attempts to submit the MOU step without providing a signature
 - **THEN** the submission is blocked and the missing signature field is highlighted
 
-### Requirement: WFEMS signer configuration
-The system SHALL store WFEMS signer name, title, and organization as admin-configurable settings with defaults of James Brown, EMS Major, and Winchester Fire/EMS respectively.
+### Requirement: WFEMS signature tied to admin account
+The system SHALL tie the WFEMS signature to a specific admin account. The `class_mous` record SHALL capture a `wfems_signed_by` FK referencing `admin_accounts` at signing time. Signer name and rank SHALL be derived from the admin account row and stored on the MOU record for snapshot purposes. Admin accounts SHALL have a `rank` field.
 
-#### Scenario: Admin views WFEMS signer defaults
-- **WHEN** an admin opens the relevant settings section
-- **THEN** the current WFEMS signer name, title, and organization are displayed and may be edited
-
-#### Scenario: Defaults applied when no custom values set
-- **WHEN** no admin has configured custom WFEMS signer values
-- **THEN** the system uses the defaults of James Brown, EMS Major, and Winchester Fire/EMS
-
-### Requirement: Admin Daily Ops MOU signature items
-The admin Daily Ops SHALL display MOU records that have instructor signatures but no WFEMS signature, providing context and a sign action without blocking class approval.
-
-#### Scenario: Admin sees instructor-signed MOU awaiting WFEMS signature
-- **WHEN** an instructor has signed the MOU but the WFEMS signature is not yet recorded
-- **THEN** the MOU item appears in the admin Daily Ops action queue with the class name, TEI, instructor name, instructor signature date, and a "Sign as WFEMS" action
-
-#### Scenario: Admin signs MOU as WFEMS
+#### Scenario: Admin signs MOU with their admin identity
 - **WHEN** an admin clicks "Sign as WFEMS" on a pending MOU item
-- **THEN** the WFEMS signer fields are populated from portal settings, the wfems_signed_at timestamp is recorded, and the completed PDF is generated and emailed
+- **THEN** the signing admin's account identity (name, rank) is recorded on the MOU record along with the signing timestamp
+
+#### Scenario: Signer identity traceable to admin account
+- **WHEN** a completed MOU is viewed or printed
+- **THEN** the WFEMS signer name and rank are displayed and traceable to a specific admin account
+
+### Requirement: Admin rank field
+The `admin_accounts` table SHALL include a `rank` field that is required for new accounts and editable for existing accounts.
+
+#### Scenario: Admin creates account with rank
+- **WHEN** an admin creates a new admin account
+- **THEN** the rank field is required before the account can be saved
+
+#### Scenario: Admin edits account rank
+- **WHEN** an admin edits an existing admin account
+- **THEN** the rank field is editable
+
+### Requirement: MOU notification preference in Account Management
+Admin accounts SHALL have a configurable MOU completion notification preference that is editable through the Account Management page.
+
+#### Scenario: Admin enables MOU notifications in Account Management
+- **WHEN** an admin edits their account and enables the MOU notification toggle
+- **THEN** they receive completed MOU PDF emails when a class MOU is fully signed
+
+#### Scenario: Admin disables MOU notifications
+- **WHEN** an admin disables the MOU notification toggle in their account settings
+- **THEN** they do not receive completed MOU PDF emails
+
+### Requirement: Auto-filled MOU template
+The MOU template body SHALL be rendered with all placeholder values replaced by actual registration data before being presented to the instructor for review and signature. Unsigned party fields SHALL indicate their pending status.
+
+#### Scenario: Instructor sees populated MOU
+- **WHEN** an instructor reaches the MOU review step
+- **THEN** the MOU displays the training organization name, class name, class date range, effective date (one day after today), and representative details without any raw `{{placeholder}}` tags
+
+#### Scenario: Effective date auto-calculated
+- **WHEN** the MOU is presented to the instructor
+- **THEN** the effective date field shows one calendar day after the current date
+
+#### Scenario: Unsigned party slot shown as pending
+- **WHEN** the instructor reviews the MOU before the WFEMS signer has signed
+- **THEN** the WFEMS signer block indicates "[Pending WFEMS signature]" rather than showing a name
 
 #### Scenario: MOU does not block class approval
 - **WHEN** an admin has a class pending approval and its MOU is not yet signed by WFEMS
