@@ -183,6 +183,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: classError?.message || 'Unable to create class.' }, { status: 500 });
     }
 
+    const { error: mouError } = await adminClient
+      .from('class_mous')
+      .insert({
+        training_class_id: trainingClass.id,
+        effective_date: payload.mou.effectiveDate,
+        training_organization_name: payload.mou.trainingOrganizationName,
+        representative_name: payload.mou.representativeName,
+        representative_title: payload.mou.representativeTitle,
+        representative_signature: payload.mou.representativeSignature,
+        mou_body_snapshot: payload.mou.mouBodySnapshot,
+      });
+
+    if (mouError) {
+      console.error('MOU creation failed:', mouError.message);
+    }
+
     return NextResponse.json({ success: true });
   } catch (e) {
     console.error('Instructor registration error:', e);

@@ -81,12 +81,19 @@ export function MaintenanceArchive() {
   const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([]);
   const [auditError, setAuditError] = useState<string | null>(null);
   const [loadingAudit, setLoadingAudit] = useState(true);
+  const [mouTemplateBody, setMouTemplateBody] = useState('');
+  const [mouSignerName, setMouSignerName] = useState('');
+  const [mouSignerTitle, setMouSignerTitle] = useState('');
+  const [mouSignerOrg, setMouSignerOrg] = useState('');
+  const [savingMouSettings, setSavingMouSettings] = useState(false);
+  const [mouSettingsMsg, setMouSettingsMsg] = useState<string | null>(null);
 
   const supabase = createClient();
 
   useEffect(() => {
     loadAbandonedRegistrations();
     loadAuditEntries();
+    loadMouSettings();
   }, []);
 
   const loadAbandonedRegistrations = async () => {
@@ -124,6 +131,41 @@ export function MaintenanceArchive() {
       setAuditError(e?.message || 'Unable to load audit activity.');
     }
     setLoadingAudit(false);
+  };
+
+  const loadMouSettings = async () => {
+    const keys = ['mou_template_body', 'mou_wfems_signer_name', 'mou_wfems_signer_title', 'mou_wfems_signer_organization'];
+    const { data } = await supabase.from('portal_settings').select('key, value').in('key', keys);
+    const settings: Record<string, string> = {};
+    for (const row of data ?? []) {
+      settings[row.key] = row.value;
+    }
+    setMouTemplateBody(settings.mou_template_body ?? '');
+    setMouSignerName(settings.mou_wfems_signer_name ?? 'James Brown');
+    setMouSignerTitle(settings.mou_wfems_signer_title ?? 'EMS Major');
+    setMouSignerOrg(settings.mou_wfems_signer_organization ?? 'Winchester Fire/EMS');
+  };
+
+  const saveMouSettings = async () => {
+    setSavingMouSettings(true);
+    setMouSettingsMsg(null);
+    const settings: Record<string, string> = {
+      mou_template_body: mouTemplateBody,
+      mou_wfems_signer_name: mouSignerName,
+      mou_wfems_signer_title: mouSignerTitle,
+      mou_wfems_signer_organization: mouSignerOrg,
+    };
+    let hasError = false;
+    for (const [key, value] of Object.entries(settings)) {
+      const { error } = await supabase.from('portal_settings').upsert({ key, value }, { onConflict: 'key' });
+      if (error) {
+        setMouSettingsMsg(`Error saving ${key}: ${error.message}`);
+        hasError = true;
+        break;
+      }
+    }
+    if (!hasError) setMouSettingsMsg('MOU settings saved.');
+    setSavingMouSettings(false);
   };
 
   const handleMasterExport = async () => {
@@ -307,6 +349,50 @@ export function MaintenanceArchive() {
           </div>
         </Card>
       </div>
+
+      <Card className="overflow-hidden">
+        <div className="border-l-4 border-wfd-crimson p-5">
+          <p className="text-xs font-bold uppercase tracking-wide text-wfd-crimson">MOU Configuration</p>
+          <h3 className="mt-1 font-serif text-xl font-bold text-wfd-charcoal">MOU Template Body</h3>
+          <p className="mt-2 text-sm text-gray-600">
+            This is the body text for the Memorandum of Understanding shown to instructors during class registration. Use placeholders like {'{{'}effective_date{'}}'}, {'{{'}training_organization_name{'}}'}, {'{{'}class_name{'}}'}, {'{{'}class_start_date{'}}'}, {'{{'}ride_time_end_date{'}}'}, {'{{'}representative_name{'}}'}, {'{{'}representative_title{'}}'}, {'{{'}representative_signed_at{'}}'}, {'{{'}wfems_signer_name{'}}'}, {'{{'}wfems_signer_title{'}}'}, and {'{{'}wfems_signed_at{'}}'}.
+          </p>
+          <textarea
+            value={mouTemplateBody}
+            onChange={(e) => setMouTemplateBody(e.target.value)}
+            rows={12}
+            className="mt-3 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 font-mono outline-none focus:ring-2 focus:ring-wfd-crimson"
+          />
+        </div>
+      </Card>
+
+      <Card className="overflow-hidden">
+        <div className="border-l-4 border-wfd-charcoal p-5">
+          <p className="text-xs font-bold uppercase tracking-wide text-wfd-charcoal">WFEMS Signer</p>
+          <h3 className="mt-1 font-serif text-xl font-bold text-wfd-charcoal">Default WFEMS Signer Identity</h3>
+          <p className="mt-2 text-sm text-gray-600">
+            These values are used when an admin signs the MOU as WFEMS. Update them when the EMS Major or signer changes.
+          </p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Signer Name</label>
+              <input value={mouSignerName} onChange={(e) => setMouSignerName(e.target.value)} className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-wfd-crimson" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Signer Title</label>
+              <input value={mouSignerTitle} onChange={(e) => setMouSignerTitle(e.target.value)} className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-wfd-crimson" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Organization</label>
+              <input value={mouSignerOrg} onChange={(e) => setMouSignerOrg(e.target.value)} className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-wfd-crimson" />
+            </div>
+          </div>
+          <div className="mt-4 flex items-center gap-3">
+            <Button type="button" onClick={saveMouSettings} loading={savingMouSettings}>Save MOU Settings</Button>
+            {mouSettingsMsg && statusPanel('success', mouSettingsMsg)}
+          </div>
+        </div>
+      </Card>
 
       <Card className="p-5">
         <div className="mb-4 flex items-start justify-between gap-4">

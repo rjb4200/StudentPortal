@@ -237,3 +237,48 @@ export function buildFlaggedEvaluationEmail(params: {
     ),
   };
 }
+
+export function buildMouCompletedInstructorEmail(params: {
+  instructor_name: string;
+  class_name: string;
+  site_name: string | null;
+  class_start_date: string;
+  ride_time_end_date: string;
+}): EmailContent {
+  const { instructor_name, class_name, site_name, class_start_date, ride_time_end_date } = params;
+  const bodyHtml = `<p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:16px;line-height:1.6;text-align:center;">Hi ${escHtml(instructor_name)}, the Memorandum of Understanding for your class has been completed and signed by both parties.</p>
+      <div style="margin:20px auto;padding:16px 18px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;max-width:440px;">
+        ${site_name ? `<p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Training Site:</strong> ${escHtml(site_name)}</p>` : ''}
+        <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Class:</strong> ${escHtml(class_name)}</p>
+        <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Class Window:</strong> ${escHtml(class_start_date)} to ${escHtml(ride_time_end_date)}</p>
+      </div>
+      <p style="margin:0 auto 20px auto;max-width:500px;color:#4b5563;font-size:14px;line-height:1.6;text-align:center;">The completed MOU PDF is attached to this email. Please keep it for your records.</p>`;
+  return {
+    subject: 'MOU Completed — WFD EMS Student Portal',
+    html: buildEmailHtml('MOU Completed', bodyHtml),
+  };
+}
+
+export function buildMouCompletedAdminEmail(params: {
+  class_name: string;
+  site_name: string | null;
+  class_start_date: string;
+  ride_time_end_date: string;
+  instructor_name: string;
+  wfems_signer_name: string;
+}): EmailContent {
+  const { class_name, site_name, class_start_date, ride_time_end_date, instructor_name, wfems_signer_name } = params;
+  const bodyHtml = `<p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:16px;line-height:1.6;text-align:center;">A class MOU has been completed and signed by both parties.</p>
+      <div style="margin:20px auto;padding:16px 18px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;max-width:440px;">
+        ${site_name ? `<p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Training Site:</strong> ${escHtml(site_name)}</p>` : ''}
+        <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Class:</strong> ${escHtml(class_name)}</p>
+        <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Class Window:</strong> ${escHtml(class_start_date)} to ${escHtml(ride_time_end_date)}</p>
+        <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Instructor:</strong> ${escHtml(instructor_name)}</p>
+        <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>WFEMS Signed By:</strong> ${escHtml(wfems_signer_name)}</p>
+      </div>
+      <p style="margin:0 auto 20px auto;max-width:500px;color:#4b5563;font-size:14px;line-height:1.6;text-align:center;">The completed MOU PDF is attached. View the class in the admin portal for the full record.</p>`;
+  return {
+    subject: 'Class MOU Completed — WFD EMS',
+    html: buildEmailHtml('MOU Completed', bodyHtml),
+  };
+}

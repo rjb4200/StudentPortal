@@ -69,6 +69,11 @@ export default function InstructorRegistrationPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [mouRepName, setMouRepName] = useState('');
+  const [mouRepTitle, setMouRepTitle] = useState('');
+  const [mouSignature, setMouSignature] = useState('');
+  const [mouBody, setMouBody] = useState('');
+  const [loadingMou, setLoadingMou] = useState(true);
 
   useEffect(() => {
     async function loadSites() {
@@ -156,6 +161,28 @@ export default function InstructorRegistrationPage() {
         instructorForm.preferredContactHours
       );
 
+  const goNextFromClass = async () => {
+    const classOk = Boolean(classForm.name && classForm.classStartDate && classForm.rideTimeEndDate);
+    if (!classOk) {
+      setError('Complete all class fields before continuing.');
+      return;
+    }
+    setError('');
+    setLoadingMou(true);
+    try {
+      const response = await fetch('/api/settings?key=mou_template_body');
+      const payload = await response.json().catch(() => null);
+      if (payload?.value) setMouBody(payload.value);
+    } catch {}
+    setLoadingMou(false);
+    const repName = instructorMode === 'existing'
+      ? `${selectedInstructor?.first_name ?? ''} ${selectedInstructor?.last_name ?? ''}`.trim()
+      : `${instructorForm.firstName} ${instructorForm.lastName}`.trim();
+    setMouRepName(repName);
+    setMouRepTitle(instructorMode === 'existing' ? (selectedInstructor?.title ?? '') : instructorForm.title);
+    setStep(4);
+  };
+
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setSubmitting(true);
@@ -176,6 +203,14 @@ export default function InstructorRegistrationPage() {
         site: sitePayload,
         instructor: instructorPayload,
         class: classForm,
+        mou: {
+          effectiveDate: new Date().toISOString().split('T')[0],
+          trainingOrganizationName: siteMode === 'existing' ? (selectedSite?.organization_name ?? '') : siteForm.organizationName,
+          representativeName: mouRepName,
+          representativeTitle: mouRepTitle,
+          representativeSignature: mouSignature,
+          mouBodySnapshot: mouBody,
+        },
       }),
     });
 
@@ -214,7 +249,7 @@ export default function InstructorRegistrationPage() {
         <div className="rounded-xl border border-wfd-sage/30 bg-wfd-sage/10 p-5 text-center">
           <h2 className="text-xl font-bold text-wfd-charcoal">Registration Submitted</h2>
           <p className="mt-2 text-sm leading-6 text-gray-600">
-            Your TEI, instructor, and class information has been submitted for admin review. Students cannot register until the class is approved and the class start date has been reached. You will receive an email when the class is approved.
+            Your TEI, instructor, and class information has been submitted for admin review along with your signed MOU. Students cannot register until the class is approved and the class start date has been reached. You will receive an email when the class is approved. A completed MOU with both party signatures will be emailed after the WFEMS signer has signed.
           </p>
         </div>
         <Link href="/" className="block text-center text-sm font-semibold text-wfd-crimson hover:underline">
@@ -231,10 +266,11 @@ export default function InstructorRegistrationPage() {
         Select the TEI first, then choose an instructor record scoped to that TEI before registering the class.
       </p>
 
-      <div className="mb-5 grid grid-cols-3 gap-2 text-center text-xs font-bold uppercase tracking-wide text-gray-500">
+      <div className="mb-5 grid grid-cols-4 gap-2 text-center text-xs font-bold uppercase tracking-wide text-gray-500">
         <div className={step === 1 ? 'rounded-full bg-wfd-crimson px-3 py-2 text-white' : 'rounded-full bg-gray-100 px-3 py-2'}>1 TEI</div>
         <div className={step === 2 ? 'rounded-full bg-wfd-crimson px-3 py-2 text-white' : 'rounded-full bg-gray-100 px-3 py-2'}>2 Instructor</div>
         <div className={step === 3 ? 'rounded-full bg-wfd-crimson px-3 py-2 text-white' : 'rounded-full bg-gray-100 px-3 py-2'}>3 Class</div>
+        <div className={step === 4 ? 'rounded-full bg-wfd-crimson px-3 py-2 text-white' : 'rounded-full bg-gray-100 px-3 py-2'}>4 MOU</div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -421,8 +457,48 @@ export default function InstructorRegistrationPage() {
             </label>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <Button type="button" variant="secondary" onClick={() => setStep(2)}>Back to Instructor</Button>
-              <Button type="submit" loading={submitting}>Submit for Admin Review</Button>
+              <Button type="button" onClick={goNextFromClass}>Continue to MOU</Button>
             </div>
+          </section>
+        )}
+
+        {step === 4 && (
+          <section className="space-y-4">
+            <h3 className="text-sm font-black uppercase tracking-wide text-wfd-crimson">Step 4: Review and sign MOU</h3>
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700">
+              <p><span className="font-bold">TEI:</span> {siteMode === 'existing' ? selectedSite?.name : siteForm.name}</p>
+              <p><span className="font-bold">Instructor:</span> {instructorMode === 'existing' ? `${selectedInstructor?.first_name ?? ''} ${selectedInstructor?.last_name ?? ''}`.trim() : `${instructorForm.firstName} ${instructorForm.lastName}`.trim()}</p>
+              <p><span className="font-bold">Class:</span> {classForm.name} ({classForm.classStartDate} to {classForm.rideTimeEndDate})</p>
+            </div>
+            {loadingMou ? (
+              <p className="text-sm text-gray-500">Loading MOU template...</p>
+            ) : (
+              <>
+                <div className="max-h-80 overflow-y-auto rounded-lg border border-gray-200 bg-gray-50 p-4">
+                  <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-gray-700">
+                    {mouBody}
+                  </pre>
+                </div>
+                <div className="rounded-lg border border-wfd-gold/30 bg-wfd-gold/10 p-3 text-sm leading-6 text-wfd-charcoal">
+                  By signing below, you certify you are authorized to execute this Memorandum of Understanding on behalf of the training organization. A completed copy with both party signatures will be emailed to you after the WFEMS signer has signed.
+                </div>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <Input label="Representative name" required value={mouRepName} onChange={(e) => setMouRepName(e.target.value)} />
+                  <Input label="Representative title" required value={mouRepTitle} onChange={(e) => setMouRepTitle(e.target.value)} />
+                </div>
+                <Input
+                  label={`Electronic signature - type "${mouRepName}" to sign`}
+                  required
+                  value={mouSignature}
+                  onChange={(e) => setMouSignature(e.target.value)}
+                  placeholder={mouRepName}
+                />
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <Button type="button" variant="secondary" onClick={() => setStep(3)}>Back to Class</Button>
+                  <Button type="submit" loading={submitting} disabled={mouSignature !== mouRepName || !mouSignature}>Submit Registration</Button>
+                </div>
+              </>
+            )}
           </section>
         )}
 

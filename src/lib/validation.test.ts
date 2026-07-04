@@ -76,6 +76,14 @@ describe('instructorRegistrationBody', () => {
       rideTimeEndDate: '2026-08-01',
       notes: '',
     },
+    mou: {
+      effectiveDate: '2026-06-15',
+      trainingOrganizationName: 'School A',
+      representativeName: 'Jane Instructor',
+      representativeTitle: 'Coordinator',
+      representativeSignature: 'Jane Instructor',
+      mouBodySnapshot: 'This is the MOU body text for the test.',
+    },
   };
 
   it('accepts valid instructor registrations', () => {

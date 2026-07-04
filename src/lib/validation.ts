@@ -108,6 +108,15 @@ const trainingClassDetailsSchema = z.object({
   notes: optionalTextSchema(1000),
 });
 
+const mouSchema = z.object({
+  effectiveDate: dateOnlySchema,
+  trainingOrganizationName: textSchema(200).min(1),
+  representativeName: textSchema(200).min(1),
+  representativeTitle: textSchema(200).min(1),
+  representativeSignature: textSchema(200).min(1),
+  mouBodySnapshot: z.string().min(1),
+});
+
 export const instructorRegistrationBody = z.object({
   site: z.discriminatedUnion('mode', [
     z.object({ mode: z.literal('existing'), trainingSiteId: uuidSchema }),
@@ -118,6 +127,7 @@ export const instructorRegistrationBody = z.object({
     instructorDetailsSchema.extend({ mode: z.literal('new') }),
   ]),
   class: trainingClassDetailsSchema,
+  mou: mouSchema,
 }).refine((value) => value.class.rideTimeEndDate >= value.class.classStartDate, {
   message: 'Ride-time end date must be on or after class start date',
   path: ['class', 'rideTimeEndDate'],

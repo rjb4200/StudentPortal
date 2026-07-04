@@ -22,6 +22,7 @@ export type Database = {
           full_name: string
           id: string
           is_active: boolean
+          notify_class_mou: boolean
           notify_daily_report: boolean
           notify_evaluation_flagged: boolean
           notify_onboarding_complete: boolean
@@ -34,6 +35,7 @@ export type Database = {
           full_name: string
           id?: string
           is_active?: boolean
+          notify_class_mou?: boolean
           notify_daily_report?: boolean
           notify_evaluation_flagged?: boolean
           notify_onboarding_complete?: boolean
@@ -46,12 +48,75 @@ export type Database = {
           full_name?: string
           id?: string
           is_active?: boolean
+          notify_class_mou?: boolean
           notify_daily_report?: boolean
           notify_evaluation_flagged?: boolean
           notify_onboarding_complete?: boolean
           updated_at?: string
         }
         Relationships: []
+      }
+      class_mous: {
+        Row: {
+          created_at: string
+          effective_date: string
+          id: string
+          mou_body_snapshot: string
+          pdf_generated_at: string | null
+          representative_name: string
+          representative_signature: string
+          representative_signed_at: string
+          representative_title: string
+          training_class_id: string
+          training_organization_name: string
+          updated_at: string
+          wfems_signed_at: string | null
+          wfems_signer_name: string | null
+          wfems_signer_title: string | null
+        }
+        Insert: {
+          created_at?: string
+          effective_date?: string
+          id?: string
+          mou_body_snapshot?: string
+          pdf_generated_at?: string | null
+          representative_name?: string
+          representative_signature?: string
+          representative_signed_at?: string
+          representative_title?: string
+          training_class_id: string
+          training_organization_name?: string
+          updated_at?: string
+          wfems_signed_at?: string | null
+          wfems_signer_name?: string | null
+          wfems_signer_title?: string | null
+        }
+        Update: {
+          created_at?: string
+          effective_date?: string
+          id?: string
+          mou_body_snapshot?: string
+          pdf_generated_at?: string | null
+          representative_name?: string
+          representative_signature?: string
+          representative_signed_at?: string
+          representative_title?: string
+          training_class_id?: string
+          training_organization_name?: string
+          updated_at?: string
+          wfems_signed_at?: string | null
+          wfems_signer_name?: string | null
+          wfems_signer_title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_mous_training_class_id_fkey"
+            columns: ["training_class_id"]
+            isOneToOne: true
+            referencedRelation: "training_classes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       admin_notes: {
         Row: {

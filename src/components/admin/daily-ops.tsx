@@ -62,6 +62,8 @@ export function DailyOps() {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [scheduleActionError, setScheduleActionError] = useState<string | null>(null);
+  const [pendingMous, setPendingMous] = useState<any[]>([]);
+  const [signingMou, setSigningMou] = useState<string | null>(null);
 
   const supabase = createClient() as any;
 
@@ -78,6 +80,7 @@ export function DailyOps() {
       { data: pendingSites },
       { data: pendingInstructors },
       { data: pendingClasses },
+      { data: pendingMousData },
     ] = await Promise.all([
       supabase.from('students').select('*, training_classes(name, class_start_date, ride_time_end_date, training_sites(name), instructors(first_name, last_name))').eq('status', 'pending').not('onboarding_completed_at', 'is', null).order('created_at', { ascending: false }),
       supabase.from('students').select('*, training_classes(name, class_start_date, ride_time_end_date, training_sites(name), instructors(first_name, last_name))').order('created_at', { ascending: false }),
@@ -86,6 +89,7 @@ export function DailyOps() {
       supabase.from('training_sites').select('*').eq('status', 'pending').order('created_at', { ascending: false }),
       supabase.from('instructors').select('*, training_sites(name)').eq('status', 'pending').order('created_at', { ascending: false }),
       supabase.from('training_classes').select('*, training_sites(name), instructors(first_name, last_name)').eq('status', 'pending').order('created_at', { ascending: false }),
+      supabase.from('class_mous').select('*, training_classes!inner(name, training_sites!inner(name), instructors!inner(first_name, last_name, email))').is('wfems_signed_at', null).not('representative_signature', 'eq', '').order('created_at', { ascending: false }),
     ]);
 
     setPendingStudents(pending ?? []);
@@ -97,6 +101,7 @@ export function DailyOps() {
       ...(pendingInstructors ?? []).map((item: any) => ({ ...item, registryTable: 'instructors', registryLabel: 'Instructor' })),
       ...(pendingClasses ?? []).map((item: any) => ({ ...item, registryTable: 'training_classes', registryLabel: 'Class' })),
     ]);
+    setPendingMous(pendingMousData ?? []);
   };
 
   const handleApprove = async (student: any) => {
@@ -291,7 +296,27 @@ export function DailyOps() {
   const pendingSchedules = schedules.filter((s: any) => s.status === 'pending');
   const cancelRequests = schedules.filter((s: any) => s.status === 'cancelled' && s.cancelled_by === 'student');
   const rosterStudents = students.filter((s: any) => s.status === 'certified');
-  const totalActions = pendingStudents.length + pendingSchedules.length + cancelRequests.length + quizFlags.length + registryItems.length;
+  const totalActions = pendingStudents.length + pendingSchedules.length + cancelRequests.length + quizFlags.length + registryItems.length + pendingMous.length;
+
+  const handleWfemsSign = async (mouId: string) => {
+    setSigningMou(mouId);
+    try {
+      const { data: settings } = await supabase.from('portal_settings').select('key, value').in('key', ['mou_wfems_signer_name', 'mou_wfems_signer_title']);
+      const signer: Record<string, string> = {};
+      for (const row of settings ?? []) { signer[row.key] = row.value; }
+      const signerName = signer.mou_wfems_signer_name ?? 'James Brown';
+      const signerTitle = signer.mou_wfems_signer_title ?? 'EMS Major';
+
+      await supabase.from('class_mous').update({
+        wfems_signer_name: signerName,
+        wfems_signer_title: signerTitle,
+        wfems_signed_at: new Date().toISOString(),
+      }).eq('id', mouId);
+
+      loadAll();
+    } catch {}
+    setSigningMou(null);
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -442,6 +467,33 @@ export function DailyOps() {
                 </Button>
               </div>
             ))}
+            {pendingMous.map((mou) => {
+              const trainingClass = Array.isArray(mou.training_classes) ? mou.training_classes[0] : mou.training_classes;
+              const site = Array.isArray(trainingClass?.training_sites) ? trainingClass.training_sites[0] : trainingClass?.training_sites;
+              const instructor = Array.isArray(trainingClass?.instructors) ? trainingClass.instructors[0] : trainingClass?.instructors;
+              return (
+                <div key={`mou-${mou.id}`} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <span className="shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full bg-wfd-charcoal/10 text-wfd-charcoal">MOU</span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{trainingClass?.name ?? 'Class'}</p>
+                      <p className="text-xs text-gray-500">
+                        {site?.name ?? 'Site'} — {instructor ? `${instructor.first_name} ${instructor.last_name}` : 'Instructor'} — Signed {new Date(mou.representative_signed_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => handleWfemsSign(mou.id)}
+                    loading={signingMou === mou.id}
+                    className="ml-3 flex-shrink-0"
+                  >
+                    Sign as WFEMS
+                  </Button>
+                </div>
+              );
+            })}
           </div>
         )}
       </Card>

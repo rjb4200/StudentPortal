@@ -9,6 +9,7 @@ interface SendEmailParams {
   subject: string;
   html: string;
   from?: string;
+  attachments?: { filename: string; content: string; content_type: string }[];
 }
 
 interface SendEmailResult {
@@ -35,7 +36,7 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
         Authorization: `Bearer ${serverEnv.RESEND_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ from, to, subject, html }),
+      body: JSON.stringify({ from, to, subject, html, attachments: params.attachments }),
       signal: controller.signal,
     });
 
