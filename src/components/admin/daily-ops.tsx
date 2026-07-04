@@ -301,19 +301,20 @@ export function DailyOps() {
   const handleWfemsSign = async (mouId: string) => {
     setSigningMou(mouId);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data: admin } = await supabase.from('admin_accounts').select('id, full_name, rank').eq('auth_user_id', user.id).single();
-      if (!admin) return;
-
-      await supabase.from('class_mous').update({
-        wfems_signed_by: admin.id,
-        wfems_signed_at: new Date().toISOString(),
-      }).eq('id', mouId);
-
-      loadAll();
-    } catch {}
+      const res = await fetch('/api/admin/sign-mou', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mouId }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        setScheduleActionError(err?.error || 'Failed to sign MOU.');
+      }
+    } catch {
+      setScheduleActionError('Network error signing MOU.');
+    }
     setSigningMou(null);
+    loadAll();
   };
 
   return (
