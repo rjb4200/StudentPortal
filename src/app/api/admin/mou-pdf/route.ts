@@ -56,27 +56,41 @@ export async function GET(request: NextRequest) {
 
   const jsPDF = (await import('jspdf')).default;
   const doc = new jsPDF({ unit: 'mm', format: 'letter' });
-
   const pageWidth = doc.internal.pageSize.getWidth();
-  let y = 25;
 
+  const logoUrl = 'https://ejjsahtohaydoogtilgp.supabase.co/storage/v1/object/public/branding/wfd-logo-1848.jpg';
+  let y = 16;
+
+  try {
+    const logoRes = await fetch(logoUrl);
+    if (logoRes.ok) {
+      const logoBuffer = Buffer.from(await logoRes.arrayBuffer());
+      const logoBase64 = logoBuffer.toString('base64');
+      const logoDataUri = `data:image/jpeg;base64,${logoBase64}`;
+      doc.addImage(logoDataUri, 'JPEG', 14, y, 26, 26);
+    }
+  } catch {}
+
+  const headerLeft = 46;
   doc.setFontSize(18);
   doc.setTextColor(164, 1, 4);
   doc.setFont('helvetica', 'bold');
-  doc.text('Winchester Fire/EMS', pageWidth / 2, y, { align: 'center' });
-  y += 6;
-  doc.setFontSize(10);
-  doc.setTextColor(28, 28, 30);
-  doc.text('44 N Maple Street, Winchester, KY 40392', pageWidth / 2, y, { align: 'center' });
-  y += 4;
+  doc.text('Winchester Fire/EMS', headerLeft, y + 6);
   doc.setFontSize(9);
+  doc.setTextColor(28, 28, 30);
+  doc.setFont('helvetica', 'normal');
+  doc.text('44 N Maple Street, Winchester, KY 40392', headerLeft, y + 11.5);
+  doc.setFontSize(7);
   doc.setTextColor(106, 153, 78);
-  doc.text('Division of EMS — Student Portal', pageWidth / 2, y, { align: 'center' });
+  doc.text('DIVISION OF EMS — STUDENT PORTAL', headerLeft, y + 15.5);
 
-  y += 8;
+  y = 44;
   doc.setDrawColor(164, 1, 4);
-  doc.setLineWidth(0.5);
-  doc.line(20, y, pageWidth - 20, y);
+  doc.setLineWidth(0.6);
+  doc.line(14, y, pageWidth - 14, y);
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(0.3);
+  doc.line(14, y + 1.5, pageWidth - 14, y + 1.5);
   y += 8;
 
   doc.setFontSize(14);
