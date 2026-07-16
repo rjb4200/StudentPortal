@@ -39,6 +39,12 @@ const ROTATION_TAG_STYLES = {
   gray: 'border-gray-300 bg-gray-100 text-gray-700',
 };
 
+const ROTATION_SHORT_LABELS = {
+  'First Shift': '1st Shift',
+  'Second Shift': '2nd Shift',
+  'Third Shift': '3rd Shift',
+} as const;
+
 export function CalendarGrid({ schedules, onDateClick, classStartDate, rideTimeEndDate }: CalendarGridProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
@@ -123,22 +129,24 @@ export function CalendarGrid({ schedules, onDateClick, classStartDate, rideTimeE
               onClick={() => onDateClick(dateStr)}
               disabled={disabled}
               title={outsideClassWindow ? 'Outside your class ride-time window' : past && !schedule ? 'Past dates are unavailable for scheduling' : undefined}
-              className={`aspect-square flex flex-col items-center justify-center rounded-lg text-sm transition-colors
+              className={`aspect-square flex flex-col items-start justify-start rounded-lg p-1 text-sm transition-colors
                 ${!inMonth ? 'text-gray-300' : ''}
                 ${disabled ? 'bg-gray-50 text-gray-300 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-100'}
                 ${today ? 'ring-2 ring-wfd-crimson ring-offset-1' : ''}
                 ${getCellStyle(day, schedule)}
               `}
             >
-              <span className="text-xs">{format(day, 'd')}</span>
-              <span
-                className={`mt-0.5 max-w-full truncate rounded border px-1 text-[8px] font-semibold leading-3 ${ROTATION_TAG_STYLES[rotation.color]}`}
-                title={`${rotation.label} - ${rotation.chief}`}
-              >
-                {rotation.label.replace(' Shift', '')} - {rotation.chief}
+              <span className="flex w-full items-start gap-1">
+                <span className="text-xs leading-3">{format(day, 'd')}</span>
+                <span
+                  className={`min-w-0 truncate rounded border px-1 text-[8px] font-semibold leading-3 ${ROTATION_TAG_STYLES[rotation.color]}`}
+                  title={`${rotation.label} - ${rotation.chief}`}
+                >
+                  {ROTATION_SHORT_LABELS[rotation.label]}
+                </span>
               </span>
               {schedule && (
-                <span className="text-[10px] leading-tight mt-0.5">
+                <span className="mt-0.5 text-[10px] leading-tight">
                   {schedule.start_time && schedule.end_time
                     ? `${abbreviated12(schedule.start_time)}–${abbreviated12(schedule.end_time)}`
                     : schedule.shift_type === 'full'
