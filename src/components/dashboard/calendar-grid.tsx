@@ -129,14 +129,14 @@ export function CalendarGrid({ schedules, onDateClick, classStartDate, rideTimeE
               onClick={() => onDateClick(dateStr)}
               disabled={disabled}
               title={outsideClassWindow ? 'Outside your class ride-time window' : past && !schedule ? 'Past dates are unavailable for scheduling' : undefined}
-              className={`aspect-square flex flex-col items-start justify-start rounded-lg p-1 text-sm transition-colors
+              className={`relative aspect-square rounded-lg p-1 text-sm transition-colors
                 ${!inMonth ? 'text-gray-300' : ''}
                 ${disabled ? 'bg-gray-50 text-gray-300 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-100'}
                 ${today ? 'ring-2 ring-wfd-crimson ring-offset-1' : ''}
                 ${getCellStyle(day, schedule)}
               `}
             >
-              <span className="flex w-full items-start gap-1">
+              <span className="absolute left-1 top-1 flex max-w-[calc(100%-0.5rem)] items-start gap-1">
                 <span className="text-xs leading-3">{format(day, 'd')}</span>
                 <span
                   className={`min-w-0 truncate rounded border px-1 text-[8px] font-semibold leading-3 ${ROTATION_TAG_STYLES[rotation.color]}`}
@@ -146,7 +146,7 @@ export function CalendarGrid({ schedules, onDateClick, classStartDate, rideTimeE
                 </span>
               </span>
               {schedule && (
-                <span className="mt-0.5 text-[10px] leading-tight">
+                <span className="absolute left-1 top-5 text-[10px] leading-tight">
                   {schedule.start_time && schedule.end_time
                     ? `${abbreviated12(schedule.start_time)}–${abbreviated12(schedule.end_time)}`
                     : schedule.shift_type === 'full'
@@ -159,7 +159,7 @@ export function CalendarGrid({ schedules, onDateClick, classStartDate, rideTimeE
                 </span>
               )}
               {schedule && getStatusLabel(schedule) && (
-                <span className="text-[9px] leading-tight">{getStatusLabel(schedule)!.icon} {getStatusLabel(schedule)!.text}</span>
+                <span className="absolute bottom-1 left-1 text-[9px] leading-tight">{getStatusLabel(schedule)!.icon} {getStatusLabel(schedule)!.text}</span>
               )}
             </button>
           );
