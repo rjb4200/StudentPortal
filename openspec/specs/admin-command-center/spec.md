@@ -111,6 +111,13 @@ The admin daily operations tab SHALL display actionable items within a unified "
 - **WHEN** no approval-ready pending students, schedule requests, cancel requests, quiz flags, or MOU signature items exist
 - **THEN** the Action Required card displays "Nothing requires your attention"
 
+### Requirement: Crew context for pending schedule approval
+The Admin Daily Operations Action Required panel SHALL show the applicable department crew shift and on-duty Chief for each pending schedule request. The crew tag SHALL appear with the request date and time and SHALL not change the existing approve, reject, or cancel actions.
+
+#### Scenario: Admin views pending schedule requests on different crew days
+- **WHEN** the Action Required panel lists pending schedule requests on different rotation dates
+- **THEN** each request shows the crew shift and Chief derived from its own scheduled date
+
 ### Requirement: Admin MOU notification preference
 The `admin_accounts` table SHALL support a notification preference for class MOU completion emails so that only admins who opt in receive completed MOU PDF attachments.
 

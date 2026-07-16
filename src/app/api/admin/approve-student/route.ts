@@ -5,6 +5,7 @@ import { canAccessAdmin } from '@/lib/roles';
 import { publicEnv } from '@/lib/env';
 import { sendEmail } from '@/lib/email';
 import { buildStudentApprovalEmail } from '@/lib/email-templates';
+import { getStationOneMapUrl } from '@/lib/station-map';
 
 export async function POST(request: NextRequest) {
   const cookieHeader = request.headers.get('cookie') || '';
@@ -59,7 +60,17 @@ export async function POST(request: NextRequest) {
 
   {
     const loginUrl = `${publicEnv.SITE_URL}/login`;
-    const { subject, html } = buildStudentApprovalEmail({ full_name: student.full_name, login_url: loginUrl });
+    let stationMapUrl: string | null = null;
+    try {
+      stationMapUrl = await getStationOneMapUrl(adminClient, publicEnv.SITE_URL);
+    } catch (error) {
+      console.error('Unable to resolve Station 1 map:', error);
+    }
+    const { subject, html } = buildStudentApprovalEmail({
+      full_name: student.full_name,
+      login_url: loginUrl,
+      station_map_url: stationMapUrl,
+    });
     try {
       await sendEmail({ to: student.email, subject, html });
     } catch {}

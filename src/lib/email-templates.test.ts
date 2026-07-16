@@ -7,6 +7,7 @@ import {
   buildShiftCancelledByStudentEmail,
   buildShiftCancelledByStudentAdminEmail,
   buildShiftApprovedEmail,
+  buildShiftReminderEmail,
   buildShiftCancelledByAdminEmail,
   buildShiftRejectedEmail,
   buildEvaluationReceiptEmail,
@@ -43,6 +44,28 @@ describe('buildStudentApprovalEmail', () => {
     });
     expect(result.html).toContain('Hi John Smith');
     expect(result.html).toContain('Go to Student Portal Login');
+    expect(result.html).toContain('report to Station 1 at 0700');
+  });
+
+  it('includes an escaped Station 1 map link when configured', () => {
+    const result = buildStudentApprovalEmail({
+      full_name: 'John Smith',
+      login_url: 'https://example.com/login',
+      station_map_url: 'https://example.com/map?site=station-1&view=full',
+    });
+
+    expect(result.html).toContain('View the Station 1 map');
+    expect(result.html).toContain('site=station-1&amp;view=full');
+  });
+
+  it('omits the map link when no active map is available', () => {
+    const result = buildStudentApprovalEmail({
+      full_name: 'John Smith',
+      login_url: 'https://example.com/login',
+      station_map_url: null,
+    });
+
+    expect(result.html).not.toContain('View the Station 1 map');
   });
 });
 
@@ -196,6 +219,41 @@ describe('buildShiftApprovedEmail', () => {
     });
     expect(result.html).toContain('O&#39;Brien');
     expect(result.subject).toBe('Shift Approved — WFD EMS Student Portal');
+  });
+});
+
+describe('buildShiftReminderEmail', () => {
+  it('includes ride, Chief, reporting, and map details', () => {
+    const result = buildShiftReminderEmail({
+      full_name: 'John Smith',
+      date_str: 'Saturday, July 18, 2026',
+      time_display: '7:00 AM - 7:00 PM',
+      shift_label: 'Third Shift',
+      chief_name: 'M Martin',
+      dashboard_url: 'https://example.com/dashboard',
+      station_map_url: 'https://example.com/map?station=1',
+    });
+
+    expect(result.subject).toBe('Shift Reminder — WFD EMS Student Portal');
+    expect(result.html).toContain('Third Shift');
+    expect(result.html).toContain('M Martin');
+    expect(result.html).toContain('Report to Station 1 at 0700');
+    expect(result.html).toContain('station=1');
+  });
+
+  it('keeps reporting instructions when the map is unavailable', () => {
+    const result = buildShiftReminderEmail({
+      full_name: 'John Smith',
+      date_str: 'Saturday, July 18, 2026',
+      time_display: '7:00 AM - 7:00 PM',
+      shift_label: 'Third Shift',
+      chief_name: 'M Martin',
+      dashboard_url: 'https://example.com/dashboard',
+      station_map_url: null,
+    });
+
+    expect(result.html).toContain('Report to Station 1 at 0700');
+    expect(result.html).not.toContain('View the Station 1 map');
   });
 });
 

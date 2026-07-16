@@ -9,9 +9,15 @@ export interface EmailContent {
 export function buildStudentApprovalEmail(params: {
   full_name: string;
   login_url: string;
+  station_map_url?: string | null;
 }): EmailContent {
-  const { full_name, login_url } = params;
+  const { full_name, login_url, station_map_url } = params;
+  const stationMapLink = station_map_url
+    ? `<p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:14px;line-height:1.6;text-align:center;"><a href="${escHtml(station_map_url)}" style="color:#A40104;font-weight:700;">View the Station 1 map</a></p>`
+    : '';
   const bodyHtml = `<p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:16px;line-height:1.6;text-align:center;">Hi ${escHtml(full_name)}, your WFD EMS Student Portal account has been approved. You now have full access to schedule ride time, view preceptors, and submit evaluations.</p>
+    <p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:16px;line-height:1.6;text-align:center;">For each ride, report to Station 1 at 0700 for assignment by the on-duty Brigade Chief.</p>
+    ${stationMapLink}
     <div style="margin:30px 0;text-align:center;">
       <a href="${escHtml(login_url)}" style="display:inline-block;background:#A40104;color:#ffffff;text-decoration:none;font-size:16px;font-weight:800;padding:15px 30px;border-radius:10px;box-shadow:0 4px 12px rgba(164,1,4,0.25);">Go to Student Portal Login</a>
     </div>`;
@@ -166,6 +172,33 @@ export function buildShiftApprovedEmail(params: {
   return {
     subject: 'Shift Approved — WFD EMS Student Portal',
     html: buildEmailHtml('Shift Approved', bodyHtml, login_url),
+  };
+}
+
+export function buildShiftReminderEmail(params: {
+  full_name: string;
+  date_str: string;
+  time_display: string;
+  shift_label: string;
+  chief_name: string;
+  dashboard_url: string;
+  station_map_url?: string | null;
+}): EmailContent {
+  const stationMapLink = params.station_map_url
+    ? `<p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:14px;line-height:1.6;text-align:center;"><a href="${escHtml(params.station_map_url)}" style="color:#A40104;font-weight:700;">View the Station 1 map</a></p>`
+    : '';
+  const bodyHtml = `<p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:16px;line-height:1.6;text-align:center;">Hi ${escHtml(params.full_name)}, this is a reminder for your clinical ride tomorrow.</p>
+    <div style="margin:20px auto;padding:16px 18px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;max-width:400px;">
+      <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Date:</strong> ${escHtml(params.date_str)}</p>
+      <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Time:</strong> ${escHtml(params.time_display)}</p>
+      <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Duty Shift:</strong> ${escHtml(params.shift_label)}</p>
+      <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>On-Duty Brigade Chief:</strong> ${escHtml(params.chief_name)}</p>
+    </div>
+    <p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:16px;line-height:1.6;text-align:center;">Report to Station 1 at 0700 for assignment by the on-duty Brigade Chief.</p>
+    ${stationMapLink}`;
+  return {
+    subject: 'Shift Reminder — WFD EMS Student Portal',
+    html: buildEmailHtml('Ride Reminder', bodyHtml, params.dashboard_url),
   };
 }
 

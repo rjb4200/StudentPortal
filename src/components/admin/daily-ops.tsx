@@ -7,9 +7,15 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { to24Hour } from '@/lib/time-formats';
+import { getShiftRotation } from '@/lib/shift-rotation';
 import { ShiftManagement } from '@/components/admin/shift-management';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const ROTATION_TAG_STYLES = {
+  orange: 'border-orange-300 bg-orange-100 text-orange-900',
+  yellow: 'border-yellow-300 bg-yellow-100 text-yellow-900',
+  gray: 'border-gray-300 bg-gray-100 text-gray-700',
+};
 
 function getExpirationCountdown(accessUntil: string | null | undefined) {
   if (!accessUntil) return null;
@@ -406,6 +412,14 @@ export function DailyOps() {
                         ? ` — ${to24Hour(s.start_time)}–${to24Hour(s.end_time)}`
                         : ` — ${s.shift_type}`}
                     </p>
+                    {(() => {
+                      const rotation = getShiftRotation(s.date);
+                      return (
+                        <span className={`mt-1 inline-flex rounded border px-1.5 py-0.5 text-[10px] font-semibold ${ROTATION_TAG_STYLES[rotation.color]}`}>
+                          {rotation.label} - {rotation.chief}
+                        </span>
+                      );
+                    })()}
                     {s.students?.training_classes && (
                       <p className="text-xs text-gray-400">
                         Window: {s.students.training_classes.class_start_date} to {s.students.training_classes.ride_time_end_date}

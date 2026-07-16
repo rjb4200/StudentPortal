@@ -13,6 +13,14 @@ The system SHALL render a monthly calendar grid on the student dashboard. Each d
 - **WHEN** a student clicks the previous or next month navigation button
 - **THEN** the calendar renders the selected month with any existing schedule entries
 
+### Requirement: Department crew context on the student calendar
+The monthly student scheduling calendar SHALL show the applicable department crew shift and on-duty Chief for every displayed date. Crew context SHALL remain secondary to the student's personal schedule status, time, and approval state.
+
+#### Scenario: Student views a calendar month
+- **WHEN** a student opens or navigates to a month in the dashboard calendar
+- **THEN** every displayed date includes its applicable crew-shift context
+- **AND** existing schedule status colors and labels remain visible for dates with personal rides
+
 ### Requirement: One-click shift request
 Clicking a future date cell SHALL open a minimal modal with shift type selection: Full Shift, Day, or Night. Selecting a shift type and confirming SHALL immediately create a schedule record with status `pending`.
 

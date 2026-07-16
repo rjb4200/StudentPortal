@@ -15,6 +15,7 @@ import {
   isSameMonth,
 } from 'date-fns';
 import { abbreviated12 } from '@/lib/time-formats';
+import { getShiftRotation } from '@/lib/shift-rotation';
 
 interface Schedule {
   id: string;
@@ -31,6 +32,12 @@ interface CalendarGridProps {
   classStartDate?: string | null;
   rideTimeEndDate?: string | null;
 }
+
+const ROTATION_TAG_STYLES = {
+  orange: 'border-orange-300 bg-orange-100 text-orange-900',
+  yellow: 'border-yellow-300 bg-yellow-100 text-yellow-900',
+  gray: 'border-gray-300 bg-gray-100 text-gray-700',
+};
 
 export function CalendarGrid({ schedules, onDateClick, classStartDate, rideTimeEndDate }: CalendarGridProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -103,6 +110,7 @@ export function CalendarGrid({ schedules, onDateClick, classStartDate, rideTimeE
         {days.map((day) => {
           const schedule = getScheduleForDate(day);
           const dateStr = format(day, 'yyyy-MM-dd');
+          const rotation = getShiftRotation(dateStr);
           const past = isPast(day) && !isToday(day);
           const inMonth = isSameMonth(day, currentMonth);
           const today = isToday(day);
@@ -123,6 +131,12 @@ export function CalendarGrid({ schedules, onDateClick, classStartDate, rideTimeE
               `}
             >
               <span className="text-xs">{format(day, 'd')}</span>
+              <span
+                className={`mt-0.5 max-w-full truncate rounded border px-1 text-[8px] font-semibold leading-3 ${ROTATION_TAG_STYLES[rotation.color]}`}
+                title={`${rotation.label} - ${rotation.chief}`}
+              >
+                {rotation.label.replace(' Shift', '')} - {rotation.chief}
+              </span>
               {schedule && (
                 <span className="text-[10px] leading-tight mt-0.5">
                   {schedule.start_time && schedule.end_time

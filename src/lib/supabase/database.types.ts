@@ -796,6 +796,47 @@ export type Database = {
           },
         ]
       }
+      schedule_reminders: {
+        Row: {
+          claimed_at: string
+          created_at: string
+          delivered_at: string | null
+          error_message: string | null
+          id: string
+          reminder_type: string
+          schedule_id: string
+          status: string
+        }
+        Insert: {
+          claimed_at?: string
+          created_at?: string
+          delivered_at?: string | null
+          error_message?: string | null
+          id?: string
+          reminder_type: string
+          schedule_id: string
+          status?: string
+        }
+        Update: {
+          claimed_at?: string
+          created_at?: string
+          delivered_at?: string | null
+          error_message?: string | null
+          id?: string
+          reminder_type?: string
+          schedule_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_reminders_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       schedules: {
         Row: {
           cancel_note: string | null
