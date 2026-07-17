@@ -33,12 +33,29 @@ The student dashboard SHALL display summary cards for account status, next sched
 - **THEN** the card displays a concise empty state with a relevant action or explanation
 
 ### Requirement: Clear dashboard section navigation
-The dashboard SHALL replace opaque local feature tabs with clearer section navigation organized around student jobs-to-be-done, such as Schedule, Preceptors & Evaluations, Messages, and Calendar Feed.
+The dashboard SHALL replace opaque local feature tabs with clearer section navigation organized around student jobs-to-be-done: Schedule, Resources, Messages, and Calendar Feed. Resources, Messages, and Calendar Feed SHALL be available to pending and certified students; Schedule SHALL remain locked until certification.
+
+#### Scenario: Pending student navigates available sections
+- **WHEN** a pending student opens the dashboard
+- **THEN** Resources, Messages, and Calendar Feed are available
+- **AND** Schedule remains locked until certification
 
 #### Scenario: Student navigates dashboard sections
 - **WHEN** a student uses the dashboard navigation
 - **THEN** section labels clearly describe the work available in each section
 - **AND** navigation remains usable on desktop and mobile screen sizes
+
+### Requirement: Dashboard resource library
+The dashboard SHALL provide a Resources section that renders active resource categories and documents as ongoing study and reference materials. The section SHALL not require acknowledgement, affect onboarding completion, or contain onboarding advancement controls.
+
+#### Scenario: Student reads reference materials
+- **WHEN** a pending or certified student opens Resources
+- **THEN** the dashboard displays active categories and documents in configured order
+- **AND** the student can open each available document or embedded map
+
+#### Scenario: No active resources
+- **WHEN** no active categories contain active documents
+- **THEN** the Resources section displays a clear empty state
 
 ### Requirement: WFD-aligned dashboard presentation
 The redesigned dashboard SHALL use professional WFD styling aligned with `rjb4200/wfdwebsite`, including formal red/charcoal/green visual hierarchy, strong headers, bordered action cards, and responsive layouts.
@@ -62,28 +79,6 @@ The system SHALL display a calendar grid where students can click a date cell an
 #### Scenario: View rejected shift
 - **WHEN** a student views the calendar and an admin has rejected a previously requested shift
 - **THEN** the date cell displays the rejected state with appropriate styling
-
-### Requirement: Preceptor gallery
-The system SHALL display a gallery of preceptor cards below the calendar grid. Each card SHALL include the preceptor's professional headshot, short bio, station/unit assignment, and interactive badges representing specialty tags (e.g., "A-Shift", "Medic 1", "Trauma").
-
-#### Scenario: Browsing preceptor gallery
-- **WHEN** a certified student loads the dashboard
-- **THEN** the preceptor gallery displays all active preceptors with their images, bios, station assignments, and specialty tag badges
-
-### Requirement: Clinical evaluation submission
-The system SHALL present a standardized evaluation form with 1-5 rating scales for clinical performance, teaching quality, safety adherence, and overall experience, plus an open comments field. The evaluation SHALL be linked to both the student and the selected preceptor.
-
-#### Scenario: Submit evaluation
-- **WHEN** a student selects a preceptor, rates all four categories, optionally adds comments, and submits
-- **THEN** an evaluation record is created with all ratings and linked to the student and preceptor
-
-#### Scenario: Flagged evaluation
-- **WHEN** a student submits an evaluation with `overall_rating` less than 3
-- **THEN** the `is_flagged` field is set to `true` on the evaluation record
-
-#### Scenario: Incomplete evaluation submission
-- **WHEN** a student submits the evaluation form with any rating category unset
-- **THEN** the system blocks submission and highlights the missing fields
 
 ### Requirement: Per-student iCal calendar feed
 The system SHALL generate a unique iCal subscription URL for each student that displays all scheduled days. Days SHALL appear as pending once the student signs up and SHALL update to approved as each day is approved by an admin. The dashboard SHALL present this calendar feed in a single clear utility location and SHALL NOT duplicate calendar feed copy across pending and certified dashboard states.

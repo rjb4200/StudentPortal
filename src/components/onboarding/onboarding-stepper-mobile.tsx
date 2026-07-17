@@ -7,9 +7,8 @@ interface StepperMobileProps {
 const steps = [
   { step: 1, label: 'Register' },
   { step: 2, label: 'Legal' },
-  { step: 3, label: 'Resources' },
-  { step: 4, label: 'Review' },
-  { step: 5, label: 'Submitted' },
+  { step: 3, label: 'Review' },
+  { step: 4, label: 'Submitted' },
 ];
 
 export function OnboardingStepperMobile({ currentStep }: StepperMobileProps) {

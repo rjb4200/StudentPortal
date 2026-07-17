@@ -77,12 +77,12 @@ The system SHALL display all active legal documents one at a time in a scrollabl
 - **WHEN** a student scrolls through each document, checks all required agreement boxes, enters their full name in the signature phase, and submits
 - **THEN** the server-side API records the real IP and server timestamp on the `students` row
 - **AND** per-document acceptance records are created in `student_legal_acceptances`
-- **AND** the workflow advances to the resource library
+- **AND** the workflow advances directly to the Policy and Protocol Review quiz
 
 #### Scenario: Complete legal signing with single document
 - **WHEN** only one active document exists, the student scrolls to the bottom, checks the agreement box, enters their full name in the inline signature block, and submits
 - **THEN** the server-side API records the signature with real metadata
-- **AND** the workflow advances
+- **AND** the workflow advances directly to the Policy and Protocol Review quiz
 
 #### Scenario: Incomplete legal signing
 - **WHEN** a student submits without entering their full name or without checking all required agreement checkboxes
@@ -179,11 +179,15 @@ Upon knowledge gate completion through a verified onboarding session, the system
 
 ### Requirement: Onboarding Progress Indicator
 
-The system SHALL display an onboarding progress indicator that represents the full student onboarding flow, including Register, Legal, Resources, Review, and Complete.
+The system SHALL display an onboarding progress indicator that represents the full student onboarding flow: Register, Legal, Review, and Submitted.
+
+#### Scenario: Review step is represented
+- **WHEN** a student completes legal signing
+- **THEN** the progress indicator advances to step 3 of 4 labelled `Review`
 
 #### Scenario: Completion step is represented
 
 - **WHEN** a student reaches the final onboarding completion screen
-- **THEN** the progress indicator shows step 5 of 5
-- **AND** the current step label is `Complete`
+- **THEN** the progress indicator shows step 4 of 4
+- **AND** the current step label is `Submitted`
 

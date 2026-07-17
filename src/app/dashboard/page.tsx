@@ -7,15 +7,14 @@ import { ShiftList } from '@/components/dashboard/shift-list';
 import { DayDetailModal } from '@/components/dashboard/day-detail';
 import { ShiftModal } from '@/components/dashboard/shift-modal';
 import { CancelShiftModal } from '@/components/dashboard/cancel-shift-modal';
-import { PreceptorGallery } from '@/components/dashboard/preceptor-gallery';
-import { EvaluationForm } from '@/components/dashboard/evaluation-form';
+import { ResourceLibrary } from '@/components/onboarding/resource-library';
 import { Messages } from '@/components/dashboard/messages';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, EmptyState, LoadingState } from '@/components/ui';
 
-type DashboardSection = 'schedule' | 'preceptors' | 'messages' | 'feed';
+type DashboardSection = 'schedule' | 'resources' | 'messages' | 'feed';
 
 interface Schedule {
   id: string;
@@ -260,7 +259,7 @@ export default function DashboardPage() {
 
   const sections: { key: DashboardSection; label: string; description: string; locked?: boolean }[] = [
     { key: 'schedule', label: 'Schedule', description: 'Request and manage shifts', locked: isPending },
-    { key: 'preceptors', label: 'Preceptors & Evaluations', description: 'Review crews and submit feedback', locked: isPending },
+    { key: 'resources', label: 'Resources', description: 'Study and reference materials' },
     { key: 'messages', label: 'Messages', description: 'Contact training staff' },
     { key: 'feed', label: 'Calendar Feed', description: 'Copy your subscription link' },
   ];
@@ -445,12 +444,7 @@ export default function DashboardPage() {
         </section>
       )}
 
-      {activeSection === 'preceptors' && !isPending && (
-        <section className="space-y-6">
-          <PreceptorGallery />
-          <EvaluationForm studentId={student?.id} />
-        </section>
-      )}
+      {activeSection === 'resources' && <ResourceLibrary />}
 
       {activeSection === 'messages' && <Messages studentId={student?.id} />}
 

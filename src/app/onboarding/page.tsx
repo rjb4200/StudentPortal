@@ -4,7 +4,6 @@ import { useState, useCallback, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { RegistrationForm } from '@/components/onboarding/registration-form';
 import { LegalWaiver } from '@/components/onboarding/legal-waiver';
-import { ResourceLibrary } from '@/components/onboarding/resource-library';
 import { KnowledgeGate } from '@/components/onboarding/knowledge-gate';
 import { OnboardingComplete } from '@/components/onboarding/onboarding-complete';
 import { OnboardingStepper } from '@/components/onboarding/onboarding-stepper';
@@ -110,7 +109,8 @@ export default function OnboardingPage() {
     setStudentId(saved.studentId);
     setOnboardingToken(saved.onboardingToken ?? null);
     setStudentEmail(saved.email);
-    setCurrentStep(saved.currentStep);
+    // Sessions saved before Resources left onboarding may point to its old step.
+    setCurrentStep(saved.currentStep >= 3 ? 3 : saved.currentStep);
     setShowResumeBanner(false);
   }, []);
 
@@ -136,14 +136,10 @@ export default function OnboardingPage() {
     setCurrentStep(3);
     saveSession(studentId, onboardingToken, 3, studentEmail);
   }, [studentId, onboardingToken, studentEmail]);
-  const handleResourcesComplete = useCallback(() => {
-    setCurrentStep(4);
-    saveSession(studentId, onboardingToken, 4, studentEmail);
-  }, [studentId, onboardingToken, studentEmail]);
   const handleQuizComplete = useCallback(
     (password: string | null, email: string, isNewAccount: boolean) => {
       setCredentials({ password, email, isNewAccount });
-      setCurrentStep(5);
+      setCurrentStep(4);
       clearSession();
     },
     []
@@ -165,14 +161,11 @@ export default function OnboardingPage() {
       ) : null;
       break;
     case 3:
-      stepContent = <ResourceLibrary onComplete={handleResourcesComplete} onBack={handleBack} helpEmail={helpEmail} />;
-      break;
-    case 4:
       stepContent = studentId ? (
         <KnowledgeGate studentId={studentId} onboardingToken={onboardingToken} onComplete={handleQuizComplete} onBack={handleBack} helpEmail={helpEmail} />
       ) : null;
       break;
-    case 5:
+    case 4:
       stepContent = credentials && studentId ? (
         <OnboardingComplete
           studentId={studentId}

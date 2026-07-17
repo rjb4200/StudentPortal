@@ -7,9 +7,8 @@ interface StepperProps {
 const steps = [
   { step: 1, label: 'Register', description: 'Your details' },
   { step: 2, label: 'Legal', description: 'Review & sign' },
-  { step: 3, label: 'Resources', description: 'Study materials' },
-  { step: 4, label: 'Review', description: 'Policy & protocol' },
-  { step: 5, label: 'Submitted', description: 'Awaiting approval' },
+  { step: 3, label: 'Review', description: 'Policy & protocol' },
+  { step: 4, label: 'Submitted', description: 'Awaiting approval' },
 ];
 
 export function OnboardingStepper({ currentStep }: StepperProps) {
@@ -24,7 +23,7 @@ export function OnboardingStepper({ currentStep }: StepperProps) {
           style={{ width: `${progressPercent * 0.8}%` }}
         />
 
-        <div className="relative grid grid-cols-5 items-start">
+        <div className="relative grid grid-cols-4 items-start">
           {steps.map((s) => {
             const isCompleted = s.step < currentStep;
             const isActive = s.step === currentStep;

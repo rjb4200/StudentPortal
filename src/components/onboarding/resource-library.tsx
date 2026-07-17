@@ -1,20 +1,18 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
 import type { Tables } from '@/lib/supabase/database.types';
 
 interface ResourceLibraryProps {
-  onComplete: () => void;
-  onBack?: () => void;
-  helpEmail?: string;
+  title?: string;
+  description?: string;
 }
 
 type ResCategory = Tables<'resource_categories'>;
 type ResDoc = Tables<'resource_documents'>;
 
-export function ResourceLibrary({ onComplete, onBack, helpEmail }: ResourceLibraryProps) {
+export function ResourceLibrary({ title = 'Resources', description = 'Study and reference materials for your clinical training.' }: ResourceLibraryProps) {
   const [categories, setCategories] = useState<ResCategory[]>([]);
   const [documents, setDocuments] = useState<ResDoc[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,7 +43,7 @@ export function ResourceLibrary({ onComplete, onBack, helpEmail }: ResourceLibra
   if (loading) {
     return (
       <div>
-      <h2 className="text-xl font-bold text-wfd-charcoal mb-1 pb-2 border-b-2 border-wfd-crimson">Resource Library</h2>
+       <h2 className="text-xl font-bold text-wfd-charcoal mb-1 pb-2 border-b-2 border-wfd-crimson">{title}</h2>
       <p className="text-sm text-gray-600 mt-2">Loading resources...</p>
       </div>
     );
@@ -54,7 +52,7 @@ export function ResourceLibrary({ onComplete, onBack, helpEmail }: ResourceLibra
   if (error) {
     return (
       <div>
-        <h2 className="text-xl font-bold text-wfd-charcoal mb-2">Resource Library</h2>
+        <h2 className="text-xl font-bold text-wfd-charcoal mb-2">{title}</h2>
         <p className="text-sm text-red-600">{error}</p>
       </div>
     );
@@ -69,15 +67,12 @@ export function ResourceLibrary({ onComplete, onBack, helpEmail }: ResourceLibra
 
   return (
     <div>
-      <h2 className="text-xl font-bold text-wfd-charcoal mb-1 pb-2 border-b-2 border-wfd-crimson">Resource Library</h2>
-      <p className="text-gray-500 mb-6 mt-2">
-        Download and review these essential documents before your rotation. You&apos;ll be tested on
-        this material in the Policy and Protocol Review.
-      </p>
+       <h2 className="text-xl font-bold text-wfd-charcoal mb-1 pb-2 border-b-2 border-wfd-crimson">{title}</h2>
+       <p className="text-gray-500 mb-6 mt-2">{description}</p>
 
       {categoriesWithDocs.length === 0 ? (
         <div className="rounded-lg border border-orange-200 bg-orange-50 p-4 mb-6 text-sm text-orange-700">
-          No resource documents are currently available. You may proceed.
+           No resource documents are currently available.
         </div>
       ) : (
         <div className="space-y-6 mb-8">
@@ -134,33 +129,6 @@ export function ResourceLibrary({ onComplete, onBack, helpEmail }: ResourceLibra
         </div>
       )}
 
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
-        <p className="text-sm text-gray-600">
-          <strong className="text-wfd-charcoal">Important:</strong> The Policy and Protocol Review will test
-          your understanding of station layouts, safety protocols, and department SOGs. Make sure you
-          review all documents before proceeding.
-        </p>
-      </div>
-
-      <div className="flex gap-3">
-        {onBack && (
-          <Button type="button" variant="secondary" onClick={onBack} className="flex-1">
-            Previous Step
-          </Button>
-        )}
-        <Button onClick={onComplete} className="flex-1">
-          I&apos;ve Reviewed All Documents
-        </Button>
-      </div>
-
-      <div className="mt-6 pt-4 border-t border-gray-100">
-        <p className="text-xs text-gray-400">
-          Need help? Contact your instructor or email{' '}
-          <a href={`mailto:${helpEmail ?? 'jbrown@winchesterky.com'}`} className="text-wfd-crimson hover:underline">
-            {helpEmail ?? 'jbrown@winchesterky.com'}
-          </a>
-        </p>
-      </div>
     </div>
   );
 }

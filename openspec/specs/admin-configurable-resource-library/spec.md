@@ -41,10 +41,10 @@ The system SHALL allow admin users to create, edit, reorder, activate, and delet
 - **THEN** the document is removed from the resource library
 
 ### Requirement: Dynamic resource library rendering
-The student onboarding resource library SHALL render active categories and active documents ordered by configured sort order. Documents SHALL be displayed within their parent category's scope.
+The student resource library SHALL render active categories and active documents ordered by configured sort order. Documents SHALL be displayed within their parent category's scope. The library SHALL be available as a dashboard reference surface to pending and certified students and SHALL not require a completion acknowledgement or advance onboarding.
 
 #### Scenario: Student sees active resources
-- **WHEN** a student reaches the resource library step
+- **WHEN** a pending or certified student opens the dashboard Resources section
 - **THEN** the system displays all active categories with their active documents from the database in configured order
 
 #### Scenario: Category with no active documents
@@ -53,7 +53,7 @@ The student onboarding resource library SHALL render active categories and activ
 
 #### Scenario: Empty resource library
 - **WHEN** no categories or documents are active
-- **THEN** the resource library step displays a message and allows immediate advancement
+- **THEN** the resource library displays a clear empty state
 
 ### Requirement: Resource documents support embedded map iframes
 
@@ -76,4 +76,3 @@ The system SHALL allow resource documents to optionally include a Google Maps em
 - **WHEN** an admin creates or edits a resource document with a `map_embed_url` value
 - **THEN** the URL is stored in the database
 - **AND** the embedded map appears when students view the resource library
-
