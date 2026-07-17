@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Alert, EmptyState, FormField, SectionCard } from '@/components/ui';
 
 type RegistryTable = 'training_sites' | 'instructors' | 'training_classes';
 type RegistryStatus = 'pending' | 'active' | 'rejected' | 'suspended' | 'archived';
@@ -188,9 +189,9 @@ export function RegistryManagement() {
 
   return (
     <div className="space-y-6">
-      {error && <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+      {error && <Alert tone="danger">{error}</Alert>}
 
-      <Card className="p-4">
+      <SectionCard className="p-4">
         <h2 className="text-lg font-black text-wfd-charcoal">Create Training Site</h2>
         <form onSubmit={handleCreateSite} className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-4">
           <Input label="Site name" required value={siteForm.name} onChange={(e) => setSiteForm({ ...siteForm, name: e.target.value })} />
@@ -202,9 +203,9 @@ export function RegistryManagement() {
           <Input label="Main phone" value={siteForm.mainPhone} onChange={(e) => setSiteForm({ ...siteForm, mainPhone: e.target.value })} />
           <Button type="submit" loading={saving === 'site-create'} className="self-end">Create Active Site</Button>
         </form>
-      </Card>
+      </SectionCard>
 
-      <Card className="p-4">
+      <SectionCard className="p-4">
         <h2 className="text-lg font-black text-wfd-charcoal">Create Instructor</h2>
         <form onSubmit={handleCreateInstructor} className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-4">
           <Select label="Training site" required value={instructorForm.trainingSiteId} onChange={(value) => setInstructorForm({ ...instructorForm, trainingSiteId: value })} options={sites.map((site) => ({ value: site.id, label: site.name }))} />
@@ -217,9 +218,9 @@ export function RegistryManagement() {
           <Input label="Contact hours" required value={instructorForm.preferredContactHours} onChange={(e) => setInstructorForm({ ...instructorForm, preferredContactHours: e.target.value })} />
           <Button type="submit" loading={saving === 'instructor-create'} className="self-end">Create Active Instructor</Button>
         </form>
-      </Card>
+      </SectionCard>
 
-      <Card className="p-4">
+      <SectionCard className="p-4">
         <h2 className="text-lg font-black text-wfd-charcoal">Create Class</h2>
         <form onSubmit={handleCreateClass} className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-4">
           <Select label="Training site" required value={classForm.trainingSiteId} onChange={handleClassSiteChange} options={sites.map((site) => ({ value: site.id, label: site.name }))} />
@@ -233,7 +234,7 @@ export function RegistryManagement() {
         {classForm.trainingSiteId && classInstructorOptions.length === 0 && (
           <p className="mt-3 text-sm text-gray-500">No instructors are assigned to the selected training site.</p>
         )}
-      </Card>
+      </SectionCard>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <RegistryList title="Training Sites" rows={sites} table="training_sites" saving={saving} onStatus={statusRequest} onEdit={editSiteName} renderDetail={(site) => `${site.organization_name} - ${site.city}, ${site.state}`} />
@@ -249,22 +250,21 @@ export function RegistryManagement() {
 
 function Select({ label, value, options, onChange, required }: { label: string; value: string; options: { value: string; label: string }[]; onChange: (value: string) => void; required?: boolean }) {
   return (
-    <label className="block text-sm font-medium text-gray-700">
-      {label}
+    <FormField label={label}>
       <select required={required} value={value} onChange={(e) => onChange(e.target.value)} className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 outline-none focus:ring-2 focus:ring-wfd-crimson">
         <option value="">Select...</option>
         {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
       </select>
-    </label>
+    </FormField>
   );
 }
 
 function RegistryList({ title, rows, table, saving, onStatus, onEdit, renderTitle, renderDetail }: { title: string; rows: any[]; table: RegistryTable; saving: string | null; onStatus: (table: RegistryTable, id: string, status: RegistryStatus) => void; onEdit?: (row: any) => void; renderTitle?: (row: any) => string; renderDetail: (row: any) => string }) {
   return (
-    <Card className="p-4">
+    <SectionCard className="p-4">
       <h2 className="font-black text-wfd-charcoal">{title}</h2>
       <div className="mt-3 space-y-3">
-        {rows.length === 0 && <p className="text-sm text-gray-400">No records yet.</p>}
+        {rows.length === 0 && <EmptyState title="No records yet" />}
         {rows.map((row) => (
           <div key={row.id} className="rounded-lg border border-gray-200 p-3">
             <div className="flex items-start justify-between gap-3">
@@ -284,6 +284,6 @@ function RegistryList({ title, rows, table, saving, onStatus, onEdit, renderTitl
           </div>
         ))}
       </div>
-    </Card>
+    </SectionCard>
   );
 }

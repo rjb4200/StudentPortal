@@ -2,10 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Modal } from '@/components/ui/modal';
+import { Alert, Badge, Button, EmptyState, FormField, LoadingState, Modal, SectionCard, StatusBanner } from '@/components/ui';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const PURGE_CONFIRMATION = 'PURGE STUDENT DATA';
@@ -47,14 +44,8 @@ function getRecordAge(createdAt: string) {
 }
 
 function statusPanel(kind: 'success' | 'warning' | 'danger' | 'info', text: string) {
-  const styles = {
-    success: 'border-wfd-sage/30 bg-wfd-sage/10 text-wfd-sage',
-    warning: 'border-wfd-gold/40 bg-wfd-gold/10 text-wfd-charcoal',
-    danger: 'border-wfd-crimson/30 bg-wfd-crimson/10 text-wfd-crimson',
-    info: 'border-gray-200 bg-gray-50 text-gray-600',
-  };
-
-  return <p className={`rounded-lg border px-3 py-2 text-sm ${styles[kind]}`}>{text}</p>;
+  if (kind === 'danger') return <Alert tone="danger">{text}</Alert>;
+  return <StatusBanner tone={kind === 'success' ? 'success' : kind === 'warning' ? 'warning' : 'neutral'}>{text}</StatusBanner>;
 }
 
 export function MaintenanceArchive() {
@@ -298,7 +289,7 @@ export function MaintenanceArchive() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="overflow-hidden">
+        <SectionCard className="overflow-hidden">
           <div className="border-l-4 border-wfd-sage p-5">
             <p className="text-xs font-bold uppercase tracking-wide text-wfd-sage">Export</p>
             <h3 className="mt-1 font-serif text-xl font-bold text-wfd-charcoal">Master Export</h3>
@@ -314,9 +305,9 @@ export function MaintenanceArchive() {
               {exportError && statusPanel('danger', exportError)}
             </div>
           </div>
-        </Card>
+        </SectionCard>
 
-        <Card className="overflow-hidden">
+        <SectionCard className="overflow-hidden">
           <div className="border-l-4 border-wfd-gold p-5">
             <p className="text-xs font-bold uppercase tracking-wide text-wfd-gold">Calendar Feeds</p>
             <h3 className="mt-1 font-serif text-xl font-bold text-wfd-charcoal">Aggregate iCal Feed</h3>
@@ -329,10 +320,10 @@ export function MaintenanceArchive() {
             </div>
             {copyStatus && <div className="mt-3">{statusPanel(copyStatus.startsWith('Unable') ? 'danger' : 'success', copyStatus)}</div>}
           </div>
-        </Card>
+        </SectionCard>
       </div>
 
-      <Card className="overflow-hidden">
+      <SectionCard className="overflow-hidden">
         <div className="border-l-4 border-wfd-crimson p-5">
           <p className="text-xs font-bold uppercase tracking-wide text-wfd-crimson">MOU Configuration</p>
           <h3 className="mt-1 font-serif text-xl font-bold text-wfd-charcoal">MOU Template Body</h3>
@@ -346,9 +337,9 @@ export function MaintenanceArchive() {
             className="mt-3 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 font-mono outline-none focus:ring-2 focus:ring-wfd-crimson"
           />
         </div>
-      </Card>
+      </SectionCard>
 
-      <Card className="p-5">
+      <SectionCard className="p-5">
         <div className="mb-4 flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-bold uppercase tracking-wide text-wfd-gold">Archive Cleanup</p>
@@ -363,9 +354,9 @@ export function MaintenanceArchive() {
           {deleteSuccess && statusPanel('success', deleteSuccess)}
           {abandonedError && statusPanel('danger', abandonedError)}
           {loadingAbandoned ? (
-            statusPanel('info', 'Loading abandoned registrations...')
+            <LoadingState label="Loading abandoned registrations..." />
           ) : abandoned.length === 0 ? (
-            statusPanel('success', 'No abandoned registrations found.')
+            <EmptyState title="No abandoned registrations found." />
           ) : (
             abandoned.map((student) => {
               const age = getRecordAge(student.created_at);
@@ -385,9 +376,9 @@ export function MaintenanceArchive() {
             })
           )}
         </div>
-      </Card>
+      </SectionCard>
 
-      <Card className="overflow-hidden border-wfd-crimson/30">
+      <SectionCard className="overflow-hidden border-wfd-crimson/30">
         <div className="bg-wfd-crimson px-5 py-4 text-white">
           <p className="text-xs font-bold uppercase tracking-[0.22em] text-wfd-gold">Danger Zone</p>
           <h3 className="mt-1 font-serif text-2xl font-bold">Purge Student Data</h3>
@@ -398,7 +389,7 @@ export function MaintenanceArchive() {
           {exported && !purgeSummary && (
             <Button variant="secondary" onClick={loadPurgeSummary} loading={loadingPurgeSummary}>Load Dry-Run Summary</Button>
           )}
-          {loadingPurgeSummary && statusPanel('info', 'Building purge dry-run summary...')}
+          {loadingPurgeSummary && <LoadingState label="Building purge dry-run summary..." />}
           {purgeSummary && (
             <div className="rounded-xl border border-wfd-gold/40 bg-wfd-gold/10 p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -418,14 +409,12 @@ export function MaintenanceArchive() {
           )}
           {purgeSummary && !purgeDone && (
             <div className="grid gap-4 md:grid-cols-2">
-              <label className="text-sm font-semibold text-wfd-charcoal">
-                Reason for purge
+              <FormField label="Reason for purge">
                 <textarea value={purgeReason} onChange={(e) => setPurgeReason(e.target.value)} className="mt-1 min-h-24 w-full rounded-lg border border-gray-300 px-3 py-2 font-normal text-gray-900 outline-none focus:ring-2 focus:ring-wfd-crimson" placeholder="Document why this purge is being performed." />
-              </label>
-              <label className="text-sm font-semibold text-wfd-charcoal">
-                Type `{PURGE_CONFIRMATION}`
+              </FormField>
+              <FormField label={`Type ${PURGE_CONFIRMATION}`}>
                 <input value={purgeConfirmation} onChange={(e) => setPurgeConfirmation(e.target.value)} className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 font-normal text-gray-900 outline-none focus:ring-2 focus:ring-wfd-crimson" />
-              </label>
+              </FormField>
             </div>
           )}
           {purgeDone && statusPanel('success', 'Data purge completed. Audit log was updated with the reason and impact summary.')}
@@ -434,9 +423,9 @@ export function MaintenanceArchive() {
             <Button variant="danger" onClick={handlePurge} loading={purging} disabled={!canPurge}>Purge All Student Data</Button>
           )}
         </div>
-      </Card>
+      </SectionCard>
 
-      <Card className="p-5">
+      <SectionCard className="p-5">
         <div className="mb-4 flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-bold uppercase tracking-wide text-wfd-sage">Audit Visibility</p>
@@ -445,7 +434,7 @@ export function MaintenanceArchive() {
           <Button type="button" size="sm" variant="secondary" onClick={loadAuditEntries} loading={loadingAudit}>Refresh</Button>
         </div>
         {auditError && statusPanel('danger', auditError)}
-        {loadingAudit ? statusPanel('info', 'Loading audit activity...') : auditEntries.length === 0 ? statusPanel('info', 'No audit entries found.') : (
+        {loadingAudit ? <LoadingState label="Loading audit activity..." /> : auditEntries.length === 0 ? <EmptyState title="No audit entries found." /> : (
           <div className="divide-y divide-gray-100 rounded-xl border border-gray-200">
             {auditEntries.map((entry) => (
               <div key={entry.id} className="p-3">
@@ -455,7 +444,7 @@ export function MaintenanceArchive() {
             ))}
           </div>
         )}
-      </Card>
+      </SectionCard>
 
       <Modal open={Boolean(deleteTarget)} onClose={() => setDeleteTarget(null)} title="Delete abandoned registration">
         {deleteTarget && (
@@ -464,14 +453,12 @@ export function MaintenanceArchive() {
               <p className="font-semibold text-wfd-crimson">This permanently removes an incomplete registration.</p>
               <p className="mt-1">{deleteTarget.full_name} - {deleteTarget.email}</p>
             </div>
-            <label className="block text-sm font-semibold text-wfd-charcoal">
-              Reason
+            <FormField label="Reason">
               <textarea value={deleteReason} onChange={(e) => setDeleteReason(e.target.value)} className="mt-1 min-h-24 w-full rounded-lg border border-gray-300 px-3 py-2 font-normal text-gray-900 outline-none focus:ring-2 focus:ring-wfd-crimson" placeholder="Document why this incomplete registration is being removed." />
-            </label>
-            <label className="block text-sm font-semibold text-wfd-charcoal">
-              Type the student email to confirm
+            </FormField>
+            <FormField label="Type the student email to confirm">
               <input value={deleteConfirmation} onChange={(e) => setDeleteConfirmation(e.target.value)} className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 font-normal text-gray-900 outline-none focus:ring-2 focus:ring-wfd-crimson" placeholder={deleteTarget.email} />
-            </label>
+            </FormField>
             <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <Button type="button" variant="secondary" onClick={() => setDeleteTarget(null)}>Cancel</Button>
               <Button type="button" variant="danger" onClick={handleDeleteAbandoned} loading={deletingAbandoned} disabled={!canDelete}>Delete Registration</Button>

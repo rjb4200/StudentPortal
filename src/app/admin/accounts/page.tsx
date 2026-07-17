@@ -2,14 +2,15 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import { Alert, Badge, Button, ConfirmDialog, FormField, Input, LoadingState, SectionCard, Tabs } from '@/components/ui';
 import { AdminNavigation } from '@/components/admin/admin-navigation';
 import { canAccessAdmin } from '@/lib/roles';
 
 type Tab = 'admins' | 'preceptors' | 'students';
+type Confirmation =
+  | { action: 'disable'; type: 'admin' | 'preceptor'; id: string }
+  | { action: 'delete'; type: 'admin' | 'preceptor'; row: any; finalWarning?: boolean }
+  | { action: 'reset'; row: any };
 
 const STATIONS = ['Station 1 - Downtown HQ', 'Station 2 - West Side', 'Station 3 - Industrial'];
 
@@ -32,6 +33,7 @@ function AccountsPageInner() {
   const [message, setMessage] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
 
   useEffect(() => {
     const checkAccessAndLoad = async () => {
@@ -198,7 +200,6 @@ function AccountsPageInner() {
       setMessage('Only records marked as test records can be reset.');
       return;
     }
-    if (!confirm(`Reset all test student records for ${row.email}? This deletes test-only student data and linked auth users.`)) return;
 
     setSaving(true); setMessage(null);
     const res = await fetch('/api/admin/reset-test-student', {
@@ -218,16 +219,12 @@ function AccountsPageInner() {
   }
 
   async function disableAccount(type: 'admin' | 'preceptor', id: string) {
-    if (!confirm('Disable this account?')) return;
     const table = type === 'admin' ? 'admin_accounts' : 'preceptors';
     await supabase.from(table).update({ is_active: false }).eq('id', id);
     await loadAll();
   }
 
   async function deleteAccount(type: 'admin' | 'preceptor', row: any) {
-    if (!confirm(`Delete ${row.full_name} (${row.email}) permanently?`)) return;
-    if (!confirm('FINAL WARNING: This cannot be undone. Proceed?')) return;
-
     setDeleting(row.id);
     setDeleteError(null);
 
@@ -264,12 +261,25 @@ function AccountsPageInner() {
     setDeleting(null);
   }
 
+  async function confirmDestructiveAction() {
+    if (!confirmation) return;
+    if (confirmation.action === 'delete' && !confirmation.finalWarning) {
+      setConfirmation({ ...confirmation, finalWarning: true });
+      return;
+    }
+
+    if (confirmation.action === 'disable') await disableAccount(confirmation.type, confirmation.id);
+    if (confirmation.action === 'delete') await deleteAccount(confirmation.type, confirmation.row);
+    if (confirmation.action === 'reset') await resetTestStudent(confirmation.row);
+    setConfirmation(null);
+  }
+
   const filteredStudents = students.filter(s =>
     !studentSearch || s.full_name.toLowerCase().includes(studentSearch.toLowerCase()) || s.email.toLowerCase().includes(studentSearch.toLowerCase())
   );
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-[60vh]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-wfd-crimson" /></div>;
+    return <LoadingState label="Loading accounts..." />;
   }
 
   return (
@@ -278,11 +288,11 @@ function AccountsPageInner() {
       <h1 className="text-2xl font-bold text-wfd-charcoal">Account Management</h1>
 
       {editing || editType ? (
-        <div className="rounded-xl border border-wfd-crimson bg-white p-6">
+        <SectionCard className="p-6">
           <h3 className="text-lg font-bold text-wfd-charcoal mb-4">
             {editing ? `Edit ${editType === 'admin' ? 'Admin' : editType === 'preceptor' ? 'Preceptor' : 'Student'}: ${editing.full_name || editing.email}` : `Add ${editType === 'admin' ? 'Admin' : 'Preceptor'}`}
           </h3>
-          {message && <div className="mb-3 rounded-lg border border-green-200 bg-green-50 p-2 text-sm text-green-800">{message}</div>}
+          {message && <Alert tone={message.startsWith('Error:') ? 'danger' : 'info'}>{message}</Alert>}
           <div className="grid gap-3 sm:grid-cols-2">
             <Input label="Full Name" value={form.full_name || ''} onChange={e => setForm({...form, full_name: e.target.value})} />
             <Input label="Email" type="email" value={form.email || ''} onChange={e => setForm({...form, email: e.target.value})} />
@@ -296,15 +306,14 @@ function AccountsPageInner() {
                 <Input label="School / Program" value={form.school_name || ''} onChange={e => setForm({...form, school_name: e.target.value})} />
                 <Input label="Instructor Name" value={form.instructor_name || ''} onChange={e => setForm({...form, instructor_name: e.target.value})} />
                 <Input label="Instructor Contact" value={form.instructor_contact || ''} onChange={e => setForm({...form, instructor_contact: e.target.value})} />
-                <label className="block text-sm font-medium text-gray-700">
-                  Status
+                <FormField label="Status">
                   <select value={form.status || 'pending'} onChange={e => setForm({...form, status: e.target.value})} className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900">
                     <option value="pending">Pending</option>
                     <option value="certified">Certified</option>
                     <option value="expired">Expired</option>
                     <option value="archived">Archived</option>
                   </select>
-                </label>
+                </FormField>
                 <Input label="Auth User ID" value={form.auth_user_id || ''} onChange={e => setForm({...form, auth_user_id: e.target.value})} />
                 <Input label="Previous Student ID" value={form.previous_student_id || ''} onChange={e => setForm({...form, previous_student_id: e.target.value})} />
                 <div className="flex items-end gap-6 pb-2">
@@ -317,18 +326,18 @@ function AccountsPageInner() {
 
             {editType === 'preceptor' && (
               <>
-                <label className="block text-sm font-medium text-gray-700">
-                  Station
+                <FormField label="Station">
                   <select value={form.station_unit || STATIONS[0]} onChange={e => setForm({...form, station_unit: e.target.value})} className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900">
                     {STATIONS.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
-                </label>
+                </FormField>
                 <Input label="Image URL" value={form.image_url || ''} onChange={e => setForm({...form, image_url: e.target.value})} />
                 <Input label="Specialty Tags (comma-separated)" value={form.specialty_tags || ''} onChange={e => setForm({...form, specialty_tags: e.target.value})} />
-                <label className="block text-sm font-medium text-gray-700 col-span-2">
-                  Bio
-                  <textarea value={form.bio || ''} onChange={e => setForm({...form, bio: e.target.value})} className="mt-1 min-h-20 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900" />
-                </label>
+                <div className="col-span-2">
+                  <FormField label="Bio">
+                    <textarea value={form.bio || ''} onChange={e => setForm({...form, bio: e.target.value})} className="mt-1 min-h-20 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900" />
+                  </FormField>
+                </div>
                 <div className="flex items-end gap-4 pb-2 col-span-2">
                   <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.notify_evaluation || false} onChange={e => setForm({...form, notify_evaluation: e.target.checked})} className="h-4 w-4" /> Evaluation alerts</label>
                   <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.notify_schedule_approved || false} onChange={e => setForm({...form, notify_schedule_approved: e.target.checked})} className="h-4 w-4" /> Schedule alerts</label>
@@ -356,29 +365,21 @@ function AccountsPageInner() {
           </div>
           <div className="mt-4 flex gap-2">
             <Button onClick={saveEdit} loading={saving}>Save</Button>
-            {editing && (editType === 'admin' || editType === 'preceptor') && <Button variant="danger" onClick={() => deleteAccount(editType, editing)}>Delete Account</Button>}
-            {editing && editType === 'student' && editing.is_test_record && <Button variant="danger" onClick={() => resetTestStudent(editing)}>Reset Test Student</Button>}
+            {editing && (editType === 'admin' || editType === 'preceptor') && <Button variant="danger" onClick={() => setConfirmation({ action: 'delete', type: editType, row: editing })}>Delete Account</Button>}
+            {editing && editType === 'student' && editing.is_test_record && <Button variant="danger" onClick={() => setConfirmation({ action: 'reset', row: editing })}>Reset Test Student</Button>}
             <Button variant="secondary" onClick={cancelEdit}>Cancel</Button>
           </div>
-        </div>
+        </SectionCard>
       ) : (
         <>
-          <div className="flex gap-2 border-b border-gray-200">
-            {(['admins', 'preceptors', 'students'] as Tab[]).map(t => (
-              <button key={t} onClick={() => setTab(t)} className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px capitalize ${tab === t ? 'border-wfd-crimson text-wfd-crimson' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
-                {t}
-              </button>
-            ))}
-          </div>
+          <Tabs tabs={[{ value: 'admins', label: 'Admins' }, { value: 'preceptors', label: 'Preceptors' }, { value: 'students', label: 'Students' }]} value={tab} onChange={value => setTab(value as Tab)} />
 
           {deleteError && (
-            <p role="alert" className="mb-3 mt-2 rounded-lg border border-wfd-crimson/20 bg-wfd-crimson/10 px-3 py-2 text-sm text-wfd-crimson">
-              {deleteError}
-            </p>
+            <Alert tone="danger">{deleteError}</Alert>
           )}
 
           {tab === 'admins' && (
-            <div className="space-y-3">
+            <SectionCard className="space-y-3 p-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-500">{adminAccounts.length} admin account(s)</p>
                 <Button size="sm" onClick={() => startNew('admin')}>Add Admin</Button>
@@ -391,16 +392,16 @@ function AccountsPageInner() {
                   </div>
                   <div className="flex gap-1 shrink-0">
                     <Button size="sm" variant="secondary" onClick={() => startEdit(a, 'admin')}>Edit</Button>
-                    <Button size="sm" variant="secondary" onClick={() => disableAccount('admin', a.id)}>Disable</Button>
-                    <Button size="sm" variant="danger" onClick={() => deleteAccount('admin', a)}>Delete</Button>
+                    <Button size="sm" variant="secondary" onClick={() => setConfirmation({ action: 'disable', type: 'admin', id: a.id })}>Disable</Button>
+                    <Button size="sm" variant="danger" onClick={() => setConfirmation({ action: 'delete', type: 'admin', row: a })}>Delete</Button>
                   </div>
                 </div>
               ))}
-            </div>
+            </SectionCard>
           )}
 
           {tab === 'preceptors' && (
-            <div className="space-y-3">
+            <SectionCard className="space-y-3 p-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-500">{preceptors.length} preceptor(s)</p>
                 <Button size="sm" onClick={() => startNew('preceptor')}>Add Preceptor</Button>
@@ -413,16 +414,16 @@ function AccountsPageInner() {
                   </div>
                   <div className="flex gap-1 shrink-0">
                     <Button size="sm" variant="secondary" onClick={() => startEdit(p, 'preceptor')}>Edit</Button>
-                    <Button size="sm" variant="secondary" onClick={() => disableAccount('preceptor', p.id)}>Disable</Button>
-                    <Button size="sm" variant="danger" onClick={() => deleteAccount('preceptor', p)}>Delete</Button>
+                    <Button size="sm" variant="secondary" onClick={() => setConfirmation({ action: 'disable', type: 'preceptor', id: p.id })}>Disable</Button>
+                    <Button size="sm" variant="danger" onClick={() => setConfirmation({ action: 'delete', type: 'preceptor', row: p })}>Delete</Button>
                   </div>
                 </div>
               ))}
-            </div>
+            </SectionCard>
           )}
 
           {tab === 'students' && (
-            <div className="space-y-3">
+            <SectionCard className="space-y-3 p-4">
               <Input placeholder="Search students..." value={studentSearch} onChange={e => setStudentSearch(e.target.value)} />
               {filteredStudents.map(s => (
                 <div key={s.id} className="flex items-center justify-between rounded-lg border border-gray-200 p-3">
@@ -436,17 +437,26 @@ function AccountsPageInner() {
                 </div>
               ))}
               {filteredStudents.length === 0 && <p className="text-sm text-gray-500">No students found.</p>}
-            </div>
+            </SectionCard>
           )}
         </>
       )}
+      <ConfirmDialog
+        open={confirmation !== null}
+        title={confirmation?.action === 'delete' ? (confirmation.finalWarning ? 'Final deletion warning' : 'Delete account') : confirmation?.action === 'disable' ? 'Disable account' : 'Reset test student'}
+        description={confirmation?.action === 'delete' ? (confirmation.finalWarning ? 'This cannot be undone. Proceed with permanent deletion?' : `Delete ${confirmation.row.full_name} (${confirmation.row.email}) permanently?`) : confirmation?.action === 'disable' ? 'Disable this account?' : `Reset all test student records for ${confirmation?.row.email}? This deletes test-only student data and linked auth users.`}
+        confirmLabel={confirmation?.action === 'delete' ? 'Delete account' : confirmation?.action === 'disable' ? 'Disable account' : 'Reset test student'}
+        onConfirm={confirmDestructiveAction}
+        onClose={() => setConfirmation(null)}
+        loading={saving || deleting !== null}
+      />
     </div>
   );
 }
 
 export default function AccountsPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-[60vh]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-wfd-crimson" /></div>}>
+    <Suspense fallback={<LoadingState label="Loading accounts..." />}>
       <AccountsPageInner />
     </Suspense>
   );

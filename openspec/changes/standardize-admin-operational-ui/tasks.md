@@ -31,10 +31,10 @@
 
 ## 5. Registry, Accounts, And Maintenance Migration
 
-- [ ] 5.1 Refactor Registry Management create forms and registry lists to shared section, form-field, alert, empty, badge, and table/card patterns.
-- [ ] 5.2 Refactor Account Management tabs, lists, edit forms, loading/message states, and destructive confirmations to shared operational components.
-- [ ] 5.3 Refactor Maintenance & Archive export, purge, abandoned-registration, calendar-feed, and audit sections to shared operational components where practical.
-- [ ] 5.4 Preserve typed confirmation behavior for purge/delete workflows when stronger confirmation is already required.
+- [x] 5.1 Refactor Registry Management create forms and registry lists to shared section, form-field, alert, empty, badge, and table/card patterns.
+- [x] 5.2 Refactor Account Management tabs, lists, edit forms, loading/message states, and destructive confirmations to shared operational components.
+- [x] 5.3 Refactor Maintenance & Archive export, purge, abandoned-registration, calendar-feed, and audit sections to shared operational components where practical.
+- [x] 5.4 Preserve typed confirmation behavior for purge/delete workflows when stronger confirmation is already required.
 
 ## 6. Selective Student Utility Reuse
 
