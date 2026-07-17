@@ -385,12 +385,12 @@ function AccountsPageInner() {
                 <Button size="sm" onClick={() => startNew('admin')}>Add Admin</Button>
               </div>
               {adminAccounts.map(a => (
-                <div key={a.id} className="flex items-center justify-between rounded-lg border border-gray-200 p-3">
+                <div key={a.id} className="flex flex-col gap-3 rounded-lg border border-gray-200 p-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
                     <p className="font-medium truncate">{a.full_name}</p>
                     <p className="text-xs text-gray-500">{a.email}{a.rank ? ` — ${a.rank}` : ''} {!a.is_active && <span className="text-orange-600">(inactive)</span>}</p>
                   </div>
-                  <div className="flex gap-1 shrink-0">
+                  <div className="flex flex-wrap gap-1 shrink-0">
                     <Button size="sm" variant="secondary" onClick={() => startEdit(a, 'admin')}>Edit</Button>
                     <Button size="sm" variant="secondary" onClick={() => setConfirmation({ action: 'disable', type: 'admin', id: a.id })}>Disable</Button>
                     <Button size="sm" variant="danger" onClick={() => setConfirmation({ action: 'delete', type: 'admin', row: a })}>Delete</Button>
@@ -407,12 +407,12 @@ function AccountsPageInner() {
                 <Button size="sm" onClick={() => startNew('preceptor')}>Add Preceptor</Button>
               </div>
               {preceptors.map(p => (
-                <div key={p.id} className="flex items-center justify-between rounded-lg border border-gray-200 p-3">
+                <div key={p.id} className="flex flex-col gap-3 rounded-lg border border-gray-200 p-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
                     <p className="font-medium truncate">{p.full_name}</p>
                     <p className="text-xs text-gray-500">{p.email || 'No email'} — {p.station_unit || 'Unassigned'}</p>
                   </div>
-                  <div className="flex gap-1 shrink-0">
+                  <div className="flex flex-wrap gap-1 shrink-0">
                     <Button size="sm" variant="secondary" onClick={() => startEdit(p, 'preceptor')}>Edit</Button>
                     <Button size="sm" variant="secondary" onClick={() => setConfirmation({ action: 'disable', type: 'preceptor', id: p.id })}>Disable</Button>
                     <Button size="sm" variant="danger" onClick={() => setConfirmation({ action: 'delete', type: 'preceptor', row: p })}>Delete</Button>
@@ -426,7 +426,7 @@ function AccountsPageInner() {
             <SectionCard className="space-y-3 p-4">
               <Input placeholder="Search students..." value={studentSearch} onChange={e => setStudentSearch(e.target.value)} />
               {filteredStudents.map(s => (
-                <div key={s.id} className="flex items-center justify-between rounded-lg border border-gray-200 p-3">
+                <div key={s.id} className="flex flex-col gap-3 rounded-lg border border-gray-200 p-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
                     <p className="font-medium truncate">{s.full_name}</p>
                     <p className="text-xs text-gray-500">{s.email} — {s.school_name} — <Badge variant={s.status === 'certified' ? 'green' : s.status === 'pending' ? 'gold' : 'gray'}>{s.status}</Badge>{s.is_test_record && <Badge variant="gold" className="ml-1">Test</Badge>}</p>

@@ -26,8 +26,8 @@
 - [x] 4.1 Refactor Action Required to shared section, alert, badge, empty-state, and action-row patterns while preserving existing ordering and API behavior.
 - [x] 4.2 Refactor Student Messages into shared operational section/card styling without changing thread loading or message sending behavior.
 - [x] 4.3 Refactor Student Roster to use the shared compact `DataTable` pattern.
-- [ ] 4.4 Replace migrated Daily Ops destructive native confirmations with `ConfirmDialog` where behavior is currently covered by this change.
-- [ ] 4.5 Verify approvals, registry actions, schedule actions, quiz flag acknowledgment, no-show updates, and blacklist toggles still behave as before.
+- [x] 4.4 Replace migrated Daily Ops destructive native confirmations with `ConfirmDialog` where behavior is currently covered by this change.
+- [x] 4.5 Verify approvals, registry actions, schedule actions, quiz flag acknowledgment, no-show updates, and blacklist toggles still behave as before.
 
 ## 5. Registry, Accounts, And Maintenance Migration
 
@@ -38,14 +38,14 @@
 
 ## 6. Selective Student Utility Reuse
 
-- [ ] 6.1 Identify low-risk student dashboard empty, loading, and alert states that can use shared neutral utility components.
-- [ ] 6.2 Apply shared utilities only where they do not change the student dashboard command hierarchy or make the page feel admin-oriented.
-- [ ] 6.3 Verify student dashboard scheduling, messages, feed copy, and pending/certified states remain functionally unchanged.
+- [x] 6.1 Identify low-risk student dashboard empty, loading, and alert states that can use shared neutral utility components.
+- [x] 6.2 Apply shared utilities only where they do not change the student dashboard command hierarchy or make the page feel admin-oriented.
+- [x] 6.3 Verify student dashboard scheduling, messages, feed copy, and pending/certified states remain functionally unchanged.
 
 ## 7. Accessibility And Verification
 
 - [ ] 7.1 Check keyboard focus visibility and keyboard operation for new buttons, tabs, form fields, data tables, disclosures, and confirmation dialogs.
 - [ ] 7.2 Check responsive layouts on mobile-width and desktop-width screens for migrated admin pages.
-- [ ] 7.3 Run `npm run build`.
-- [ ] 7.4 Run `npm run test` if touched behavior has existing Vitest coverage or if API-adjacent behavior changes during migration.
-- [ ] 7.5 Review migrated screens for remaining obvious one-off UI blocks that should be converted within this change scope.
+- [x] 7.3 Run `npm run build`.
+- [x] 7.4 Run `npm run test` if touched behavior has existing Vitest coverage or if API-adjacent behavior changes during migration.
+- [x] 7.5 Review migrated screens for remaining obvious one-off UI blocks that should be converted within this change scope.

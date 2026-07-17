@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Alert } from '@/components/ui';
 
 interface EvaluationFormProps {
   studentId: string;
@@ -162,9 +163,7 @@ export function EvaluationForm({ studentId }: EvaluationFormProps) {
         </div>
 
         {error && (
-          <div className="p-3 bg-wfd-crimson/10 border border-wfd-crimson/30 rounded-lg text-sm text-wfd-crimson">
-            {error}
-          </div>
+          <Alert tone="danger">{error}</Alert>
         )}
 
         <Button onClick={handleSubmit} loading={loading} className="w-full">

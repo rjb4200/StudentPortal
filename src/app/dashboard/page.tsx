@@ -13,6 +13,7 @@ import { Messages } from '@/components/dashboard/messages';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Alert, EmptyState, LoadingState } from '@/components/ui';
 
 type DashboardSection = 'schedule' | 'preceptors' | 'messages' | 'feed';
 
@@ -266,8 +267,8 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-wfd-crimson" />
+      <div className="min-h-[60vh] pt-20">
+        <LoadingState label="Loading your dashboard..." />
       </div>
     );
   }
@@ -413,15 +414,15 @@ export default function DashboardPage() {
           </div>
 
           {scheduleError && (
-            <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{scheduleError}</p>
+            <Alert tone="danger">{scheduleError}</Alert>
           )}
 
           {activeSchedules.length === 0 && (
-            <Card className="border-wfd-crimson/20 bg-wfd-crimson/5 p-5 text-center">
-              <h3 className="text-lg font-black text-wfd-charcoal">No shifts scheduled yet</h3>
-              <p className="mx-auto mt-1 max-w-xl text-sm text-gray-600">Start with the Schedule a Shift button. You can also pick a future date directly on the calendar.</p>
-              <Button onClick={openScheduleRequest} className="mt-4">Schedule a Shift</Button>
-            </Card>
+            <EmptyState
+              title="No shifts scheduled yet"
+              description="Start with the Schedule a Shift button. You can also pick a future date directly on the calendar."
+              action={<Button onClick={openScheduleRequest}>Schedule a Shift</Button>}
+            />
           )}
 
           {viewMode === 'grid' ? (

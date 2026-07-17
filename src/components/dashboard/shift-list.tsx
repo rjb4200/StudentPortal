@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui';
 import { abbreviated12 } from '@/lib/time-formats';
 
 interface Schedule {
@@ -30,10 +31,10 @@ export function ShiftList({ schedules, onDateClick, onCancel }: ShiftListProps) 
 
   if (sorted.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow border border-gray-200 p-8 text-center">
-        <p className="text-gray-400 text-sm">No shifts scheduled yet.</p>
-        <p className="text-gray-400 text-xs mt-1">Click a date on the calendar or use the Request Shift button to get started.</p>
-      </div>
+      <EmptyState
+        title="No shifts scheduled yet"
+        description="Click a date on the calendar or use the Request Shift button to get started."
+      />
     );
   }
 

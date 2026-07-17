@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 
 interface DisclosureProps {
   title: string;
@@ -18,13 +18,16 @@ export function Disclosure({
   className = '',
 }: DisclosureProps) {
   const [open, setOpen] = useState(defaultOpen);
+  const contentId = useId();
 
   return (
     <div className={`bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow transition-shadow ${className}`}>
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-5 py-3.5 text-left hover:bg-gray-50/80 transition-colors rounded-t-lg"
+        aria-expanded={open}
+        aria-controls={contentId}
+        className="w-full flex items-center justify-between rounded-t-lg px-5 py-3.5 text-left transition-colors hover:bg-gray-50/80 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-wfd-crimson"
       >
         <div className="flex-1 min-w-0">
           <span className="font-semibold text-base text-wfd-charcoal">{title}</span>
@@ -42,6 +45,7 @@ export function Disclosure({
         </svg>
       </button>
       <div
+        id={contentId}
         className={`overflow-hidden transition-all duration-200 ease-in-out ${
           open ? 'max-h-[4000px] opacity-100' : 'max-h-0 opacity-0'
         }`}

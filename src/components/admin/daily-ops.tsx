@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { to24Hour } from '@/lib/time-formats';
 import { getShiftRotation } from '@/lib/shift-rotation';
 import { ShiftManagement } from '@/components/admin/shift-management';
-import { Alert, DataTable, DataTableCell, DataTableHead, DataTableRow, EmptyState, SectionCard } from '@/components/ui';
+import { Alert, ConfirmDialog, DataTable, DataTableCell, DataTableHead, DataTableRow, EmptyState, SectionCard } from '@/components/ui';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const ROTATION_TAG_STYLES = {
@@ -17,6 +17,10 @@ const ROTATION_TAG_STYLES = {
   yellow: 'border-yellow-300 bg-yellow-100 text-yellow-900',
   gray: 'border-gray-300 bg-gray-100 text-gray-700',
 };
+
+type ConfirmationAction =
+  | { type: 'blacklist'; student: any }
+  | { type: 'delete'; student: any; finalWarning: boolean };
 
 function getExpirationCountdown(accessUntil: string | null | undefined) {
   if (!accessUntil) return null;
@@ -71,6 +75,7 @@ export function DailyOps() {
   const [scheduleActionError, setScheduleActionError] = useState<string | null>(null);
   const [pendingMous, setPendingMous] = useState<any[]>([]);
   const [signingMou, setSigningMou] = useState<string | null>(null);
+  const [confirmationAction, setConfirmationAction] = useState<ConfirmationAction | null>(null);
 
   const supabase = createClient() as any;
 
@@ -203,9 +208,6 @@ export function DailyOps() {
 
   const handleKillSwitch = async (student: any) => {
     const newState = !student.is_blacklisted;
-    if (newState && !confirm(`Are you sure you want to blacklist ${student.full_name}? This will prevent them from accessing the portal.`)) {
-      return;
-    }
     await supabase
       .from('students')
       .update({ is_blacklisted: newState })
@@ -223,12 +225,6 @@ export function DailyOps() {
   };
 
   const handleDeleteStudent = async (student: any) => {
-    if (!confirm(`Are you sure you want to permanently delete ${student.full_name} (${student.email})? This will remove their student record, schedules, evaluations, and messages. This cannot be undone.`)) {
-      return;
-    }
-    if (!confirm(`FINAL WARNING: All data for ${student.full_name} will be permanently deleted. Proceed?`)) {
-      return;
-    }
     setDeleting(student.id);
     setDeleteError(null);
     try {
@@ -246,6 +242,22 @@ export function DailyOps() {
       setDeleteError(e?.message || 'Network error during deletion.');
     }
     setDeleting(null);
+  };
+
+  const handleConfirmAction = () => {
+    if (!confirmationAction) return;
+
+    if (confirmationAction.type === 'delete' && !confirmationAction.finalWarning) {
+      setConfirmationAction({ ...confirmationAction, finalWarning: true });
+      return;
+    }
+
+    setConfirmationAction(null);
+    if (confirmationAction.type === 'blacklist') {
+      void handleKillSwitch(confirmationAction.student);
+    } else {
+      void handleDeleteStudent(confirmationAction.student);
+    }
   };
 
   const handleSendBroadcast = async () => {
@@ -347,7 +359,7 @@ export function DailyOps() {
         ) : (
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {pendingStudents.map((s) => (
-              <div key={`approval-${s.id}`} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+              <div key={`approval-${s.id}`} className="flex flex-col gap-2 rounded-lg bg-gray-50 p-2 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   <span className="shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full bg-wfd-sage/10 text-wfd-sage">Approval</span>
                   <div className="min-w-0">
@@ -379,7 +391,7 @@ export function DailyOps() {
                   : `${item.organization_name} - ${item.city}, ${item.state}`;
 
               return (
-                <div key={`registry-${item.registryTable}-${item.id}`} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                <div key={`registry-${item.registryTable}-${item.id}`} className="flex flex-col gap-2 rounded-lg bg-gray-50 p-2 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-2 min-w-0 flex-1">
                     <span className="shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">{item.registryLabel}</span>
                     <div className="min-w-0">
@@ -387,7 +399,7 @@ export function DailyOps() {
                       <p className="text-xs text-gray-500 truncate">{detail}</p>
                     </div>
                   </div>
-                  <div className="ml-3 flex flex-shrink-0 gap-2">
+                  <div className="flex flex-wrap gap-2 sm:ml-3 sm:flex-shrink-0">
                     <Button size="sm" onClick={() => handleRegistryAction(item, 'active')} loading={registryActioning === item.id}>Approve</Button>
                     <Button size="sm" variant="danger" onClick={() => handleRegistryAction(item, 'rejected')} loading={registryActioning === item.id}>Reject</Button>
                   </div>
@@ -398,7 +410,7 @@ export function DailyOps() {
               <p className="text-xs text-red-600 bg-red-50 rounded-lg px-2 py-1">{scheduleActionError}</p>
             )}
             {pendingSchedules.map((s: any) => (
-              <div key={`schedule-${s.id}`} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+              <div key={`schedule-${s.id}`} className="flex flex-col gap-2 rounded-lg bg-gray-50 p-2 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   <span className="shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">Schedule</span>
                   <div>
@@ -424,7 +436,7 @@ export function DailyOps() {
                     )}
                   </div>
                 </div>
-                <div className="flex gap-2 items-center">
+                <div className="flex flex-wrap items-center gap-2">
                   <Button size="sm" onClick={() => handleScheduleAction(s.id, 'approved')}>Approve</Button>
                   <Button variant="danger" size="sm" onClick={() => handleScheduleAction(s.id, 'rejected')}>Reject</Button>
                   <ScheduleCancelButton scheduleId={s.id} onCancel={handleScheduleAction} />
@@ -432,7 +444,7 @@ export function DailyOps() {
               </div>
             ))}
             {cancelRequests.map((s: any) => (
-              <div key={`cancel-${s.id}`} className="flex items-center justify-between p-2 bg-amber-50 rounded-lg border border-amber-200">
+              <div key={`cancel-${s.id}`} className="flex flex-col gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   <span className="shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Cancel Req</span>
                   <div>
@@ -458,7 +470,7 @@ export function DailyOps() {
               </div>
             ))}
             {quizFlags.map((f) => (
-              <div key={`flag-${f.id}`} className="flex items-center justify-between p-2 bg-amber-50 rounded-lg border border-amber-200">
+              <div key={`flag-${f.id}`} className="flex flex-col gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   <span className="shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Flag</span>
                   <div className="min-w-0">
@@ -482,7 +494,7 @@ export function DailyOps() {
               const site = Array.isArray(trainingClass?.training_sites) ? trainingClass.training_sites[0] : trainingClass?.training_sites;
               const instructor = Array.isArray(trainingClass?.instructors) ? trainingClass.instructors[0] : trainingClass?.instructors;
               return (
-                <div key={`mou-${mou.id}`} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                <div key={`mou-${mou.id}`} className="flex flex-col gap-2 rounded-lg bg-gray-50 p-2 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-2 min-w-0 flex-1">
                     <span className="shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full bg-wfd-charcoal/10 text-wfd-charcoal">MOU</span>
                     <div className="min-w-0">
@@ -610,7 +622,9 @@ export function DailyOps() {
                     </DataTableCell>
                     <DataTableCell>
                       <button
-                        onClick={() => handleKillSwitch(s)}
+                        onClick={() => s.is_blacklisted
+                          ? handleKillSwitch(s)
+                          : setConfirmationAction({ type: 'blacklist', student: s })}
                         className={`px-3 py-1 rounded text-xs font-medium ${
                           s.is_blacklisted
                             ? 'bg-wfd-sage/15 text-wfd-sage hover:bg-wfd-sage/25'
@@ -620,7 +634,7 @@ export function DailyOps() {
                         {s.is_blacklisted ? 'Reactivate' : 'Blacklist'}
                       </button>
                       <button
-                        onClick={() => handleDeleteStudent(s)}
+                        onClick={() => setConfirmationAction({ type: 'delete', student: s, finalWarning: false })}
                         disabled={deleting === s.id}
                         className="px-3 py-1 rounded text-xs font-medium bg-wfd-crimson text-white hover:brightness-90 disabled:opacity-50 ml-1"
                       >
@@ -657,6 +671,28 @@ export function DailyOps() {
             </div>
           </div>
         </div>
+      )}
+      {confirmationAction && (
+        <ConfirmDialog
+          open
+          title={confirmationAction.type === 'blacklist'
+            ? `Blacklist ${confirmationAction.student.full_name}?`
+            : confirmationAction.finalWarning
+              ? `Permanently delete ${confirmationAction.student.full_name}?`
+              : `Delete ${confirmationAction.student.full_name}?`}
+          description={confirmationAction.type === 'blacklist'
+            ? `This will prevent ${confirmationAction.student.full_name} from accessing the portal.`
+            : confirmationAction.finalWarning
+              ? `FINAL WARNING: All data for ${confirmationAction.student.full_name} will be permanently deleted. Proceed?`
+              : `This will permanently remove ${confirmationAction.student.full_name} (${confirmationAction.student.email}), including their student record, schedules, evaluations, and messages. This cannot be undone.`}
+          confirmLabel={confirmationAction.type === 'blacklist'
+            ? 'Blacklist student'
+            : confirmationAction.finalWarning
+              ? 'Permanently delete'
+              : 'Continue'}
+          onConfirm={handleConfirmAction}
+          onClose={() => setConfirmationAction(null)}
+        />
       )}
     </div>
   );

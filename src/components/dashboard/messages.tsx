@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, FormEvent } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { EmptyState } from '@/components/ui';
 
 interface Message {
   id: string;
@@ -69,9 +70,10 @@ export function Messages({ studentId }: MessagesProps) {
       <h3 className="font-bold text-wfd-charcoal mb-4">Messages</h3>
       <div className="flex-1 overflow-y-auto space-y-3 mb-4">
         {messages.length === 0 && (
-          <p className="text-gray-400 text-sm text-center py-8">
-            No messages yet. Send a message to your administrator.
-          </p>
+          <EmptyState
+            title="No messages yet"
+            description="Send a message to your administrator."
+          />
         )}
         {messages.map((msg) => (
           <div
