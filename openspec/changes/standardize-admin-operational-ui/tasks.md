@@ -23,9 +23,9 @@
 
 ## 4. Daily Ops Migration
 
-- [ ] 4.1 Refactor Action Required to shared section, alert, badge, empty-state, and action-row patterns while preserving existing ordering and API behavior.
-- [ ] 4.2 Refactor Student Messages into shared operational section/card styling without changing thread loading or message sending behavior.
-- [ ] 4.3 Refactor Student Roster to use the shared compact `DataTable` pattern.
+- [x] 4.1 Refactor Action Required to shared section, alert, badge, empty-state, and action-row patterns while preserving existing ordering and API behavior.
+- [x] 4.2 Refactor Student Messages into shared operational section/card styling without changing thread loading or message sending behavior.
+- [x] 4.3 Refactor Student Roster to use the shared compact `DataTable` pattern.
 - [ ] 4.4 Replace migrated Daily Ops destructive native confirmations with `ConfirmDialog` where behavior is currently covered by this change.
 - [ ] 4.5 Verify approvals, registry actions, schedule actions, quiz flag acknowledgment, no-show updates, and blacklist toggles still behave as before.
 

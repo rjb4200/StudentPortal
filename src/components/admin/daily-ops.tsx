@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { to24Hour } from '@/lib/time-formats';
 import { getShiftRotation } from '@/lib/shift-rotation';
 import { ShiftManagement } from '@/components/admin/shift-management';
+import { Alert, DataTable, DataTableCell, DataTableHead, DataTableRow, EmptyState, SectionCard } from '@/components/ui';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const ROTATION_TAG_STYLES = {
@@ -326,7 +327,7 @@ export function DailyOps() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Action Required */}
-      <Card className="p-4 lg:col-span-2">
+      <SectionCard className="p-4 lg:col-span-2">
         <h3 className="font-bold text-wfd-charcoal mb-3">
           Action Required
           {totalActions > 0 && (
@@ -336,17 +337,13 @@ export function DailyOps() {
           )}
         </h3>
         {approvalError && (
-          <p role="alert" className="mb-3 rounded-lg border border-wfd-crimson/20 bg-wfd-crimson/10 px-3 py-2 text-sm text-wfd-crimson">
-            Approval failed: {approvalError}
-          </p>
+          <Alert tone="danger">Approval failed: {approvalError}</Alert>
         )}
         {deleteError && (
-          <p role="alert" className="mb-3 rounded-lg border border-wfd-crimson/20 bg-wfd-crimson/10 px-3 py-2 text-sm text-wfd-crimson">
-            Deletion failed: {deleteError}
-          </p>
+          <Alert tone="danger">Deletion failed: {deleteError}</Alert>
         )}
         {totalActions === 0 ? (
-          <p className="text-gray-400 text-sm">Nothing requires your attention.</p>
+          <EmptyState title="Nothing requires your attention" />
         ) : (
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {pendingStudents.map((s) => (
@@ -509,10 +506,10 @@ export function DailyOps() {
             })}
           </div>
         )}
-      </Card>
+      </SectionCard>
 
       {/* Threaded Messaging */}
-      <Card className="p-4 lg:col-span-2">
+      <SectionCard className="p-4 lg:col-span-2">
         <h3 className="font-bold text-wfd-charcoal mb-3">Student Messages</h3>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="md:col-span-1 border-r border-gray-200 pr-2 max-h-64 overflow-y-auto">
@@ -568,21 +565,13 @@ export function DailyOps() {
             )}
           </div>
         </div>
-      </Card>
+      </SectionCard>
 
       {/* Student Roster with Actions */}
-      <Card className="p-4 lg:col-span-2">
+      <SectionCard className="p-4 lg:col-span-2">
         <h3 className="font-bold text-wfd-charcoal mb-3">Student Roster</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-200 text-left">
-                <th className="py-2 px-3 font-medium text-gray-500">Student</th>
-                <th className="py-2 px-3 font-medium text-gray-500">Status</th>
-                <th className="py-2 px-3 font-medium text-gray-500">No-Shows</th>
-                <th className="py-2 px-3 font-medium text-gray-500">Actions</th>
-              </tr>
-            </thead>
+        <DataTable>
+            <DataTableHead><DataTableRow><DataTableCell header>Student</DataTableCell><DataTableCell header>Status</DataTableCell><DataTableCell header>No-Shows</DataTableCell><DataTableCell header>Actions</DataTableCell></DataTableRow></DataTableHead>
             <tbody>
               {rosterStudents.map((s) => {
                 const expirationCountdown = getExpirationCountdown(s.access_until);
@@ -592,13 +581,13 @@ export function DailyOps() {
                   : expirationCountdown?.title;
 
                 return (
-                  <tr key={s.id} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="py-2 px-3">
+                  <DataTableRow key={s.id}>
+                    <DataTableCell>
                       <a href={`/admin/students/${s.id}`} className="font-medium text-wfd-crimson hover:underline">{s.full_name}</a>
                       <p className="text-xs text-gray-400">{s.email}</p>
                       {trainingClass && <p className="text-xs text-gray-400">{getStudentClassLabel(s)}</p>}
-                    </td>
-                    <td className="py-2 px-3">
+                    </DataTableCell>
+                    <DataTableCell>
                       <Badge variant={s.status === 'certified' ? 'green' : s.status === 'pending' ? 'gold' : 'gray'}>
                         {s.status}
                       </Badge>
@@ -613,13 +602,13 @@ export function DailyOps() {
                       {(s.no_show_count >= 3) && (
                         <Badge variant="red" className="ml-1">{s.no_show_count} no-shows</Badge>
                       )}
-                    </td>
-                    <td className="py-2 px-3">
+                    </DataTableCell>
+                    <DataTableCell>
                       <Button variant="secondary" size="sm" onClick={() => handleNoShow(s)}>
                         +No-Show ({s.no_show_count || 0})
                       </Button>
-                    </td>
-                    <td className="py-2 px-3">
+                    </DataTableCell>
+                    <DataTableCell>
                       <button
                         onClick={() => handleKillSwitch(s)}
                         className={`px-3 py-1 rounded text-xs font-medium ${
@@ -637,14 +626,13 @@ export function DailyOps() {
                       >
                         {deleting === s.id ? '...' : 'Delete'}
                       </button>
-                    </td>
-                  </tr>
+                    </DataTableCell>
+                  </DataTableRow>
                 );
               })}
             </tbody>
-          </table>
-        </div>
-      </Card>
+          </DataTable>
+      </SectionCard>
 
       {/* Shift Management */}
       <ShiftManagement schedules={schedules} students={students} onCancel={handleScheduleAction} />
