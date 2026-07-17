@@ -46,7 +46,7 @@ export function ShiftModal({ open, onClose, date, schedules, classStartDate, rid
     if (selected === 'day') {
       onSubmit('day', '7:00 AM', '7:00 PM');
     } else if (selected === 'full') {
-      onSubmit('full', '7:00 AM', '7:00 AM');
+      onSubmit('full', '7:00 AM', '10:00 PM');
     } else {
       onSubmit('custom', customStart, customEnd);
     }
@@ -109,8 +109,8 @@ export function ShiftModal({ open, onClose, date, schedules, classStartDate, rid
             className="text-wfd-crimson focus:ring-wfd-crimson"
           />
           <div>
-            <div className="font-medium text-wfd-charcoal text-sm">Full Shift</div>
-            <div className="text-xs text-gray-500">7:00 AM – 7:00 AM (next day)</div>
+            <div className="font-medium text-wfd-charcoal text-sm">Extended Shift</div>
+            <div className="text-xs text-gray-500">7:00 AM – 10:00 PM</div>
           </div>
         </label>
 
@@ -139,7 +139,13 @@ export function ShiftModal({ open, onClose, date, schedules, classStartDate, rid
                 <label className="block text-xs font-medium text-gray-500 mb-1">Start Time</label>
                 <select
                   value={customStart}
-                  onChange={(e) => setCustomStart(e.target.value)}
+                  onChange={(e) => {
+                    const nextStart = e.target.value;
+                    setCustomStart(nextStart);
+                    if (END_TIME_OPTIONS.indexOf(customEnd) <= END_TIME_OPTIONS.indexOf(nextStart)) {
+                      setCustomEnd(END_TIME_OPTIONS[END_TIME_OPTIONS.indexOf(nextStart) + 1]);
+                    }
+                  }}
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-wfd-charcoal focus:border-wfd-crimson focus:ring-1 focus:ring-wfd-crimson"
                 >
                   {START_TIME_OPTIONS.map((t) => (
@@ -166,7 +172,7 @@ export function ShiftModal({ open, onClose, date, schedules, classStartDate, rid
                   onChange={(e) => setCustomEnd(e.target.value)}
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-wfd-charcoal focus:border-wfd-crimson focus:ring-1 focus:ring-wfd-crimson"
                 >
-                  {END_TIME_OPTIONS.map((t) => (
+                  {END_TIME_OPTIONS.filter((t) => END_TIME_OPTIONS.indexOf(t) > END_TIME_OPTIONS.indexOf(customStart)).map((t) => (
                     <option key={t} value={t}>{t}</option>
                   ))}
                 </select>

@@ -100,8 +100,11 @@ describe('instructorRegistrationBody', () => {
 
 describe('scheduleCreateBody', () => {
   it('validates schedule creation input', () => {
-    expect(scheduleCreateBody.safeParse({ date: '2026-07-01', shiftType: 'full', startTime: '7:00 AM', endTime: '7:00 AM' }).success).toBe(true);
+    expect(scheduleCreateBody.safeParse({ date: '2026-07-01', shiftType: 'full', startTime: '7:00 AM', endTime: '10:00 PM' }).success).toBe(true);
     expect(scheduleCreateBody.safeParse({ date: '07/01/2026', shiftType: 'full', startTime: '7:00 AM', endTime: '7:00 AM' }).success).toBe(false);
+    expect(scheduleCreateBody.safeParse({ date: '2026-07-01', shiftType: 'custom', startTime: '9:00 PM', endTime: '10:00 PM' }).success).toBe(true);
+    expect(scheduleCreateBody.safeParse({ date: '2026-07-01', shiftType: 'custom', startTime: '10:00 PM', endTime: '7:00 AM' }).success).toBe(false);
+    expect(scheduleCreateBody.safeParse({ date: '2026-07-01', shiftType: 'custom', startTime: '10:00 PM', endTime: '11:00 PM' }).success).toBe(false);
   });
 });
 

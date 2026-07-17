@@ -5,7 +5,7 @@ Define the recurring department crew rotation used to provide student and staff 
 ## Requirements
 
 ### Requirement: Fixed 24/48 crew rotation
-The system SHALL derive a department crew shift for each calendar date from a repeating three-day rotation anchored at 0700 America/New_York on July 16, 2026. The rotation SHALL identify First Shift with R Brown and orange presentation, Second Shift with S Bellot and yellow presentation, and Third Shift with M Martin and gray presentation. A ride scheduled on a date SHALL use the crew shift that begins at 0700 on that date, including a full ride that ends at 0700 the following day.
+The system SHALL derive a department crew shift for each calendar date from a repeating three-day rotation anchored at 0700 America/New_York on July 16, 2026. The rotation SHALL identify First Shift with R Brown and orange presentation, Second Shift with S Bellot and yellow presentation, and Third Shift with M Martin and gray presentation. A ride scheduled on a date SHALL use the crew shift that begins at 0700 on that date.
 
 #### Scenario: Rotation starts on the anchor date
 - **WHEN** the system derives the crew shift for July 16, 2026
@@ -15,9 +15,6 @@ The system SHALL derive a department crew shift for each calendar date from a re
 - **WHEN** the system derives the crew shift for July 19, 2026
 - **THEN** it identifies First Shift with R Brown and orange presentation
 
-#### Scenario: Full ride keeps its starting-date crew
-- **WHEN** a student has a full 0700-to-0700 ride dated July 18, 2026
-- **THEN** the system identifies Third Shift with M Martin for that ride
 
 ### Requirement: Rotation tag on student calendar
 The student dashboard monthly calendar SHALL display a compact crew-shift tag for every visible date cell. The tag SHALL include the shift label and on-duty Chief and SHALL use the crew presentation color without replacing the existing student schedule status treatment.

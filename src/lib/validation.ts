@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { STUDENT_SHIFT_TIME_OPTIONS, to24Hour } from '@/lib/time-formats';
 
 export const emailSchema = z.string().email().max(255).trim().toLowerCase();
 export const uuidSchema = z.string().uuid();
@@ -179,6 +180,18 @@ export const adminRegistryUpsertBody = z.discriminatedUnion('table', [
 export const scheduleCreateBody = z.object({
   date: dateOnlySchema,
   shiftType: z.enum(['full', 'day', 'custom']),
-  startTime: textSchema(20).min(1),
-  endTime: textSchema(20).min(1),
+  startTime: z.string().refine((time) => STUDENT_SHIFT_TIME_OPTIONS.includes(time), 'Shift times must be between 7:00 AM and 10:00 PM'),
+  endTime: z.string().refine((time) => STUDENT_SHIFT_TIME_OPTIONS.includes(time), 'Shift times must be between 7:00 AM and 10:00 PM'),
+}).superRefine((value, ctx) => {
+  const expected = value.shiftType === 'day'
+    ? ['7:00 AM', '7:00 PM']
+    : value.shiftType === 'full'
+      ? ['7:00 AM', '10:00 PM']
+      : null;
+  if (expected && (value.startTime !== expected[0] || value.endTime !== expected[1])) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Preset shift times cannot be changed', path: ['startTime'] });
+  }
+  if (value.shiftType === 'custom' && to24Hour(value.endTime) <= to24Hour(value.startTime)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'End time must be later than start time', path: ['endTime'] });
+  }
 });

@@ -28,5 +28,6 @@ export function abbreviated12(time12: string | null | undefined): string {
   return time12.replace(':00 ', '').replace(' AM', 'A').replace(' PM', 'P');
 }
 
-export const START_TIME_OPTIONS = Object.keys(TIME_12_TO_24);
-export const END_TIME_OPTIONS = Object.keys(TIME_12_TO_24);
+export const STUDENT_SHIFT_TIME_OPTIONS = Object.keys(TIME_12_TO_24).filter((time) => time !== '11:00 PM');
+export const START_TIME_OPTIONS = STUDENT_SHIFT_TIME_OPTIONS.slice(0, -1);
+export const END_TIME_OPTIONS = STUDENT_SHIFT_TIME_OPTIONS;
