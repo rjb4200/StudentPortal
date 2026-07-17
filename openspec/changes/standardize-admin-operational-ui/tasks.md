@@ -1,25 +1,25 @@
 ## 1. Component Foundation
 
-- [ ] 1.1 Audit existing `src/components/ui` exports and identify overlapping class patterns from the student profile before adding new primitives.
-- [ ] 1.2 Add shared operational UI components for `PageHeader`, `SectionCard`, `StatusBanner`, `Alert`, `EmptyState`, and `LoadingState`.
-- [ ] 1.3 Add `FactGrid` and `FactItem` components that match the student profile summary-cell pattern.
-- [ ] 1.4 Add `DataTable` components or helpers for compact admin tables with profile-style headers, row spacing, badges, and responsive overflow.
-- [ ] 1.5 Add `Tabs` and `FormField` components for admin navigation controls and form layouts.
-- [ ] 1.6 Add an accessible `ConfirmDialog` component for destructive admin actions.
-- [ ] 1.7 Export new components from `src/components/ui/index.ts` and keep existing imports working.
+- [x] 1.1 Audit existing `src/components/ui` exports and identify overlapping class patterns from the student profile before adding new primitives.
+- [x] 1.2 Add shared operational UI components for `PageHeader`, `SectionCard`, `StatusBanner`, `Alert`, `EmptyState`, and `LoadingState`.
+- [x] 1.3 Add `FactGrid` and `FactItem` components that match the student profile summary-cell pattern.
+- [x] 1.4 Add `DataTable` components or helpers for compact admin tables with profile-style headers, row spacing, badges, and responsive overflow.
+- [x] 1.5 Add `Tabs` and `FormField` components for admin navigation controls and form layouts.
+- [x] 1.6 Add an accessible `ConfirmDialog` component for destructive admin actions.
+- [x] 1.7 Export new components from `src/components/ui/index.ts` and keep existing imports working.
 
 ## 2. Baseline Profile Validation
 
-- [ ] 2.1 Refactor the student profile summary card to use shared `SectionCard` and `FactGrid` components without changing displayed data or layout intent.
-- [ ] 2.2 Refactor student profile warning, empty, and table states to use shared components where practical.
+- [x] 2.1 Refactor the student profile summary card to use shared `SectionCard` and `FactGrid` components without changing displayed data or layout intent.
+- [x] 2.2 Refactor student profile warning, empty, and table states to use shared components where practical.
 - [ ] 2.3 Verify student profile disclosures, filters, print behavior, copy actions, and legal document modal behavior remain unchanged.
 
 ## 3. System Health Migration
 
-- [ ] 3.1 Refactor `/admin/system` page title and refresh action to use `PageHeader`.
-- [ ] 3.2 Refactor overall status and summary metrics to use `StatusBanner`, `SectionCard`, and `FactGrid`.
-- [ ] 3.3 Refactor operational alerts, check cards, storage/environment sections, and recent lists to shared alert, section, empty-state, and list/table patterns.
-- [ ] 3.4 Verify System Health still hides secret values and preserves refresh/error behavior.
+- [x] 3.1 Refactor `/admin/system` page title and refresh action to use `PageHeader`.
+- [x] 3.2 Refactor overall status and summary metrics to use `StatusBanner`, `SectionCard`, and `FactGrid`.
+- [x] 3.3 Refactor operational alerts, check cards, storage/environment sections, and recent lists to shared alert, section, empty-state, and list/table patterns.
+- [x] 3.4 Verify System Health still hides secret values and preserves refresh/error behavior.
 
 ## 4. Daily Ops Migration
 

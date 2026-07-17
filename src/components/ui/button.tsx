@@ -1,6 +1,6 @@
 'use client';
 
-import { type ButtonHTMLAttributes } from 'react';
+import { forwardRef, type ButtonHTMLAttributes } from 'react';
 
 type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'sage';
 
@@ -22,7 +22,7 @@ const sizeStyles: Record<'sm' | 'md', string> = {
   md: 'px-4 py-2',
 };
 
-export function Button({
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button({
   variant = 'primary',
   size = 'md',
   loading,
@@ -30,9 +30,10 @@ export function Button({
   children,
   className = '',
   ...props
-}: ButtonProps) {
+}: ButtonProps, ref) {
   return (
     <button
+      ref={ref}
       disabled={disabled || loading}
       className={`${sizeStyles[size]} rounded-lg font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${variantStyles[variant]} ${className}`}
       {...props}
@@ -47,7 +48,7 @@ export function Button({
       )}
     </button>
   );
-}
+});
 
 export function Spinner({ className = '' }: { className?: string }) {
   return (

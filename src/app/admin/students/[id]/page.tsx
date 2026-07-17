@@ -11,6 +11,7 @@ import { RideHistorySection } from '@/components/admin/student-profile/ride-hist
 import { PrintPacketButton } from '@/components/admin/student-profile/print-packet-button';
 import { CopyButton } from '@/components/admin/student-profile/copy-button';
 import { AdminNavigation } from '@/components/admin/admin-navigation';
+import { FactGrid, FactItem, SectionCard } from '@/components/ui';
 
 export default async function StudentProfilePage({
   params,
@@ -100,7 +101,7 @@ export default async function StudentProfilePage({
         {warnings.length > 0 && <CompletenessWarnings warnings={warnings} />}
 
         {/* === Status Summary Card === */}
-        <Card className="overflow-hidden print:shadow-none border-l-4 border-l-wfd-crimson">
+        <SectionCard className="overflow-hidden print:shadow-none">
           <div className="p-6">
             <div className="flex items-start justify-between mb-5">
               <div>
@@ -115,19 +116,10 @@ export default async function StudentProfilePage({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5 text-sm">
-              <div className="bg-gray-50/50 rounded-lg p-3">
-                <span className="text-wfd-crimson/70 block text-xs uppercase tracking-wider font-semibold mb-1">Class</span>
-                <span className="text-wfd-charcoal font-semibold">{trainingClass ? trainingClass.name : '—'}</span>
-              </div>
-              <div className="bg-gray-50/50 rounded-lg p-3">
-                <span className="text-wfd-crimson/70 block text-xs uppercase tracking-wider font-semibold mb-1">Instructor</span>
-                <span className="text-wfd-charcoal font-semibold">{instructor ? `${instructor.first_name} ${instructor.last_name}` : (student.instructor_name || '—')}</span>
-              </div>
-              <div className="bg-gray-50/50 rounded-lg p-3">
-                <span className="text-wfd-crimson/70 block text-xs uppercase tracking-wider font-semibold mb-1">TEI</span>
-                <span className="text-wfd-charcoal font-semibold">{trainingSite ? trainingSite.name : '—'}</span>
-              </div>
+            <FactGrid className="lg:grid-cols-4 text-sm">
+              <FactItem label="Class">{trainingClass ? trainingClass.name : '—'}</FactItem>
+              <FactItem label="Instructor">{instructor ? `${instructor.first_name} ${instructor.last_name}` : (student.instructor_name || '—')}</FactItem>
+              <FactItem label="TEI">{trainingSite ? trainingSite.name : '—'}</FactItem>
               <div className="bg-gray-50/50 rounded-lg p-3">
                 <span className="text-wfd-crimson/70 block text-xs uppercase tracking-wider font-semibold mb-1">Class Start</span>
                 <span className="text-wfd-charcoal font-semibold">
@@ -154,9 +146,9 @@ export default async function StudentProfilePage({
                   <Badge variant="red">{student.no_show_count}</Badge>
                 </div>
               )}
-            </div>
+            </FactGrid>
           </div>
-        </Card>
+        </SectionCard>
 
         <div className="space-y-4">
           {/* === Instructor === */}

@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
+import { Alert, EmptyState, FactGrid, FactItem, LoadingState, PageHeader, SectionCard, StatusBanner } from '@/components/ui';
 import { AdminNavigation } from '@/components/admin/admin-navigation';
 
 type Status = 'healthy' | 'warning' | 'attention' | 'unknown';
@@ -81,7 +82,7 @@ function StatusBadge({ status }: { status: Status }) {
 
 function CheckCard({ title, status, detail, children }: { title: string; status: Status; detail: string; children?: React.ReactNode }) {
   return (
-    <Card className={`p-4 border ${statusStyles[status]?.panel ?? statusStyles.unknown.panel}`}>
+    <SectionCard className={`p-4 ${statusStyles[status]?.panel ?? statusStyles.unknown.panel}`}>
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="font-bold text-wfd-charcoal">{title}</h3>
@@ -90,7 +91,7 @@ function CheckCard({ title, status, detail, children }: { title: string; status:
         <StatusBadge status={status} />
       </div>
       {children && <div className="mt-3 text-sm text-gray-600">{children}</div>}
-    </Card>
+    </SectionCard>
   );
 }
 
@@ -121,34 +122,24 @@ export default function SystemHealthPage() {
 
   if (loading && !data) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-wfd-crimson" />
-      </div>
+        <div className="min-h-[60vh] pt-24"><LoadingState label="Loading system health..." /></div>
     );
   }
 
   return (
     <div className="space-y-6">
       <AdminNavigation />
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-wfd-charcoal">System Health</h1>
-          <p className="text-sm text-gray-500">Operational status, configuration checks, and daily sweep telemetry.</p>
-        </div>
-        <Button type="button" variant="secondary" onClick={loadHealth} loading={loading}>
+      <PageHeader title="System Health" description="Operational status, configuration checks, and daily sweep telemetry." actions={<Button type="button" variant="secondary" onClick={loadHealth} loading={loading}>
           Refresh
-        </Button>
-      </div>
+        </Button>} />
 
       {error && (
-        <p role="alert" className="rounded-lg border border-wfd-crimson/20 bg-wfd-crimson/10 px-3 py-2 text-sm text-wfd-crimson">
-          {error}
-        </p>
+        <Alert tone="danger">{error}</Alert>
       )}
 
       {data && (
         <>
-          <Card className="p-5">
+          <StatusBanner tone={data.overallStatus === 'healthy' ? 'success' : data.overallStatus === 'attention' ? 'danger' : 'warning'}>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm font-medium uppercase tracking-wide text-gray-400">Overall Status</p>
@@ -157,19 +148,14 @@ export default function SystemHealthPage() {
               </div>
               <StatusBadge status={data.overallStatus} />
             </div>
-          </Card>
+          </StatusBanner>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <MetricCard label="Active Students" value={data.metrics.activeStudents} />
-            <MetricCard label="Pending Approvals" value={data.metrics.pendingApprovals} />
-            <MetricCard label="Active Instructors" value={data.metrics.activeInstructors} />
-            <MetricCard label="Active Training Sites" value={data.metrics.activeTrainingSites} />
-          </div>
+          <FactGrid className="lg:grid-cols-4"><FactItem label="Active Students">{data.metrics.activeStudents}</FactItem><FactItem label="Pending Approvals">{data.metrics.pendingApprovals}</FactItem><FactItem label="Active Instructors">{data.metrics.activeInstructors}</FactItem><FactItem label="Active Training Sites">{data.metrics.activeTrainingSites}</FactItem></FactGrid>
 
-          <Card className="p-4">
+          <SectionCard className="p-4">
             <h2 className="font-bold text-wfd-charcoal">Operational Alerts</h2>
             {data.alerts.length === 0 ? (
-              <p className="mt-3 text-sm text-gray-400">No operational alerts.</p>
+              <div className="mt-3"><EmptyState title="No operational alerts" /></div>
             ) : (
               <div className="mt-3 space-y-2">
                 {data.alerts.map((alert, index) => (
@@ -183,7 +169,7 @@ export default function SystemHealthPage() {
                 ))}
               </div>
             )}
-          </Card>
+          </SectionCard>
 
           <div className="grid gap-4 lg:grid-cols-2">
             <CheckCard title="Database" status={data.checks.database.status} detail={`${data.checks.database.latencyMs}ms latency`}>
