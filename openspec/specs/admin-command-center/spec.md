@@ -163,7 +163,7 @@ The admin SHALL be able to add notes to a student's record with priority levels 
 - **THEN** a blue hover-expandable badge appears on that student's profile row
 
 ### Requirement: Kill switch for student access
-A prominent red toggle SHALL allow the admin to terminate a student's access. Activation SHALL prompt a native confirmation modal. A reverse switch SHALL be available for instant reactivation.
+A prominent red toggle SHALL allow the admin to terminate a student's access. Activation SHALL prompt a reusable confirmation dialog. A reverse switch SHALL be available for instant reactivation.
 
 #### Scenario: Terminate student access
 - **WHEN** an admin toggles the kill switch on a student and confirms the action
@@ -286,3 +286,18 @@ The Maintenance & Archive tab SHALL use WFD visual branding to communicate admin
 #### Scenario: Risk states use branded colors
 - **WHEN** the maintenance interface shows destructive, caution, success, and command states
 - **THEN** those states use WFD crimson, gold, sage, and charcoal styling consistently
+
+### Requirement: Daily Ops operational UI pattern
+The Daily Operations admin section SHALL use shared operational UI components for action queues, message panels, roster tables, alerts, empty states, and loading states where those components match existing behavior.
+
+#### Scenario: Action Required uses shared operational surfaces
+- **WHEN** an admin views the Action Required area
+- **THEN** the area uses shared section, alert, badge, and empty-state patterns while preserving the existing action ordering and approval behavior
+
+#### Scenario: Student roster uses shared data table styling
+- **WHEN** an admin views the Student Roster
+- **THEN** the roster uses the shared compact admin table pattern with consistent headers, row spacing, badges, and action placement
+
+#### Scenario: Message panel uses shared section styling
+- **WHEN** an admin views Student Messages
+- **THEN** the message list and conversation panel are presented within the shared operational section/card pattern without changing message threading behavior
