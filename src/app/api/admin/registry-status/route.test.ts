@@ -112,6 +112,23 @@ describe('POST /api/admin/registry-status', () => {
     expect(sendEmail).not.toHaveBeenCalled();
   });
 
+  it('emails the associated instructor when a suspended class is reactivated', async () => {
+    const { sendEmail } = await import('@/lib/email');
+    mockState.trainingClass.status = 'suspended';
+
+    const res = await post({
+      table: 'training_classes',
+      id: '11111111-1111-4111-8111-111111111111',
+      status: 'active',
+    });
+
+    expect(res.status).toBe(200);
+    expect(sendEmail).toHaveBeenCalledTimes(1);
+    expect(mockState.updates).toEqual([
+      expect.objectContaining({ table: 'training_classes', payload: expect.objectContaining({ status: 'active' }) }),
+    ]);
+  });
+
   it('keeps approval successful when the instructor email fails', async () => {
     const { sendEmail } = await import('@/lib/email');
     vi.mocked(sendEmail).mockResolvedValueOnce({ ok: false, error: 'provider unavailable' });
