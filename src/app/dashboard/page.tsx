@@ -14,6 +14,8 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, EmptyState, LoadingState } from '@/components/ui';
 import { getScheduleBlock, type ScheduleBlock } from '@/lib/schedule-blocks';
+import { getCalendarFeedUrl } from '@/lib/calendar-feed';
+import { publicEnv } from '@/lib/env';
 
 type DashboardSection = 'schedule' | 'resources' | 'messages' | 'feed';
 
@@ -280,8 +282,10 @@ export default function DashboardPage() {
 
   const copyCalendarFeed = () => {
     if (!student?.id) return;
-    navigator.clipboard.writeText(`${window.location.origin}/api/calendar/${student.id}.ics`);
+    navigator.clipboard.writeText(getCalendarFeedUrl(publicEnv.SITE_URL, student.id));
   };
+
+  const calendarFeedUrl = student?.id ? getCalendarFeedUrl(publicEnv.SITE_URL, student.id) : null;
 
   const sections: { key: DashboardSection; label: string; description: string; locked?: boolean }[] = [
     { key: 'schedule', label: 'Schedule', description: 'Request and manage shifts', locked: isPending },
@@ -475,7 +479,7 @@ export default function DashboardPage() {
       {activeSection === 'messages' && <Messages studentId={student?.id} />}
 
       {activeSection === 'feed' && (
-        <CalendarFeedCard studentId={student?.id} onCopy={copyCalendarFeed} />
+        <CalendarFeedCard feedUrl={calendarFeedUrl} onCopy={copyCalendarFeed} />
       )}
 
       <DayDetailModal
@@ -526,7 +530,7 @@ function SummaryCard({ label, value, detail }: { label: string; value: string; d
   );
 }
 
-function CalendarFeedCard({ studentId, onCopy }: { studentId: string; onCopy: () => void }) {
+function CalendarFeedCard({ feedUrl, onCopy }: { feedUrl: string | null; onCopy: () => void }) {
   return (
     <Card className="overflow-hidden">
       <div className="border-b-4 border-wfd-sage bg-wfd-charcoal p-5 text-white">
@@ -536,8 +540,8 @@ function CalendarFeedCard({ studentId, onCopy }: { studentId: string; onCopy: ()
       </div>
       <div className="space-y-4 p-5">
         <div className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3 sm:flex-row sm:items-center">
-          <code className="min-w-0 flex-1 truncate text-xs text-gray-700">/api/calendar/{studentId}.ics</code>
-          <Button onClick={onCopy} size="sm">Copy Link</Button>
+          <code className="min-w-0 flex-1 truncate text-xs text-gray-700">{feedUrl ?? 'Loading calendar link...'}</code>
+          <Button onClick={onCopy} size="sm" disabled={!feedUrl}>Copy Link</Button>
         </div>
         <p className="text-sm text-gray-500">Calendar apps refresh subscriptions on their own schedule, so newly approved shifts may not appear immediately.</p>
       </div>
