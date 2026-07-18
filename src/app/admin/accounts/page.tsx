@@ -85,7 +85,7 @@ function AccountsPageInner() {
   function startNew(type: 'admin' | 'preceptor') {
     if (type === 'admin') {
       setEditing(null); setEditType('admin');
-      setForm({ full_name: '', email: '', rank: '', notify_onboarding_complete: true, notify_evaluation_flagged: true, notify_daily_report: false, notify_class_mou: false, is_active: true });
+      setForm({ full_name: '', email: '', rank: '', notify_onboarding_complete: true, notify_evaluation_flagged: true, notify_student_messages: true, notify_daily_report: false, notify_class_mou: false, is_active: true });
       setFormPassword('');
     } else {
       setEditing(null); setEditType('preceptor');
@@ -139,6 +139,7 @@ function AccountsPageInner() {
         full_name: form.full_name.trim(), email: form.email.trim(), rank: form.rank.trim(), is_active: form.is_active,
         notify_onboarding_complete: form.notify_onboarding_complete,
         notify_evaluation_flagged: form.notify_evaluation_flagged,
+        notify_student_messages: form.notify_student_messages,
         notify_daily_report: form.notify_daily_report,
         notify_class_mou: form.notify_class_mou,
         updated_at: new Date().toISOString(),
@@ -355,6 +356,7 @@ function AccountsPageInner() {
               <div className="flex items-end gap-4 pb-2 col-span-2">
                 <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.notify_onboarding_complete || false} onChange={e => setForm({...form, notify_onboarding_complete: e.target.checked})} className="h-4 w-4" /> Onboarding alerts</label>
                 <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.notify_evaluation_flagged || false} onChange={e => setForm({...form, notify_evaluation_flagged: e.target.checked})} className="h-4 w-4" /> Evaluation alerts</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.notify_student_messages || false} onChange={e => setForm({...form, notify_student_messages: e.target.checked})} className="h-4 w-4" /> Student message emails</label>
                 <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.notify_daily_report || false} onChange={e => setForm({...form, notify_daily_report: e.target.checked})} className="h-4 w-4" /> Daily report</label>
                 <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.notify_class_mou || false} onChange={e => setForm({...form, notify_class_mou: e.target.checked})} className="h-4 w-4" /> MOU alerts</label>
               </div>

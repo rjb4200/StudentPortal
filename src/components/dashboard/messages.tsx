@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, FormEvent } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { EmptyState } from '@/components/ui';
+import { Alert, EmptyState } from '@/components/ui';
 
 interface Message {
   id: string;
@@ -21,6 +21,7 @@ export function Messages({ studentId }: MessagesProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const supabase = createClient();
@@ -47,17 +48,18 @@ export function Messages({ studentId }: MessagesProps) {
     if (!newMessage.trim()) return;
 
     setLoading(true);
-    const { data: msg } = await supabase
-      .from('messages')
-      .insert({
-        student_id: studentId,
-        sender: 'student',
-        message_text: newMessage.trim(),
-      })
-      .select()
-      .single();
+    setError(null);
+    const response = await fetch('/api/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: newMessage.trim() }),
+    });
+    const result = await response.json().catch(() => null);
+    const msg = result?.message as Message | undefined;
 
-    if (msg) {
+    if (!response.ok || !msg) {
+      setError(result?.error || 'Unable to send your message. Please try again.');
+    } else {
       setMessages((prev) => [...prev, msg]);
       setNewMessage('');
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
@@ -68,6 +70,7 @@ export function Messages({ studentId }: MessagesProps) {
   return (
     <Card className="p-4 flex flex-col h-[500px]">
       <h3 className="font-bold text-wfd-charcoal mb-4">Messages</h3>
+      {error && <div className="mb-3"><Alert tone="danger">{error}</Alert></div>}
       <div className="flex-1 overflow-y-auto space-y-3 mb-4">
         {messages.length === 0 && (
           <EmptyState

@@ -83,6 +83,12 @@ export function DailyOps() {
     loadAll();
   }, []);
 
+  useEffect(() => {
+    if (!students.length) return;
+    const studentId = new URLSearchParams(window.location.search).get('student');
+    if (studentId && students.some((student) => student.id === studentId)) void loadMessages(studentId);
+  }, [students]);
+
   const loadAll = async () => {
     const [
       { data: pending },
@@ -192,11 +198,17 @@ export function DailyOps() {
 
   const handleSendReply = async () => {
     if (!replyText.trim() || !activeStudentId) return;
-    await supabase.from('messages').insert({
-      student_id: activeStudentId,
-      sender: 'admin',
-      message_text: replyText.trim(),
+    setScheduleActionError(null);
+    const response = await fetch('/api/admin/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ studentId: activeStudentId, message: replyText.trim() }),
     });
+    const result = await response.json().catch(() => null);
+    if (!response.ok || !result?.message) {
+      setScheduleActionError(result?.error || 'Unable to send the reply.');
+      return;
+    }
     setReplyText('');
     const { data: msgs } = await supabase
       .from('messages')

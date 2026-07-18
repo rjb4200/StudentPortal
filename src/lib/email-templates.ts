@@ -271,6 +271,25 @@ export function buildFlaggedEvaluationEmail(params: {
   };
 }
 
+export function buildStudentMessageAdminEmail(params: {
+  student_name: string;
+  student_email: string;
+  message_text: string;
+  conversation_url: string;
+}): EmailContent {
+  const excerpt = params.message_text.length > 500 ? `${params.message_text.slice(0, 497)}...` : params.message_text;
+  const bodyHtml = `<p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:16px;line-height:1.6;text-align:center;"><strong>${escHtml(params.student_name)}</strong> sent a message from the EMS Student Portal.</p>
+    <div style="margin:20px auto;padding:16px 18px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;max-width:480px;">
+      <p style="margin:0 0 8px 0;color:#4b5563;font-size:14px;"><strong>Student:</strong> ${escHtml(params.student_name)}</p>
+      <p style="margin:0 0 12px 0;color:#4b5563;font-size:14px;"><strong>Email:</strong> ${escHtml(params.student_email)}</p>
+      <p style="margin:0;color:#1c1c1e;font-size:14px;line-height:1.6;white-space:pre-wrap;">${escHtml(excerpt)}</p>
+    </div>`;
+  return {
+    subject: `New student message from ${params.student_name}`,
+    html: buildEmailHtml('Student Message', bodyHtml, params.conversation_url, 'Open Conversation'),
+  };
+}
+
 export function buildMouCompletedInstructorEmail(params: {
   instructor_name: string;
   class_name: string;

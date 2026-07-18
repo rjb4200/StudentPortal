@@ -6,7 +6,11 @@ export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ studentId: string }> }
 ) {
-  const { studentId } = await params;
+  const { studentId: rawStudentId } = await params;
+  const studentId = rawStudentId.endsWith('.ics') ? rawStudentId.slice(0, -4) : rawStudentId;
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(studentId)) {
+    return new NextResponse('Not found', { status: 404 });
+  }
 
   const supabase = createAdminClient();
 

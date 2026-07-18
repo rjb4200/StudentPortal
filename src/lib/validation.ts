@@ -72,6 +72,14 @@ export const scheduleBlockDeleteBody = z.object({
   date: dateOnlySchema,
 });
 
+export const messageBody = z.object({
+  message: textSchema(2000).min(1, 'Message cannot be empty'),
+});
+
+export const adminMessageReplyBody = messageBody.extend({
+  studentId: uuidSchema,
+});
+
 export const classDateRangeSchema = z.object({
   classStartDate: dateOnlySchema,
   rideTimeEndDate: dateOnlySchema,
