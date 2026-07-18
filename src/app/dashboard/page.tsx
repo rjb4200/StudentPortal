@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, EmptyState, LoadingState } from '@/components/ui';
+import { getScheduleBlock, type ScheduleBlock } from '@/lib/schedule-blocks';
 
 type DashboardSection = 'schedule' | 'resources' | 'messages' | 'feed';
 
@@ -46,6 +47,7 @@ function formatShiftTime(schedule?: Schedule | null) {
 export default function DashboardPage() {
   const [student, setStudent] = useState<any>(null);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [blocks, setBlocks] = useState<ScheduleBlock[]>([]);
   const [messageCount, setMessageCount] = useState(0);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showShiftModal, setShowShiftModal] = useState(false);
@@ -79,13 +81,18 @@ export default function DashboardPage() {
     if (student) {
       setStudent(student);
 
-      const [{ data: schedules }, { data: welcome }, { count }] = await Promise.all([
+      const [{ data: schedules }, { data: welcome }, { count }, availabilityResponse] = await Promise.all([
         supabase.from('schedules').select('*').eq('student_id', student.id).order('date', { ascending: true }),
         supabase.from('message_templates').select('title, body').eq('template_type', 'welcome').eq('is_active', true).limit(1),
         supabase.from('messages').select('id', { count: 'exact', head: true }).eq('student_id', student.id),
+        fetch('/api/schedule/availability'),
       ]);
 
       setSchedules((schedules ?? []) as Schedule[]);
+      if (availabilityResponse.ok) {
+        const availability = await availabilityResponse.json();
+        setBlocks((availability.blocks ?? []) as ScheduleBlock[]);
+      }
       setMessageCount(count ?? 0);
       if (welcome?.[0]) setWelcomeMsg(welcome[0]);
       if (student.status === 'pending') setActiveSection('messages');
@@ -103,6 +110,8 @@ export default function DashboardPage() {
     if (!classStartDate || !rideTimeEndDate) return true;
     return date >= classStartDate && date <= rideTimeEndDate;
   };
+  const getBlockForDate = (date: string) => getScheduleBlock(blocks, date);
+  const isDateBlocked = (date: string) => !!getBlockForDate(date);
   const activeSchedules = schedules.filter((s) => s.status !== 'cancelled' && s.status !== 'rejected');
   const pendingSchedules = schedules.filter((s) => s.status === 'pending');
   const futureApproved = schedules
@@ -111,7 +120,13 @@ export default function DashboardPage() {
   const nextShift = futureApproved[0] ?? null;
 
   const openScheduleRequest = () => {
-    const initialDate = isDateInClassWindow(today) ? today : classStartDate;
+    let initialDate = isDateInClassWindow(today) ? today : classStartDate;
+    for (let offset = 0; initialDate && offset < 366 && isDateBlocked(initialDate); offset++) {
+      const next = new Date(`${initialDate}T00:00:00`);
+      next.setDate(next.getDate() + 1);
+      initialDate = next.toISOString().slice(0, 10);
+      if (!isDateInClassWindow(initialDate)) initialDate = null;
+    }
     if (!initialDate || !isDateInClassWindow(initialDate)) {
       setScheduleError('Scheduling is unavailable because your class ride-time window is not active.');
       return;
@@ -203,6 +218,11 @@ export default function DashboardPage() {
       setScheduleError('That date is outside your class ride-time window.');
       return;
     }
+    const block = getBlockForDate(date);
+    if (block) {
+      setScheduleError(`That date is unavailable for scheduling.${block.reason ? ` ${block.reason}` : ''}`);
+      return;
+    }
     setScheduleError(null);
     setSelectedDate(date);
     setShowShiftModal(true);
@@ -217,6 +237,12 @@ export default function DashboardPage() {
 
   const handleShiftSubmit = async (shiftType: 'full' | 'day' | 'custom', startTime: string, endTime: string) => {
     if (!selectedDate || !student || !isCertified) return;
+
+    const block = getBlockForDate(selectedDate);
+    if (block) {
+      setScheduleError(`That date is unavailable for scheduling.${block.reason ? ` ${block.reason}` : ''}`);
+      return;
+    }
 
     setScheduleError(null);
     const response = await fetch('/api/schedule/request', {
@@ -425,7 +451,7 @@ export default function DashboardPage() {
           )}
 
           {viewMode === 'grid' ? (
-            <CalendarGrid schedules={schedules} onDateClick={handleDateClick} classStartDate={classStartDate} rideTimeEndDate={rideTimeEndDate} />
+            <CalendarGrid schedules={schedules} blocks={blocks} onDateClick={handleDateClick} classStartDate={classStartDate} rideTimeEndDate={rideTimeEndDate} />
           ) : (
             <ShiftList
               schedules={schedules}
@@ -469,6 +495,7 @@ export default function DashboardPage() {
         schedules={schedules}
         classStartDate={classStartDate}
         rideTimeEndDate={rideTimeEndDate}
+        blocks={blocks}
         onDateChange={setSelectedDate}
         onSubmit={handleShiftSubmit}
       />

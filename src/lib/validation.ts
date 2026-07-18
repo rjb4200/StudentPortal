@@ -57,11 +57,20 @@ export const scheduleCancelBody = z.object({
 
 export const scheduleActionBody = z.object({
   scheduleId: uuidSchema,
-  action: z.enum(['approved', 'rejected', 'cancelled']),
+  action: z.enum(['approved', 'rejected', 'cancelled', 'approved_and_blocked', 'rejected_and_blocked']),
   note: textSchema(500).optional(),
 });
 
 const dateOnlySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD date format');
+
+export const scheduleBlockBody = z.object({
+  date: dateOnlySchema,
+  reason: textSchema(500).optional().or(z.literal('')),
+});
+
+export const scheduleBlockDeleteBody = z.object({
+  date: dateOnlySchema,
+});
 
 export const classDateRangeSchema = z.object({
   classStartDate: dateOnlySchema,

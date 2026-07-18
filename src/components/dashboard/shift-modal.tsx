@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { START_TIME_OPTIONS, END_TIME_OPTIONS } from '@/lib/time-formats';
+import { getScheduleBlock, type ScheduleBlock } from '@/lib/schedule-blocks';
 
 interface Schedule {
   id: string;
@@ -21,13 +22,14 @@ interface ShiftModalProps {
   schedules: Schedule[];
   classStartDate?: string | null;
   rideTimeEndDate?: string | null;
+  blocks?: ScheduleBlock[];
   onDateChange?: (date: string) => void;
   onSubmit: (shiftType: 'full' | 'day' | 'custom', startTime: string, endTime: string) => void;
 }
 
 const CUSTOM_DEFAULT_START = '7:00 AM';
 
-export function ShiftModal({ open, onClose, date, schedules, classStartDate, rideTimeEndDate, onDateChange, onSubmit }: ShiftModalProps) {
+export function ShiftModal({ open, onClose, date, schedules, classStartDate, rideTimeEndDate, blocks = [], onDateChange, onSubmit }: ShiftModalProps) {
   const [selected, setSelected] = useState<'full' | 'day' | 'custom'>('full');
   const [customStart, setCustomStart] = useState(CUSTOM_DEFAULT_START);
   const [customEnd, setCustomEnd] = useState('7:00 PM');
@@ -56,6 +58,7 @@ export function ShiftModal({ open, onClose, date, schedules, classStartDate, rid
   };
 
   const showNag = selected === 'custom' && customStart !== CUSTOM_DEFAULT_START;
+  const selectedBlock = getScheduleBlock(blocks, selectedDate);
 
   return (
     <Modal open={open} onClose={onClose} title="Request Shift">
@@ -72,6 +75,11 @@ export function ShiftModal({ open, onClose, date, schedules, classStartDate, rid
       </div>
 
       <div className="space-y-3 mb-6">
+        {selectedBlock && (
+          <p className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700">
+            This date is unavailable for scheduling.{selectedBlock.reason ? ` ${selectedBlock.reason}` : ''}
+          </p>
+        )}
         <label
           className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
             selected === 'day'
@@ -185,7 +193,7 @@ export function ShiftModal({ open, onClose, date, schedules, classStartDate, rid
         <Button variant="secondary" onClick={onClose} className="flex-1">
           Cancel
         </Button>
-        <Button onClick={handleSubmit} className="flex-1">
+        <Button onClick={handleSubmit} disabled={!!selectedBlock || !selectedDate} className="flex-1">
           Confirm Request
         </Button>
       </div>

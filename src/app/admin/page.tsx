@@ -6,12 +6,13 @@ import { DailyOps } from '@/components/admin/daily-ops';
 import { PreceptorAnalytics } from '@/components/admin/preceptor-analytics';
 import { MaintenanceArchive } from '@/components/admin/maintenance-archive';
 import { RegistryManagement } from '@/components/admin/registry-management';
+import { ScheduleCalendar } from '@/components/admin/schedule-calendar';
 import { AdminNavigation, type AdminSection } from '@/components/admin/admin-navigation';
 import { canAccessAdmin } from '@/lib/roles';
 
 type Tab = AdminSection;
 
-const tabs: Tab[] = ['daily', 'registry', 'analytics', 'maintenance'];
+const tabs: Tab[] = ['daily', 'calendar', 'registry', 'analytics', 'maintenance'];
 
 function getTabFromLocation() {
   if (typeof window === 'undefined') return 'daily';
@@ -55,6 +56,7 @@ export default function AdminPage() {
       <AdminNavigation activeSection={activeTab} onSectionSelect={setActiveTab} />
 
       {activeTab === 'daily' && <DailyOps />}
+      {activeTab === 'calendar' && <ScheduleCalendar />}
       {activeTab === 'registry' && <RegistryManagement />}
       {activeTab === 'analytics' && <PreceptorAnalytics />}
       {activeTab === 'maintenance' && <MaintenanceArchive />}

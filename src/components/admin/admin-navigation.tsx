@@ -3,10 +3,11 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 
-export type AdminSection = 'daily' | 'registry' | 'analytics' | 'maintenance';
+export type AdminSection = 'daily' | 'calendar' | 'registry' | 'analytics' | 'maintenance';
 
 const primaryItems: { key: AdminSection; label: string; href: string }[] = [
   { key: 'daily', label: 'Daily Operations', href: '/admin?tab=daily' },
+  { key: 'calendar', label: 'Calendar', href: '/admin?tab=calendar' },
   { key: 'registry', label: 'Registry', href: '/admin?tab=registry' },
   { key: 'analytics', label: 'Preceptor Analytics', href: '/admin?tab=analytics' },
   { key: 'maintenance', label: 'Maintenance & Archive', href: '/admin?tab=maintenance' },

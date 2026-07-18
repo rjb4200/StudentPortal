@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
   );
 
   const { data: { user } } = await authClient.auth.getUser();
-  if (!canAccessAdmin(user)) {
+  if (!user || !canAccessAdmin(user)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
@@ -27,6 +27,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
   }
   const { scheduleId, action, note } = parsed.data;
+  const isCombinedAction = action === 'approved_and_blocked' || action === 'rejected_and_blocked';
+  const resolvedAction = action === 'approved_and_blocked'
+    ? 'approved'
+    : action === 'rejected_and_blocked'
+      ? 'rejected'
+      : action;
 
   const adminClient = createAdminClient();
 
@@ -40,7 +46,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Schedule not found' }, { status: 404 });
   }
 
-  const isProcessingStudentCancellation = schedule.status === 'cancelled' && action === 'cancelled';
+  const isProcessingStudentCancellation = schedule.status === 'cancelled' && resolvedAction === 'cancelled';
 
   if (schedule.status === 'rejected') {
     return NextResponse.json({ success: true, message: 'Already rejected' });
@@ -50,18 +56,30 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, message: 'Already cancelled' });
   }
 
-  const updatePayload = isProcessingStudentCancellation
-    ? { cancelled_by: 'admin' as const }
-    : { status: action, ...(action === 'cancelled' ? { cancelled_by: 'admin' as const } : {}) };
+  let updateError: { message: string } | null = null;
+  if (isCombinedAction) {
+    const { error } = await adminClient.rpc('resolve_schedule_and_block_day', {
+      p_schedule_id: scheduleId,
+      p_action: resolvedAction as 'approved' | 'rejected',
+      p_reason: note || '',
+      p_admin_id: user.id,
+    });
+    updateError = error;
+  } else {
+    const updatePayload = isProcessingStudentCancellation
+      ? { cancelled_by: 'admin' as const }
+      : { status: resolvedAction, ...(resolvedAction === 'cancelled' ? { cancelled_by: 'admin' as const } : {}) };
 
-  if (action === 'cancelled' && note) {
-    (updatePayload as any).cancel_note = note;
+    if (resolvedAction === 'cancelled' && note) {
+      (updatePayload as any).cancel_note = note;
+    }
+
+    const { error } = await adminClient
+      .from('schedules')
+      .update(updatePayload as any)
+      .eq('id', scheduleId);
+    updateError = error;
   }
-
-  const { error: updateError } = await adminClient
-    .from('schedules')
-    .update(updatePayload as any)
-    .eq('id', scheduleId);
 
   if (updateError) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
@@ -85,9 +103,9 @@ export async function POST(request: NextRequest) {
       const templateParams = { full_name: student.full_name, date_str: dateStr, time_display: timeDisplay };
       let result;
 
-      if (action === 'approved') {
+      if (resolvedAction === 'approved') {
         result = buildShiftApprovedEmail({ ...templateParams, login_url: loginUrl });
-      } else if (action === 'cancelled') {
+      } else if (resolvedAction === 'cancelled') {
         result = buildShiftCancelledByAdminEmail({ ...templateParams, note: note || null, login_url: loginUrl });
       } else {
         result = buildShiftRejectedEmail({ ...templateParams, login_url: loginUrl });

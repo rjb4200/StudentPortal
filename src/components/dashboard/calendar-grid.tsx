@@ -16,6 +16,7 @@ import {
 } from 'date-fns';
 import { abbreviated12 } from '@/lib/time-formats';
 import { getShiftRotation } from '@/lib/shift-rotation';
+import { getScheduleBlock, type ScheduleBlock } from '@/lib/schedule-blocks';
 
 interface Schedule {
   id: string;
@@ -31,6 +32,7 @@ interface CalendarGridProps {
   onDateClick: (date: string) => void;
   classStartDate?: string | null;
   rideTimeEndDate?: string | null;
+  blocks?: ScheduleBlock[];
 }
 
 const ROTATION_TAG_STYLES = {
@@ -45,7 +47,7 @@ const ROTATION_SHORT_LABELS = {
   'Third Shift': '3rd Shift',
 } as const;
 
-export function CalendarGrid({ schedules, onDateClick, classStartDate, rideTimeEndDate }: CalendarGridProps) {
+export function CalendarGrid({ schedules, onDateClick, classStartDate, rideTimeEndDate, blocks = [] }: CalendarGridProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   const monthStart = startOfMonth(currentMonth);
@@ -121,14 +123,18 @@ export function CalendarGrid({ schedules, onDateClick, classStartDate, rideTimeE
           const inMonth = isSameMonth(day, currentMonth);
           const today = isToday(day);
           const outsideClassWindow = !!classStartDate && !!rideTimeEndDate && (dateStr < classStartDate || dateStr > rideTimeEndDate);
-          const disabled = past || outsideClassWindow;
+          const block = getScheduleBlock(blocks, dateStr);
+          const isBlockedWithoutSchedule = !!block && !schedule;
+          const disabled = past || outsideClassWindow || isBlockedWithoutSchedule;
+          const unavailableTitle = block?.reason ? `Unavailable: ${block.reason}` : 'Unavailable for scheduling';
 
           return (
             <button
               key={dateStr}
               onClick={() => onDateClick(dateStr)}
               disabled={disabled}
-              title={outsideClassWindow ? 'Outside your class ride-time window' : past && !schedule ? 'Past dates are unavailable for scheduling' : undefined}
+              title={outsideClassWindow ? 'Outside your class ride-time window' : isBlockedWithoutSchedule ? unavailableTitle : past && !schedule ? 'Past dates are unavailable for scheduling' : undefined}
+              aria-label={`${dateStr}${block ? `, blocked day${block.reason ? `: ${block.reason}` : ''}` : ''}`}
               className={`relative aspect-square rounded-lg p-1 text-sm transition-colors
                 ${!inMonth ? 'text-gray-300' : ''}
                 ${disabled ? 'bg-gray-50 text-gray-300 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-100'}
@@ -160,6 +166,9 @@ export function CalendarGrid({ schedules, onDateClick, classStartDate, rideTimeE
               )}
               {schedule && getStatusLabel(schedule) && (
                 <span className="absolute bottom-1 left-1 text-[9px] leading-tight">{getStatusLabel(schedule)!.icon} {getStatusLabel(schedule)!.text}</span>
+              )}
+              {block && schedule && (
+                <span className="absolute bottom-1 right-1 rounded bg-gray-700 px-1 text-[8px] font-bold text-white" title={unavailableTitle}>Blocked</span>
               )}
             </button>
           );

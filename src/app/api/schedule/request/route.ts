@@ -43,6 +43,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Schedule date is outside your class ride-time window.' }, { status: 400 });
   }
 
+  const { data: block, error: blockError } = await adminClient
+    .from('schedule_blocks')
+    .select('date')
+    .eq('date', date)
+    .maybeSingle();
+
+  if (blockError) {
+    return NextResponse.json({ error: 'Unable to verify scheduling availability.' }, { status: 500 });
+  }
+  if (block) {
+    return NextResponse.json({ error: 'This date is unavailable for scheduling.' }, { status: 400 });
+  }
+
   const { data: schedule, error: insertError } = await adminClient
     .from('schedules')
     .insert({

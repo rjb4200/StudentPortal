@@ -152,7 +152,7 @@ export function DailyOps() {
     }
   };
 
-  const handleScheduleAction = async (scheduleId: string, action: 'approved' | 'rejected' | 'cancelled', note?: string) => {
+  const handleScheduleAction = async (scheduleId: string, action: 'approved' | 'rejected' | 'cancelled' | 'approved_and_blocked' | 'rejected_and_blocked', note?: string) => {
     setScheduleActionError(null);
     try {
       const response = await fetch('/api/admin/schedule-action', {
@@ -438,7 +438,9 @@ export function DailyOps() {
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <Button size="sm" onClick={() => handleScheduleAction(s.id, 'approved')}>Approve</Button>
+                  <Button size="sm" variant="secondary" onClick={() => handleScheduleAction(s.id, 'approved_and_blocked')}>Approve + Block</Button>
                   <Button variant="danger" size="sm" onClick={() => handleScheduleAction(s.id, 'rejected')}>Reject</Button>
+                  <Button variant="danger" size="sm" onClick={() => handleScheduleAction(s.id, 'rejected_and_blocked')}>Reject + Block</Button>
                   <ScheduleCancelButton scheduleId={s.id} onCancel={handleScheduleAction} />
                 </div>
               </div>

@@ -837,6 +837,30 @@ export type Database = {
           },
         ]
       }
+      schedule_blocks: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          date: string
+          reason: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          date: string
+          reason?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          reason?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       schedules: {
         Row: {
           cancel_note: string | null
@@ -1209,6 +1233,19 @@ export type Database = {
     }
     Functions: {
       refresh_pgrst_schema: { Args: never; Returns: undefined }
+      resolve_schedule_and_block_day: {
+        Args: {
+          p_action: Database["public"]["Enums"]["schedule_status"]
+          p_admin_id: string
+          p_reason: string
+          p_schedule_id: string
+        }
+        Returns: {
+          schedule_date: string
+          schedule_id: string
+          schedule_status: Database["public"]["Enums"]["schedule_status"]
+        }[]
+      }
       register_onboarding_student:
         | {
             Args: {

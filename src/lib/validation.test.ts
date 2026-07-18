@@ -6,6 +6,8 @@ import {
   instructorRegistrationBody,
   maintenancePurgeBody,
   onboardingRegistrationWithClassBody,
+  scheduleActionBody,
+  scheduleBlockBody,
   scheduleCreateBody,
 } from '@/lib/validation';
 
@@ -133,6 +135,20 @@ describe('adminRegistryUpsertBody', () => {
         notes: '',
       },
     }).success).toBe(false);
+  });
+});
+
+describe('schedule block validation', () => {
+  it('accepts a global block with an optional student-visible reason', () => {
+    expect(scheduleBlockBody.safeParse({ date: '2026-07-21', reason: 'Station training day.' }).success).toBe(true);
+    expect(scheduleBlockBody.safeParse({ date: '2026-07-21', reason: '' }).success).toBe(true);
+    expect(scheduleBlockBody.safeParse({ date: '07/21/2026', reason: '' }).success).toBe(false);
+  });
+
+  it('accepts only supported combined schedule actions', () => {
+    expect(scheduleActionBody.safeParse({ studentId: uuid, scheduleId: uuid, action: 'approved_and_blocked' }).success).toBe(true);
+    expect(scheduleActionBody.safeParse({ scheduleId: uuid, action: 'rejected_and_blocked' }).success).toBe(true);
+    expect(scheduleActionBody.safeParse({ scheduleId: uuid, action: 'blocked' }).success).toBe(false);
   });
 });
 
