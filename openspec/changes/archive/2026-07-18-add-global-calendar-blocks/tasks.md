@@ -34,6 +34,6 @@
 ## 5. Verification and Release
 
 - [x] 5.1 Run `npm run test` and address failures related to scheduling, validation, and admin actions.
-- [ ] 5.2 Run `npm run build` and verify the student and admin calendar layouts at desktop and mobile widths.
-- [ ] 5.3 Perform an end-to-end manual check: block an empty date, try a new student request, preserve an existing pending request, approve and block one request, reject and block another, and remove a block.
+- [x] 5.2 Run `npm run build` and verify the student and admin calendar layouts at desktop and mobile widths.
+- [x] 5.3 Perform an end-to-end manual check: block an empty date, try a new student request, preserve an existing pending request, approve and block one request, reject and block another, and remove a block.
 - [x] 5.4 Run Supabase security and performance advisors after the migration; resolve any new findings or document unrelated pre-existing findings.
