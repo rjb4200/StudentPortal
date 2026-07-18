@@ -80,6 +80,10 @@ export const adminMessageReplyBody = messageBody.extend({
   studentId: uuidSchema,
 });
 
+export const adminMessageThreadReadBody = z.object({
+  studentId: uuidSchema,
+});
+
 export const classDateRangeSchema = z.object({
   classStartDate: dateOnlySchema,
   rideTimeEndDate: dateOnlySchema,

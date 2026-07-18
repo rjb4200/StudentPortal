@@ -10,6 +10,7 @@ import { to24Hour } from '@/lib/time-formats';
 import { getShiftRotation } from '@/lib/shift-rotation';
 import { ShiftManagement } from '@/components/admin/shift-management';
 import { Alert, ConfirmDialog, DataTable, DataTableCell, DataTableHead, DataTableRow, EmptyState, SectionCard } from '@/components/ui';
+import { orderMessageThreads, type MessageThread } from '@/lib/message-inbox';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const ROTATION_TAG_STYLES = {
@@ -59,6 +60,8 @@ export function DailyOps() {
   const [students, setStudents] = useState<any[]>([]);
   const [activeStudentId, setActiveStudentId] = useState<string | null>(null);
   const [messages, setMessages] = useState<any[]>([]);
+  const [messageThreads, setMessageThreads] = useState<MessageThread[]>([]);
+  const [messageInboxError, setMessageInboxError] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
   const [approving, setApproving] = useState<string | null>(null);
   const [approvalError, setApprovalError] = useState<string | null>(null);
@@ -86,8 +89,8 @@ export function DailyOps() {
   useEffect(() => {
     if (!students.length) return;
     const studentId = new URLSearchParams(window.location.search).get('student');
-    if (studentId && students.some((student) => student.id === studentId)) void loadMessages(studentId);
-  }, [students]);
+    if (studentId && messageThreads.some((thread) => thread.student_id === studentId)) void loadMessages(studentId);
+  }, [students, messageThreads]);
 
   const loadAll = async () => {
     const [
@@ -99,6 +102,7 @@ export function DailyOps() {
       { data: pendingInstructors },
       { data: pendingClasses },
       { data: pendingMousData },
+      inboxResponse,
     ] = await Promise.all([
       supabase.from('students').select('*, training_classes(name, class_start_date, ride_time_end_date, training_sites(name), instructors(first_name, last_name))').eq('status', 'pending').not('onboarding_completed_at', 'is', null).order('created_at', { ascending: false }),
       supabase.from('students').select('*, training_classes(name, class_start_date, ride_time_end_date, training_sites(name), instructors(first_name, last_name))').order('created_at', { ascending: false }),
@@ -108,6 +112,7 @@ export function DailyOps() {
       supabase.from('instructors').select('*, training_sites(name)').eq('status', 'pending').order('created_at', { ascending: false }),
       supabase.from('training_classes').select('*, training_sites(name), instructors(first_name, last_name)').eq('status', 'pending').order('created_at', { ascending: false }),
       supabase.from('class_mous').select('*, training_classes!inner(name, training_sites!inner(name), instructors!inner(first_name, last_name, email))').is('wfems_signed_at', null).not('representative_signature', 'eq', '').order('created_at', { ascending: false }),
+      fetch('/api/admin/message-inbox'),
     ]);
 
     setPendingStudents(pending ?? []);
@@ -120,6 +125,24 @@ export function DailyOps() {
       ...(pendingClasses ?? []).map((item: any) => ({ ...item, registryTable: 'training_classes', registryLabel: 'Class' })),
     ]);
     setPendingMous(pendingMousData ?? []);
+    if (inboxResponse.ok) {
+      const inbox = await inboxResponse.json();
+      setMessageThreads(inbox.threads ?? []);
+      setMessageInboxError(null);
+    } else {
+      setMessageInboxError('Unable to load student message status.');
+    }
+  };
+
+  const loadMessageInbox = async () => {
+    const response = await fetch('/api/admin/message-inbox');
+    const inbox = await response.json().catch(() => null);
+    if (!response.ok) {
+      setMessageInboxError(inbox?.error || 'Unable to load student message status.');
+      return;
+    }
+    setMessageThreads(inbox?.threads ?? []);
+    setMessageInboxError(null);
   };
 
   const handleApprove = async (student: any) => {
@@ -210,12 +233,8 @@ export function DailyOps() {
       return;
     }
     setReplyText('');
-    const { data: msgs } = await supabase
-      .from('messages')
-      .select('*')
-      .eq('student_id', activeStudentId)
-      .order('created_at', { ascending: true });
-    setMessages(msgs ?? []);
+    await loadMessages(activeStudentId);
+    await loadMessageInbox();
   };
 
   const handleKillSwitch = async (student: any) => {
@@ -309,6 +328,20 @@ export function DailyOps() {
       .eq('student_id', studentId)
       .order('created_at', { ascending: true });
     setMessages(data ?? []);
+    const thread = messageThreads.find((item) => item.student_id === studentId);
+    if (!thread?.is_unread) return;
+
+    const response = await fetch('/api/admin/message-inbox', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ studentId }),
+    });
+    const result = await response.json().catch(() => null);
+    if (!response.ok) {
+      setMessageInboxError(result?.error || 'Unable to mark this conversation as read.');
+      return;
+    }
+    await loadMessageInbox();
   };
 
   const handleAcknowledgeFlag = async (flagId: string) => {
@@ -328,6 +361,8 @@ export function DailyOps() {
   const cancelRequests = schedules.filter((s: any) => s.status === 'cancelled' && s.cancelled_by === 'student');
   const rosterStudents = students.filter((s: any) => s.status === 'certified');
   const totalActions = pendingStudents.length + pendingSchedules.length + cancelRequests.length + quizFlags.length + registryItems.length + pendingMous.length;
+  const unreadMessageCount = messageThreads.filter((thread) => thread.is_unread).length;
+  const orderedMessageThreads = orderMessageThreads(messageThreads);
 
   const handleWfemsSign = async (mouId: string) => {
     setSigningMou(mouId);
@@ -536,20 +571,43 @@ export function DailyOps() {
 
       {/* Threaded Messaging */}
       <SectionCard className="p-4 lg:col-span-2">
-        <h3 className="font-bold text-wfd-charcoal mb-3">Student Messages</h3>
+        <h3 className="font-bold text-wfd-charcoal mb-3">
+          Student Messages
+          {unreadMessageCount > 0 && (
+            <span className="ml-2 rounded-full bg-wfd-crimson px-2 py-0.5 text-xs text-white" aria-label={`${unreadMessageCount} unread student messages`}>
+              {unreadMessageCount} unread
+            </span>
+          )}
+        </h3>
+        {messageInboxError && <Alert tone="danger">{messageInboxError}</Alert>}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="md:col-span-1 border-r border-gray-200 pr-2 max-h-64 overflow-y-auto">
-            {students.map((s) => (
+            {orderedMessageThreads.length === 0 ? (
+              <EmptyState title="No student messages yet" description="Student conversations will appear here when a message is received." />
+            ) : orderedMessageThreads.map((thread) => (
               <button
-                key={s.id}
-                onClick={() => loadMessages(s.id)}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                  activeStudentId === s.id
+                key={thread.student_id}
+                onClick={() => loadMessages(thread.student_id)}
+                aria-label={`${thread.student_name}${thread.is_unread ? ', unread message' : ''}${thread.needs_reply ? ', needs reply' : ''}`}
+                className={`mb-1 w-full rounded-lg px-3 py-2 text-left text-sm transition-colors ${
+                  activeStudentId === thread.student_id
                     ? 'bg-wfd-crimson text-white'
-                    : 'hover:bg-gray-100 text-gray-700'
+                    : thread.is_unread
+                      ? 'bg-wfd-crimson/5 font-semibold text-wfd-charcoal hover:bg-wfd-crimson/10'
+                      : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
-                {s.full_name}
+                <div className="flex items-center justify-between gap-2">
+                  <span className="truncate">{thread.student_name}</span>
+                  <time className="shrink-0 text-[10px] font-normal opacity-70" dateTime={thread.latest_message_at}>
+                    {new Date(thread.latest_message_at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                  </time>
+                </div>
+                <p className="mt-0.5 truncate text-xs font-normal opacity-75">{thread.latest_message_text}</p>
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {thread.is_unread && <span className="rounded-full bg-wfd-crimson px-1.5 py-0.5 text-[10px] font-semibold text-white">Unread</span>}
+                  {thread.needs_reply && <span className="rounded-full bg-wfd-gold/20 px-1.5 py-0.5 text-[10px] font-semibold text-wfd-charcoal">Needs reply</span>}
+                </div>
               </button>
             ))}
           </div>

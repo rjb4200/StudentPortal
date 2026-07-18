@@ -62,6 +62,42 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_message_thread_state: {
+        Row: {
+          admin_account_id: string
+          last_read_student_message_at: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          admin_account_id: string
+          last_read_student_message_at: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          admin_account_id?: string
+          last_read_student_message_at?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_message_thread_state_admin_account_id_fkey"
+            columns: ["admin_account_id"]
+            isOneToOne: false
+            referencedRelation: "admin_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_message_thread_state_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       class_mous: {
         Row: {
           created_at: string
@@ -1235,6 +1271,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_admin_message_inbox: {
+        Args: { p_admin_account_id: string }
+        Returns: {
+          is_unread: boolean
+          latest_message_at: string
+          latest_message_sender: Database["public"]["Enums"]["message_sender"]
+          latest_message_text: string
+          latest_student_message_at: string | null
+          needs_reply: boolean
+          student_id: string
+          student_name: string
+        }[]
+      }
       refresh_pgrst_schema: { Args: never; Returns: undefined }
       resolve_schedule_and_block_day: {
         Args: {
