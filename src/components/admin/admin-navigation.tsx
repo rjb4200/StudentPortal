@@ -3,13 +3,13 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 
-export type AdminSection = 'daily' | 'calendar' | 'registry' | 'analytics' | 'maintenance';
+export type AdminSection = 'daily' | 'calendar' | 'messages' | 'registry' | 'analytics' | 'maintenance';
 
 const primaryItems: { key: AdminSection; label: string; href: string }[] = [
   { key: 'daily', label: 'Daily Operations', href: '/admin?tab=daily' },
   { key: 'calendar', label: 'Calendar', href: '/admin?tab=calendar' },
+  { key: 'messages', label: 'Messages', href: '/admin?tab=messages' },
   { key: 'registry', label: 'Registry', href: '/admin?tab=registry' },
-  { key: 'analytics', label: 'Preceptor Analytics', href: '/admin?tab=analytics' },
   { key: 'maintenance', label: 'Maintenance & Archive', href: '/admin?tab=maintenance' },
 ];
 
@@ -17,6 +17,7 @@ const secondaryItems = [
   { href: '/admin/setup', label: 'Onboarding Setup', muted: false },
   { href: '/admin/accounts', label: 'Account Management', muted: false },
   { href: '/admin/system', label: 'System Health', muted: false },
+  { href: '/admin?tab=analytics', label: 'Preceptor Analytics', muted: false },
   { href: '/admin/dev', label: 'Dev Nav', muted: true },
 ];
 

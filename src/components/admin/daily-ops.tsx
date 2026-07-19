@@ -54,7 +54,7 @@ function getStudentClassLabel(student: any) {
   return [site?.name, trainingClass.name, instructorName].filter(Boolean).join(' — ');
 }
 
-export function DailyOps() {
+export function DailyOps({ onNavigateMessages }: { onNavigateMessages?: () => void }) {
   const [pendingStudents, setPendingStudents] = useState<any[]>([]);
   const [schedules, setSchedules] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
@@ -360,8 +360,8 @@ export function DailyOps() {
   const pendingSchedules = schedules.filter((s: any) => s.status === 'pending');
   const cancelRequests = schedules.filter((s: any) => s.status === 'cancelled' && s.cancelled_by === 'student');
   const rosterStudents = students.filter((s: any) => s.status === 'certified');
-  const totalActions = pendingStudents.length + pendingSchedules.length + cancelRequests.length + quizFlags.length + registryItems.length + pendingMous.length;
   const unreadMessageCount = messageThreads.filter((thread) => thread.is_unread).length;
+  const totalActions = pendingStudents.length + pendingSchedules.length + cancelRequests.length + quizFlags.length + registryItems.length + pendingMous.length + (unreadMessageCount > 0 ? 1 : 0);
   const orderedMessageThreads = orderMessageThreads(messageThreads);
 
   const handleWfemsSign = async (mouId: string) => {
@@ -538,6 +538,21 @@ export function DailyOps() {
                 </Button>
               </div>
             ))}
+            {unreadMessageCount > 0 && (
+              <div className="flex flex-col gap-2 rounded-lg bg-gray-50 p-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <span className="shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full bg-wfd-crimson/10 text-wfd-crimson">Messages</span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">
+                      {unreadMessageCount} {unreadMessageCount === 1 ? 'student has' : 'students have'} unread messages
+                    </p>
+                  </div>
+                </div>
+                <Button size="sm" onClick={() => onNavigateMessages?.()}>
+                  View Messages
+                </Button>
+              </div>
+            )}
             {pendingMous.map((mou) => {
               const trainingClass = Array.isArray(mou.training_classes) ? mou.training_classes[0] : mou.training_classes;
               const site = Array.isArray(trainingClass?.training_sites) ? trainingClass.training_sites[0] : trainingClass?.training_sites;
@@ -567,88 +582,6 @@ export function DailyOps() {
             })}
           </div>
         )}
-      </SectionCard>
-
-      {/* Threaded Messaging */}
-      <SectionCard className="p-4 lg:col-span-2">
-        <h3 className="font-bold text-wfd-charcoal mb-3">
-          Student Messages
-          {unreadMessageCount > 0 && (
-            <span className="ml-2 rounded-full bg-wfd-crimson px-2 py-0.5 text-xs text-white" aria-label={`${unreadMessageCount} unread student messages`}>
-              {unreadMessageCount} unread
-            </span>
-          )}
-        </h3>
-        {messageInboxError && <Alert tone="danger">{messageInboxError}</Alert>}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="md:col-span-1 border-r border-gray-200 pr-2 max-h-64 overflow-y-auto">
-            {orderedMessageThreads.length === 0 ? (
-              <EmptyState title="No student messages yet" description="Student conversations will appear here when a message is received." />
-            ) : orderedMessageThreads.map((thread) => (
-              <button
-                key={thread.student_id}
-                onClick={() => loadMessages(thread.student_id)}
-                aria-label={`${thread.student_name}${thread.is_unread ? ', unread message' : ''}${thread.needs_reply ? ', needs reply' : ''}`}
-                className={`mb-1 w-full rounded-lg px-3 py-2 text-left text-sm transition-colors ${
-                  activeStudentId === thread.student_id
-                    ? 'bg-wfd-crimson text-white'
-                    : thread.is_unread
-                      ? 'bg-wfd-crimson/5 font-semibold text-wfd-charcoal hover:bg-wfd-crimson/10'
-                      : 'text-gray-700 hover:bg-gray-100'
-                }`}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="truncate">{thread.student_name}</span>
-                  <time className="shrink-0 text-[10px] font-normal opacity-70" dateTime={thread.latest_message_at}>
-                    {new Date(thread.latest_message_at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
-                  </time>
-                </div>
-                <p className="mt-0.5 truncate text-xs font-normal opacity-75">{thread.latest_message_text}</p>
-                <div className="mt-1 flex flex-wrap gap-1">
-                  {thread.is_unread && <span className="rounded-full bg-wfd-crimson px-1.5 py-0.5 text-[10px] font-semibold text-white">Unread</span>}
-                  {thread.needs_reply && <span className="rounded-full bg-wfd-gold/20 px-1.5 py-0.5 text-[10px] font-semibold text-wfd-charcoal">Needs reply</span>}
-                </div>
-              </button>
-            ))}
-          </div>
-          <div className="md:col-span-3">
-            {activeStudentId ? (
-              <div className="flex flex-col h-64">
-                <div className="flex-1 overflow-y-auto space-y-2 mb-2">
-                  {messages.map((m) => (
-                    <div
-                      key={m.id}
-                      className={`text-sm px-3 py-1.5 rounded-lg max-w-[80%] ${
-                        m.sender === 'admin'
-                          ? 'bg-wfd-charcoal text-white ml-auto'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}
-                    >
-                      {m.message_text}
-                    </div>
-                  ))}
-                </div>
-                <div className="flex gap-2">
-                  <input
-                    value={replyText}
-                    onChange={(e) => setReplyText(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSendReply()}
-                    placeholder="Reply..."
-                    className="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-wfd-charcoal outline-none text-gray-900"
-                  />
-                  <Button onClick={handleSendReply} disabled={!replyText.trim()}>
-                    Send
-                  </Button>
-                  <Button type="button" variant="secondary" size="sm" onClick={() => setShowBroadcast(true)}>
-                    Broadcast
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <p className="text-gray-400 text-sm py-8 text-center">Select a student to view messages.</p>
-            )}
-          </div>
-        </div>
       </SectionCard>
 
       {/* Student Roster with Actions */}

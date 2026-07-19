@@ -50,7 +50,7 @@ export default function DashboardPage() {
   const [student, setStudent] = useState<any>(null);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [blocks, setBlocks] = useState<ScheduleBlock[]>([]);
-  const [messageCount, setMessageCount] = useState(0);
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showShiftModal, setShowShiftModal] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<Schedule | null>(null);
@@ -83,10 +83,10 @@ export default function DashboardPage() {
     if (student) {
       setStudent(student);
 
-      const [{ data: schedules }, { data: welcome }, { count }, availabilityResponse] = await Promise.all([
+      const [{ data: schedules }, { data: welcome }, { data: readState }, availabilityResponse] = await Promise.all([
         supabase.from('schedules').select('*').eq('student_id', student.id).order('date', { ascending: true }),
         supabase.from('message_templates').select('title, body').eq('template_type', 'welcome').eq('is_active', true).limit(1),
-        supabase.from('messages').select('id', { count: 'exact', head: true }).eq('student_id', student.id),
+        supabase.from('student_message_read_state').select('last_read_admin_message_at').eq('student_id', student.id).maybeSingle(),
         fetch('/api/schedule/availability'),
       ]);
 
@@ -95,7 +95,15 @@ export default function DashboardPage() {
         const availability = await availabilityResponse.json();
         setBlocks((availability.blocks ?? []) as ScheduleBlock[]);
       }
-      setMessageCount(count ?? 0);
+
+      let unreadQuery = supabase.from('messages').select('id', { count: 'exact', head: true })
+        .eq('student_id', student.id)
+        .eq('sender', 'admin');
+      if (readState?.last_read_admin_message_at) {
+        unreadQuery = unreadQuery.gt('created_at', readState.last_read_admin_message_at);
+      }
+      const { count } = await unreadQuery;
+      setUnreadMessageCount(count ?? 0);
       if (welcome?.[0]) setWelcomeMsg(welcome[0]);
       if (student.status === 'pending') setActiveSection('messages');
     }
@@ -355,8 +363,8 @@ export default function DashboardPage() {
           />
           <SummaryCard
             label="Messages"
-            value={String(messageCount)}
-            detail={messageCount === 1 ? '1 message in your thread' : `${messageCount} messages in your thread`}
+            value={String(unreadMessageCount)}
+            detail={unreadMessageCount === 1 ? '1 unread from your staff' : unreadMessageCount > 0 ? `${unreadMessageCount} unread from your staff` : 'No unread messages'}
           />
         </div>
       </section>
@@ -476,7 +484,7 @@ export default function DashboardPage() {
 
       {activeSection === 'resources' && <ResourceLibrary />}
 
-      {activeSection === 'messages' && <Messages studentId={student?.id} />}
+      {activeSection === 'messages' && <Messages studentId={student?.id} onMessagesRead={loadData} />}
 
       {activeSection === 'feed' && (
         <CalendarFeedCard feedUrl={calendarFeedUrl} onCopy={copyCalendarFeed} />

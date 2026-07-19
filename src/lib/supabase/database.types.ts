@@ -1022,6 +1022,32 @@ export type Database = {
           },
         ]
       }
+      student_message_read_state: {
+        Row: {
+          last_read_admin_message_at: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          last_read_admin_message_at: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          last_read_admin_message_at?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_message_read_state_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: true
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       students: {
         Row: {
           access_until: string | null
