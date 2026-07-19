@@ -3,6 +3,18 @@
 ## Purpose
 Allow training staff to manage the student registration form fields (add, remove, reorder, rename, toggle required, set field types) from the Admin Command Center without code changes.
 ## Requirements
+
+### Requirement: Intentional registration-field configuration changes
+The registration-field configuration interface SHALL require an explicit create or edit action before presenting editable field controls. Field activation changes SHALL require an explicit save or confirmation before they are persisted.
+
+#### Scenario: Administrator views a registration field
+- **WHEN** an administrator selects an existing registration field
+- **THEN** its stored configuration is not immediately editable
+
+#### Scenario: Administrator changes field activation deliberately
+- **WHEN** an administrator changes a field activation state and confirms or saves the change
+- **THEN** the resulting active state is persisted and governs future registration forms
+
 ### Requirement: Admin-managed registration fields
 The system SHALL allow admin users to create, edit, reorder, activate, deactivate, and delete registration form fields from the Admin Command Center. Full name and email are permanent mandatory anchors; all other fields are configurable. Reordering SHALL use ▲/▼ buttons with recalculation to guarantee unique sort_order values.
 
@@ -68,4 +80,3 @@ The registration form SHALL render fields according to their configured `field_t
 
 - **WHEN** a registration field has an unrecognized `field_type`
 - **THEN** the HTML input renders as `type="text"`
-

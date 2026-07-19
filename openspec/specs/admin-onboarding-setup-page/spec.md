@@ -3,6 +3,22 @@
 ## Purpose
 Move all onboarding configuration components (quiz rules, registration fields, legal documents, resource library, welcome message) to a dedicated `/admin/setup` page accessible via a hamburger menu, uncluttering the Daily Operations and Maintenance & Archive tabs.
 ## Requirements
+
+### Requirement: Protected onboarding setup settings
+The onboarding setup page SHALL present persisted welcome-message, completion-message, and help-email settings as read-only until an administrator explicitly starts editing each setting.
+
+#### Scenario: Administrator opens onboarding setup
+- **WHEN** an administrator views an existing onboarding setup setting
+- **THEN** its stored value is displayed without an editable input
+
+#### Scenario: Administrator saves an onboarding setup setting
+- **WHEN** an administrator explicitly edits and saves a valid onboarding setup setting
+- **THEN** the new setting is persisted and used by future student-facing views
+
+#### Scenario: Administrator cancels an onboarding setup edit
+- **WHEN** an administrator cancels an onboarding setup edit
+- **THEN** the prior stored setting remains displayed and unchanged
+
 ### Requirement: Dedicated onboarding setup page
 
 The Admin Command Center SHALL provide a dedicated page at `/admin/setup` that contains all five onboarding configuration components. The page SHALL load setup data (welcome message template, help email, and child config components) only after confirming the current user has admin access via `canAccessAdmin()`. Unauthorized users SHALL see an "Access Denied" error message rather than triggering a client-side full-page redirect. The server-side middleware SHALL remain the primary authorization gate for `/admin/*` routes.
@@ -52,4 +68,3 @@ The Maintenance & Archive tab SHALL contain only operational tools: master expor
 #### Scenario: Admin views Maintenance & Archive
 - **WHEN** an admin selects the Maintenance & Archive tab
 - **THEN** the tab displays Master Export, Purge Data, and Aggregate iCal Feed sections but no onboarding configuration components
-
