@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Alert, Badge, Button, EmptyState, FormField, LoadingState, Modal, SectionCard, StatusBanner } from '@/components/ui';
+import { Alert, Badge, Button, EmptyState, FormField, LoadingState, Modal, ProtectedEditor, SectionCard, StatusBanner } from '@/components/ui';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const PURGE_CONFIRMATION = 'PURGE STUDENT DATA';
@@ -73,6 +73,8 @@ export function MaintenanceArchive() {
   const [auditError, setAuditError] = useState<string | null>(null);
   const [loadingAudit, setLoadingAudit] = useState(true);
   const [mouTemplateBody, setMouTemplateBody] = useState('');
+  const [persistedMouTemplateBody, setPersistedMouTemplateBody] = useState('');
+  const [editingMouTemplate, setEditingMouTemplate] = useState(false);
   const [savingMouSettings, setSavingMouSettings] = useState(false);
   const [mouSettingsMsg, setMouSettingsMsg] = useState<string | null>(null);
 
@@ -123,7 +125,11 @@ export function MaintenanceArchive() {
 
   const loadMouSettings = async () => {
     const { data } = await supabase.from('portal_settings').select('key, value').eq('key', 'mou_template_body');
-    if (data?.[0]) setMouTemplateBody(data[0].value ?? '');
+    if (data?.[0]) {
+      const value = data[0].value ?? '';
+      setMouTemplateBody(value);
+      setPersistedMouTemplateBody(value);
+    }
   };
 
   const saveMouSettings = async () => {
@@ -136,6 +142,8 @@ export function MaintenanceArchive() {
     if (error) {
       setMouSettingsMsg(`Error: ${error.message}`);
     } else {
+      setPersistedMouTemplateBody(mouTemplateBody);
+      setEditingMouTemplate(false);
       setMouSettingsMsg('MOU template saved.');
     }
     setSavingMouSettings(false);
@@ -327,15 +335,24 @@ export function MaintenanceArchive() {
         <div className="border-l-4 border-wfd-crimson p-5">
           <p className="text-xs font-bold uppercase tracking-wide text-wfd-crimson">MOU Configuration</p>
           <h3 className="mt-1 font-serif text-xl font-bold text-wfd-charcoal">MOU Template Body</h3>
-          <p className="mt-2 text-sm text-gray-600">
-            This is the body text for the Memorandum of Understanding shown to instructors during class registration. Use placeholders like {'{{'}effective_date{'}}'}, {'{{'}training_organization_name{'}}'}, {'{{'}class_name{'}}'}, {'{{'}class_start_date{'}}'}, {'{{'}ride_time_end_date{'}}'}, {'{{'}representative_name{'}}'}, {'{{'}representative_title{'}}'}, {'{{'}representative_signed_at{'}}'}, {'{{'}wfems_signer_name{'}}'}, {'{{'}wfems_signer_title{'}}'}, and {'{{'}wfems_signed_at{'}}'}.
-          </p>
-          <textarea
-            value={mouTemplateBody}
-            onChange={(e) => setMouTemplateBody(e.target.value)}
-            rows={12}
-            className="mt-3 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 font-mono outline-none focus:ring-2 focus:ring-wfd-crimson"
-          />
+          <ProtectedEditor
+            title="Future agreement template"
+            description="Saved changes apply only to newly created MOUs. Existing signed MOU snapshots remain unchanged."
+            editing={editingMouTemplate}
+            saving={savingMouSettings}
+            onEdit={() => { setMouTemplateBody(persistedMouTemplateBody); setEditingMouTemplate(true); setMouSettingsMsg(null); }}
+            onCancel={() => { setMouTemplateBody(persistedMouTemplateBody); setEditingMouTemplate(false); setMouSettingsMsg(null); }}
+            onSave={saveMouSettings}
+            editLabel="Edit template"
+            saveLabel="Save template"
+          >
+            {editingMouTemplate ? (
+              <textarea value={mouTemplateBody} onChange={(e) => setMouTemplateBody(e.target.value)} rows={12} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 font-mono outline-none focus:ring-2 focus:ring-wfd-crimson" />
+            ) : (
+              <pre className="max-h-80 overflow-y-auto whitespace-pre-wrap rounded-lg bg-gray-50 p-3 text-sm text-gray-700">{persistedMouTemplateBody || 'No MOU template configured.'}</pre>
+            )}
+          </ProtectedEditor>
+          {mouSettingsMsg && <div className="mt-3">{statusPanel(mouSettingsMsg.startsWith('Error:') ? 'danger' : 'success', mouSettingsMsg)}</div>}
         </div>
       </SectionCard>
 

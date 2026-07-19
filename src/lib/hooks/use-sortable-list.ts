@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/database.types';
+import { hasSortableOrderChanged, reorderSortableItems } from '@/lib/sortable-list-utils';
 
 type SortableTableName = keyof Database['public']['Tables'];
 
@@ -22,6 +23,9 @@ interface UseSortableListReturn<T extends SortableItem> {
   error: string | null;
   reload: () => Promise<void>;
   moveItem: (item: T, direction: -1 | 1) => Promise<void>;
+  saveOrder: () => Promise<boolean>;
+  discardOrder: () => void;
+  hasPendingOrder: boolean;
   canMoveUp: (item: T) => boolean;
   canMoveDown: (item: T) => boolean;
   nextSortOrder: () => number;
@@ -32,6 +36,7 @@ export function useSortableList<T extends SortableItem>(
 ): UseSortableListReturn<T> {
   const { tableName, filter } = options;
   const [items, setItems] = useState<T[]>([]);
+  const [persistedItems, setPersistedItems] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -52,6 +57,7 @@ export function useSortableList<T extends SortableItem>(
       setError(queryError.message);
     } else {
       setItems((data as unknown as T[]) ?? []);
+      setPersistedItems((data as unknown as T[]) ?? []);
     }
 
     setLoading(false);
@@ -63,28 +69,33 @@ export function useSortableList<T extends SortableItem>(
 
   const moveItem = useCallback(
     async (item: T, direction: -1 | 1) => {
-      const current = [...items].sort((a, b) => a.sort_order - b.sort_order);
-      const idx = current.findIndex((i) => i.id === item.id);
-      if (idx === -1) return;
-
-      const newIdx = idx + direction;
-      if (newIdx < 0 || newIdx >= current.length) return;
-
-      [current[idx], current[newIdx]] = [current[newIdx], current[idx]];
-
-      const supabase = createClient() as any;
-      const updates = current.map((it, i) =>
-        supabase
-          .from(tableName)
-          .update({ sort_order: (i + 1) * 10, updated_at: new Date().toISOString() })
-          .eq('id', it.id)
-      );
-
-      await Promise.all(updates);
-      await load();
+      setItems(reorderSortableItems(items, item.id, direction));
     },
     [items, tableName, load]
   );
+
+  const saveOrder = useCallback(async (): Promise<boolean> => {
+    setError(null);
+    const orderedItems = [...items].sort((a, b) => a.sort_order - b.sort_order);
+    const supabase = createClient() as any;
+    const results = await Promise.all(orderedItems.map((item, index) =>
+      supabase.from(tableName).update({ sort_order: (index + 1) * 10, updated_at: new Date().toISOString() }).eq('id', item.id)
+    ));
+    const saveError = results.find((result) => result.error)?.error;
+    if (saveError) {
+      setError(saveError.message);
+      return false;
+    }
+    await load();
+    return true;
+  }, [items, tableName, load]);
+
+  const discardOrder = useCallback(() => {
+    setItems(persistedItems);
+    setError(null);
+  }, [persistedItems]);
+
+  const hasPendingOrder = hasSortableOrderChanged(items, persistedItems);
 
   const canMoveUp = useCallback(
     (item: T): boolean => {
@@ -113,6 +124,9 @@ export function useSortableList<T extends SortableItem>(
     error,
     reload: load,
     moveItem,
+    saveOrder,
+    discardOrder,
+    hasPendingOrder,
     canMoveUp,
     canMoveDown,
     nextSortOrder,

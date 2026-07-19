@@ -24,6 +24,9 @@ export function ResourceLibraryConfig() {
     error: catsError,
     reload: reloadCats,
     moveItem: moveCat,
+    saveOrder: saveCategoryOrder,
+    discardOrder: discardCategoryOrder,
+    hasPendingOrder: hasPendingCategoryOrder,
     canMoveUp: canMoveCatUp,
     canMoveDown: canMoveCatDown,
     nextSortOrder: nextCatSortOrder,
@@ -32,6 +35,8 @@ export function ResourceLibraryConfig() {
   const [selectedCatId, setSelectedCatId] = useState<string | null>(null);
   const [catEditingId, setCatEditingId] = useState<string | null>(null);
   const [docEditingId, setDocEditingId] = useState<string | null>(null);
+  const [editingCategory, setEditingCategory] = useState(false);
+  const [editingDocument, setEditingDocument] = useState(false);
   const [catForm, setCatForm] = useState(emptyCatForm);
   const [docForm, setDocForm] = useState(emptyDocForm);
   const [saving, setSaving] = useState(false);
@@ -45,6 +50,9 @@ export function ResourceLibraryConfig() {
     error: docsError,
     reload: reloadDocs,
     moveItem: moveDoc,
+    saveOrder: saveDocumentOrder,
+    discardOrder: discardDocumentOrder,
+    hasPendingOrder: hasPendingDocumentOrder,
     canMoveUp: canMoveDocUp,
     canMoveDown: canMoveDocDown,
     nextSortOrder: nextDocSortOrder,
@@ -63,10 +71,10 @@ export function ResourceLibraryConfig() {
   const loading = catsLoading || (selectedCatId ? docsLoading : false);
   const displayError = error || catsError || docsError;
 
-  function startNewCat() { setCatEditingId(null); setCatForm({ ...emptyCatForm, sort_order: nextCatSortOrder() }); setMessage(null); setError(null); }
-  function startEditCat(cat: ResCategory) { setCatEditingId(cat.id); setCatForm({ name: cat.name, sort_order: cat.sort_order }); setMessage(null); setError(null); }
-  function startNewDoc() { setDocEditingId(null); setDocForm({ ...emptyDocForm, sort_order: nextDocSortOrder() }); setMessage(null); setError(null); }
-  function startEditDoc(doc: ResDoc) { setDocEditingId(doc.id); setDocForm({ name: doc.name, file_url: doc.file_url ?? '', file_type: doc.file_type, sort_order: doc.sort_order, is_active: doc.is_active, map_embed_url: doc.map_embed_url ?? '' }); setMessage(null); setError(null); }
+  function startNewCat() { setCatEditingId(null); setEditingCategory(true); setCatForm({ ...emptyCatForm, sort_order: nextCatSortOrder() }); setMessage(null); setError(null); }
+  function startEditCat(cat: ResCategory) { setCatEditingId(cat.id); setEditingCategory(true); setCatForm({ name: cat.name, sort_order: cat.sort_order }); setMessage(null); setError(null); }
+  function startNewDoc() { setDocEditingId(null); setEditingDocument(true); setDocForm({ ...emptyDocForm, sort_order: nextDocSortOrder() }); setMessage(null); setError(null); }
+  function startEditDoc(doc: ResDoc) { setDocEditingId(doc.id); setEditingDocument(true); setDocForm({ name: doc.name, file_url: doc.file_url ?? '', file_type: doc.file_type, sort_order: doc.sort_order, is_active: doc.is_active, map_embed_url: doc.map_embed_url ?? '' }); setMessage(null); setError(null); }
 
   async function saveCat() {
     if (!catForm.name.trim()) { setError('Category name is required.'); return; }
@@ -76,7 +84,7 @@ export function ResourceLibraryConfig() {
       ? await supabase.from('resource_categories').update(payload).eq('id', catEditingId)
       : await supabase.from('resource_categories').insert(payload as TablesInsert<'resource_categories'>).select('id').single();
     if (result.error) setError(result.error.message);
-    else { setMessage('Category saved.'); setCatForm(emptyCatForm); setCatEditingId(null); if (!catEditingId && 'data' in result && result.data) setSelectedCatId(result.data.id); await reloadCats(); }
+    else { setMessage('Category saved.'); setCatForm(emptyCatForm); setCatEditingId(null); setEditingCategory(false); if (!catEditingId && 'data' in result && result.data) setSelectedCatId(result.data.id); await reloadCats(); }
     setSaving(false);
   }
 
@@ -120,7 +128,7 @@ export function ResourceLibraryConfig() {
       ? await supabase.from('resource_documents').update(payload).eq('id', docEditingId)
       : await supabase.from('resource_documents').insert(payload as TablesInsert<'resource_documents'>);
     if (result.error) setError(result.error.message);
-    else { setMessage('Document saved.'); setDocForm(emptyDocForm); setDocEditingId(null); await reloadDocs(); }
+    else { setMessage('Document saved.'); setDocForm(emptyDocForm); setDocEditingId(null); setEditingDocument(false); await reloadDocs(); }
     setSaving(false);
   }
 
@@ -170,16 +178,16 @@ export function ResourceLibraryConfig() {
             ))}
             {categories.length === 0 && <p className="text-sm text-gray-500">No categories yet.</p>}
           </div>
+          {hasPendingCategoryOrder && <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg bg-wfd-gold/10 p-2 text-xs text-wfd-charcoal"><span className="font-semibold">Category order changes are not live.</span><Button type="button" size="sm" onClick={() => void saveCategoryOrder()}>Save order</Button><Button type="button" size="sm" variant="secondary" onClick={discardCategoryOrder}>Discard order</Button></div>}
 
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="rounded-lg border border-gray-200 p-3">
-              <h4 className="mb-2 text-sm font-semibold text-wfd-charcoal">{catEditingId ? 'Edit Category' : 'Add Category'}</h4>
-              <div className="flex gap-2">
+              {!editingCategory ? <div className="flex items-center justify-between gap-2"><p className="text-sm text-gray-500">Select New Category or edit the selected category.</p>{selectedCatId && <Button type="button" size="sm" variant="secondary" onClick={() => { const category = categories.find((item) => item.id === selectedCatId); if (category) startEditCat(category); }}>Edit Category</Button>}</div> : <><h4 className="mb-2 text-sm font-semibold text-wfd-charcoal">{catEditingId ? 'Edit Category' : 'Add Category'}</h4><div className="flex gap-2">
                 <Input label="" placeholder="Category name" value={catForm.name} onChange={(e) => setCatForm(f => ({ ...f, name: e.target.value }))} />
                 <Input label="" type="number" placeholder="Order" value={catForm.sort_order} onChange={(e) => setCatForm(f => ({ ...f, sort_order: Number(e.target.value) }))} className="w-20" />
                 <Button type="button" size="sm" onClick={saveCat} loading={saving}>Save</Button>
-                {selectedCatId && <Button type="button" size="sm" variant="danger" onClick={() => { const c = categories.find(x => x.id === selectedCatId); if (c) deleteCat(c); }}>Del Cat</Button>}
-              </div>
+                {catEditingId && <Button type="button" size="sm" variant="danger" onClick={() => { const c = categories.find(x => x.id === catEditingId); if (c) deleteCat(c); }}>Del Cat</Button>}<Button type="button" size="sm" variant="secondary" onClick={() => { setEditingCategory(false); setCatEditingId(null); setCatForm(emptyCatForm); }}>Discard</Button>
+              </div></>}
             </div>
 
             <div className="rounded-lg border border-gray-200 p-3">
@@ -210,12 +218,13 @@ export function ResourceLibraryConfig() {
                 </div>
               ))}
               {selectedDocs.length === 0 && selectedCatId && <p className="text-sm text-gray-500">No documents in this category.</p>}
+              {hasPendingDocumentOrder && <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg bg-wfd-gold/10 p-2 text-xs text-wfd-charcoal"><span className="font-semibold">Document order changes are not live.</span><Button type="button" size="sm" onClick={() => void saveDocumentOrder()}>Save order</Button><Button type="button" size="sm" variant="secondary" onClick={discardDocumentOrder}>Discard order</Button></div>}
             </div>
           </div>
 
           {selectedCatId && (
             <div className="mt-4 rounded-lg bg-gray-50 p-3">
-              <h5 className="mb-2 text-sm font-semibold text-wfd-charcoal">{docEditingId ? 'Edit Document' : 'Add Document'}</h5>
+              {!editingDocument ? <p className="text-sm text-gray-500">Select New Doc or Edit to change a resource. Saved active changes appear in future student resource views.</p> : <><h5 className="mb-2 text-sm font-semibold text-wfd-charcoal">{docEditingId ? 'Edit Document' : 'Add Document'}</h5>
               <div className="grid gap-2 sm:grid-cols-2">
                 <Input label="Name" value={docForm.name} onChange={(e) => setDocForm(f => ({ ...f, name: e.target.value }))} />
                 <Input label="File URL" value={docForm.file_url} onChange={(e) => setDocForm(f => ({ ...f, file_url: e.target.value }))} />
@@ -234,7 +243,8 @@ export function ResourceLibraryConfig() {
                   <span className="pb-1.5">Active</span>
                 </label>
               </div>
-              <Button type="button" onClick={saveDoc} loading={saving} className="mt-2">Save Document</Button>
+              <div className="mt-2 flex gap-2"><Button type="button" onClick={saveDoc} loading={saving}>Save Document</Button><Button type="button" variant="secondary" onClick={() => { setEditingDocument(false); setDocEditingId(null); setDocForm(emptyDocForm); }}>Discard changes</Button></div>
+              </>}
             </div>
           )}
         </>

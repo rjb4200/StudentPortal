@@ -15,8 +15,9 @@ const emptyForm = { title: '', body_text: '', require_checkbox: true, sort_order
 
 export function LegalDocsConfig() {
   const supabase = createClient();
-  const { items: docs, loading, error: loadError, reload, moveItem, canMoveUp, canMoveDown, nextSortOrder } = useSortableList<LegalDoc>({ tableName: 'legal_documents' });
+  const { items: docs, loading, error: loadError, reload, moveItem, saveOrder, discardOrder, hasPendingOrder, canMoveUp, canMoveDown, nextSortOrder } = useSortableList<LegalDoc>({ tableName: 'legal_documents' });
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -24,12 +25,14 @@ export function LegalDocsConfig() {
 
   function startNew() {
     setEditingId(null);
+    setEditing(true);
     setForm({ ...emptyForm, sort_order: nextSortOrder() });
     setMessage(null); setError(null);
   }
 
   function startEdit(doc: LegalDoc) {
     setEditingId(doc.id);
+    setEditing(true);
     setForm({ title: doc.title, body_text: doc.body_text, require_checkbox: doc.require_checkbox, sort_order: doc.sort_order, is_active: doc.is_active });
     setMessage(null); setError(null);
   }
@@ -49,7 +52,7 @@ export function LegalDocsConfig() {
       ? await supabase.from('legal_documents').update(payload).eq('id', editingId)
       : await supabase.from('legal_documents').insert(payload as TablesInsert<'legal_documents'>);
     if (result.error) setError(result.error.message);
-    else { setMessage('Document saved.'); setForm(emptyForm); setEditingId(null); await reload(); }
+    else { setMessage('Document saved.'); setForm(emptyForm); setEditingId(null); setEditing(false); await reload(); }
     setSaving(false);
   }
 
@@ -109,9 +112,11 @@ export function LegalDocsConfig() {
               </div>
             ))}
             {docs.length === 0 && <p className="text-sm text-gray-500">No legal documents yet.</p>}
+            {hasPendingOrder && <div className="flex flex-wrap items-center gap-2 rounded-lg bg-wfd-gold/10 p-2 text-xs text-wfd-charcoal"><span className="font-semibold">Order changes are not live.</span><Button type="button" size="sm" onClick={() => void saveOrder()}>Save order</Button><Button type="button" size="sm" variant="secondary" onClick={discardOrder}>Discard order</Button></div>}
           </div>
 
           <div className="rounded-lg border border-gray-200 p-4">
+            {!editing ? <p className="text-sm text-gray-500">Select New Document or Edit to change a legal agreement. Saved active changes appear in future onboarding sessions.</p> : <>
             <h4 className="mb-3 text-sm font-semibold text-wfd-charcoal">{editingId ? 'Edit Document' : 'Add Document'}</h4>
             <div className="space-y-3">
               <Input label="Title" value={form.title} onChange={(e) => setForm(f => ({ ...f, title: e.target.value }))} />
@@ -130,8 +135,9 @@ export function LegalDocsConfig() {
                   <span className="pb-1.5">Active</span>
                 </label>
               </div>
-              <Button type="button" onClick={save} loading={saving}>Save Document</Button>
+              <div className="flex gap-2"><Button type="button" onClick={save} loading={saving}>Save Document</Button><Button type="button" variant="secondary" onClick={() => { setEditing(false); setEditingId(null); setForm(emptyForm); }}>Discard changes</Button></div>
             </div>
+            </>}
           </div>
         </div>
       )}

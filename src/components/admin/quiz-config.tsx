@@ -49,6 +49,9 @@ export function QuizConfig() {
     error: rulesError,
     reload: reloadRules,
     moveItem: moveRule,
+    saveOrder: saveRuleOrder,
+    discardOrder: discardRuleOrder,
+    hasPendingOrder: hasPendingRuleOrder,
     canMoveUp: canMoveRuleUp,
     canMoveDown: canMoveRuleDown,
     nextSortOrder: nextRuleSortOrder,
@@ -57,6 +60,8 @@ export function QuizConfig() {
   const [selectedRuleId, setSelectedRuleId] = useState<string | null>(null);
   const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
   const [editingPhotoId, setEditingPhotoId] = useState<string | null>(null);
+  const [creatingRule, setCreatingRule] = useState(false);
+  const [creatingPhoto, setCreatingPhoto] = useState(false);
   const [ruleForm, setRuleForm] = useState<RuleForm>(emptyRuleForm);
   const [photoForm, setPhotoForm] = useState<PhotoForm>(emptyPhotoForm);
   const [saving, setSaving] = useState(false);
@@ -70,6 +75,9 @@ export function QuizConfig() {
     error: photosError,
     reload: reloadPhotos,
     moveItem: movePhoto,
+    saveOrder: savePhotoOrder,
+    discardOrder: discardPhotoOrder,
+    hasPendingOrder: hasPendingPhotoOrder,
     canMoveUp: canMovePhotoUp,
     canMoveDown: canMovePhotoDown,
     nextSortOrder: nextPhotoSortOrder,
@@ -94,6 +102,7 @@ export function QuizConfig() {
 
   function startNewRule() {
     setEditingRuleId(null);
+    setCreatingRule(true);
     setRuleForm({ ...emptyRuleForm, sort_order: nextRuleSortOrder() });
     setMessage(null);
     setError(null);
@@ -101,6 +110,7 @@ export function QuizConfig() {
 
   function startEditRule(rule: QuizRule) {
     setEditingRuleId(rule.id);
+    setCreatingRule(false);
     setSelectedRuleId(rule.id);
     setRuleForm({
       title: rule.title,
@@ -116,6 +126,7 @@ export function QuizConfig() {
 
   function startNewPhoto() {
     setEditingPhotoId(null);
+    setCreatingPhoto(true);
     setPhotoForm({ ...emptyPhotoForm, sort_order: nextPhotoSortOrder() });
     setMessage(null);
     setError(null);
@@ -123,6 +134,7 @@ export function QuizConfig() {
 
   function startEditPhoto(photo: QuizPhoto) {
     setEditingPhotoId(photo.id);
+    setCreatingPhoto(false);
     setPhotoForm({
       label: photo.label,
       image_url: photo.image_url ?? '',
@@ -208,6 +220,7 @@ export function QuizConfig() {
       if (!editingRuleId && 'data' in result && result.data) setSelectedRuleId(result.data.id);
       setRuleForm(emptyRuleForm);
       setEditingRuleId(null);
+      setCreatingRule(false);
       await reloadRules();
     }
     setSaving(false);
@@ -318,6 +331,7 @@ export function QuizConfig() {
       setMessage('Photo saved.');
       setPhotoForm(emptyPhotoForm);
       setEditingPhotoId(null);
+      setCreatingPhoto(false);
       await reloadPhotos();
     }
     setSaving(false);
@@ -357,6 +371,8 @@ export function QuizConfig() {
   const optionNoun = selectedRuleUsesTextOptions ? 'answer options' : 'photos';
   const correctLabel = selectedRuleUsesTextOptions ? 'Correct' : 'Non-compliant';
   const incorrectLabel = selectedRuleUsesTextOptions ? 'Incorrect' : 'Compliant';
+  const ruleEditorOpen = creatingRule || Boolean(editingRuleId);
+  const photoEditorOpen = creatingPhoto || Boolean(editingPhotoId);
 
   return (
     <Card className="p-4">
@@ -420,6 +436,7 @@ export function QuizConfig() {
               );
             })}
             {rules.length === 0 && <p className="text-sm text-gray-500">No quiz rules yet.</p>}
+            {hasPendingRuleOrder && <div className="flex flex-wrap items-center gap-2 rounded-lg bg-wfd-gold/10 p-2 text-xs text-wfd-charcoal"><span className="font-semibold">Rule order changes are not live.</span><Button type="button" size="sm" onClick={() => void saveRuleOrder()}>Save order</Button><Button type="button" size="sm" variant="secondary" onClick={discardRuleOrder}>Discard order</Button></div>}
           </div>
 
           <div className="space-y-5">
@@ -434,15 +451,10 @@ export function QuizConfig() {
             )}
 
             <div className="rounded-lg border border-gray-200 p-4">
-              <div className="mb-3 flex items-center justify-between gap-3">
+              {!ruleEditorOpen ? <div className="flex items-center justify-between gap-3"><p className="text-sm text-gray-500">{selectedRule ? `${selectedRule.title} is read-only until you select Edit Selected.` : 'Select New Rule to create quiz content.'}</p>{selectedRule && <Button type="button" size="sm" variant="secondary" onClick={() => startEditRule(selectedRule)}>Edit Selected</Button>}</div> : <><div className="mb-3 flex items-center justify-between gap-3">
                 <h4 className="font-semibold text-wfd-charcoal">
                   {editingRuleId ? 'Edit Rule' : 'Create Rule'}
                 </h4>
-                {selectedRule && !editingRuleId && (
-                  <Button type="button" size="sm" variant="secondary" onClick={() => startEditRule(selectedRule)}>
-                    Edit Selected
-                  </Button>
-                )}
               </div>
 
               <div className="space-y-3">
@@ -507,8 +519,12 @@ export function QuizConfig() {
                       Delete Selected Rule
                     </Button>
                   )}
+                  <Button type="button" variant="secondary" onClick={() => { setCreatingRule(false); setEditingRuleId(null); setRuleForm(emptyRuleForm); }}>
+                    Discard changes
+                  </Button>
                 </div>
               </div>
+              </>}
             </div>
 
             {selectedRule && (
@@ -526,6 +542,7 @@ export function QuizConfig() {
                     {selectedRuleUsesTextOptions ? 'New Answer Option' : 'New Photo'}
                   </Button>
                 </div>
+                {hasPendingPhotoOrder && <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg bg-wfd-gold/10 p-2 text-xs text-wfd-charcoal"><span className="font-semibold">Option order changes are not live.</span><Button type="button" size="sm" onClick={() => void savePhotoOrder()}>Save order</Button><Button type="button" size="sm" variant="secondary" onClick={discardPhotoOrder}>Discard order</Button></div>}
 
                 <div className="mb-4 grid gap-3 md:grid-cols-2">
                   {selectedPhotos.map((photo) => (
@@ -583,7 +600,7 @@ export function QuizConfig() {
                 </div>
 
                 <div className="rounded-lg bg-gray-50 p-3">
-                  <h5 className="mb-3 text-sm font-semibold text-wfd-charcoal">
+                  {!photoEditorOpen ? <p className="text-sm text-gray-500">Select New {selectedRuleUsesTextOptions ? 'Answer Option' : 'Photo'} or Edit to change this quiz content.</p> : <><h5 className="mb-3 text-sm font-semibold text-wfd-charcoal">
                     {editingPhotoId
                       ? selectedRuleUsesTextOptions ? 'Edit Answer Option' : 'Edit Photo'
                       : selectedRuleUsesTextOptions ? 'Add Answer Option' : 'Add Photo'}
@@ -666,7 +683,11 @@ export function QuizConfig() {
                     <Button type="button" onClick={savePhoto} loading={saving}>
                       Save Photo
                     </Button>
+                    <Button type="button" variant="secondary" onClick={() => { setCreatingPhoto(false); setEditingPhotoId(null); setPhotoForm(emptyPhotoForm); }}>
+                      Discard changes
+                    </Button>
                   </div>
+                  </>}
                 </div>
               </div>
             )}

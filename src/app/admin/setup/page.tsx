@@ -9,6 +9,7 @@ import { ResourceLibraryConfig } from '@/components/admin/resource-library-confi
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { ProtectedEditor } from '@/components/ui/protected-editor';
 import { AdminNavigation } from '@/components/admin/admin-navigation';
 import { canAccessAdmin } from '@/lib/roles';
 
@@ -21,13 +22,19 @@ export default function SetupPage() {
   const [welcomeBody, setWelcomeBody] = useState('');
   const [welcomeActive, setWelcomeActive] = useState(false);
   const [savingWelcome, setSavingWelcome] = useState(false);
+  const [editingWelcome, setEditingWelcome] = useState(false);
+  const [persistedWelcome, setPersistedWelcome] = useState({ title: '', body: '', active: false });
   const [completionId, setCompletionId] = useState<string | null>(null);
   const [completionTitle, setCompletionTitle] = useState('');
   const [completionBody, setCompletionBody] = useState('');
   const [completionActive, setCompletionActive] = useState(false);
   const [savingCompletion, setSavingCompletion] = useState(false);
+  const [editingCompletion, setEditingCompletion] = useState(false);
+  const [persistedCompletion, setPersistedCompletion] = useState({ title: '', body: '', active: false });
   const [helpEmail, setHelpEmail] = useState('');
   const [savingHelpEmail, setSavingHelpEmail] = useState(false);
+  const [editingHelpEmail, setEditingHelpEmail] = useState(false);
+  const [persistedHelpEmail, setPersistedHelpEmail] = useState('');
 
   useEffect(() => {
     const supabase = createClient();
@@ -49,7 +56,9 @@ export default function SetupPage() {
       .select('value')
       .eq('key', 'help_email')
       .single();
-    if (data?.value) setHelpEmail(data.value);
+    const value = data?.value ?? '';
+    setHelpEmail(value);
+    setPersistedHelpEmail(value);
   }
 
   async function handleSaveHelpEmail() {
@@ -68,6 +77,8 @@ export default function SetupPage() {
         key: 'help_email', value: helpEmail,
       });
     }
+    setPersistedHelpEmail(helpEmail);
+    setEditingHelpEmail(false);
     setSavingHelpEmail(false);
   }
 
@@ -82,6 +93,7 @@ export default function SetupPage() {
       setWelcomeTitle(data[0].title);
       setWelcomeBody(data[0].body);
       setWelcomeActive(data[0].is_active);
+      setPersistedWelcome({ title: data[0].title, body: data[0].body, active: data[0].is_active });
     }
     const { data: completion } = await supabase
       .from('message_templates')
@@ -93,7 +105,10 @@ export default function SetupPage() {
       setCompletionTitle(completion[0].title);
       setCompletionBody(completion[0].body);
       setCompletionActive(completion[0].is_active);
+      setPersistedCompletion({ title: completion[0].title, body: completion[0].body, active: completion[0].is_active });
     }
+    setPersistedWelcome({ title: welcomeTitle, body: welcomeBody, active: welcomeActive });
+    setEditingWelcome(false);
   }
 
   async function handleSaveWelcome() {
@@ -108,6 +123,8 @@ export default function SetupPage() {
       }).select('id').single();
       if (data) setWelcomeId(data.id);
     }
+    setPersistedCompletion({ title: completionTitle, body: completionBody, active: completionActive });
+    setEditingCompletion(false);
     setSavingWelcome(false);
   }
 
@@ -157,38 +174,21 @@ export default function SetupPage() {
       <ResourceLibraryConfig />
 
       <Card className="p-4">
-        <h3 className="font-bold text-wfd-charcoal mb-3">Welcome Message</h3>
-        <p className="text-sm text-gray-500 mb-3">Shown to students on their dashboard after completing onboarding.</p>
-        <div className="grid gap-3 md:grid-cols-2">
-          <Input label="Title" value={welcomeTitle} onChange={(e) => setWelcomeTitle(e.target.value)} />
-          <textarea value={welcomeBody} onChange={(e) => setWelcomeBody(e.target.value)} className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-wfd-crimson" rows={3} />
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-            <input type="checkbox" checked={welcomeActive} onChange={(e) => setWelcomeActive(e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-wfd-crimson" /> Active
-          </label>
-          <Button type="button" onClick={handleSaveWelcome} loading={savingWelcome}>Save Welcome Message</Button>
-        </div>
+        <ProtectedEditor title="Welcome Message" description="Shown to students on their dashboard after completing onboarding." editing={editingWelcome} saving={savingWelcome} onEdit={() => { setWelcomeTitle(persistedWelcome.title); setWelcomeBody(persistedWelcome.body); setWelcomeActive(persistedWelcome.active); setEditingWelcome(true); }} onCancel={() => { setWelcomeTitle(persistedWelcome.title); setWelcomeBody(persistedWelcome.body); setWelcomeActive(persistedWelcome.active); setEditingWelcome(false); }} onSave={handleSaveWelcome} editLabel="Edit message" saveLabel="Save welcome message">
+          {editingWelcome ? <div className="grid gap-3 md:grid-cols-2"><Input label="Title" value={welcomeTitle} onChange={(e) => setWelcomeTitle(e.target.value)} /><textarea value={welcomeBody} onChange={(e) => setWelcomeBody(e.target.value)} className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-wfd-crimson" rows={3} /><label className="flex items-center gap-2 text-sm font-medium text-gray-700"><input type="checkbox" checked={welcomeActive} onChange={(e) => setWelcomeActive(e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-wfd-crimson" /> Active for students</label></div> : <p className="whitespace-pre-wrap text-sm text-gray-700">{persistedWelcome.title ? `${persistedWelcome.title}\n${persistedWelcome.body}` : 'No welcome message configured.'}</p>}
+        </ProtectedEditor>
       </Card>
 
       <Card className="p-4">
-        <h3 className="font-bold text-wfd-charcoal mb-3">Completion Message</h3>
-        <p className="text-sm text-gray-500 mb-3">Shown to students on the final screen after completing the Policy and Protocol Review.</p>
-        <div className="grid gap-3 md:grid-cols-2">
-          <Input label="Title" value={completionTitle} onChange={(e) => setCompletionTitle(e.target.value)} />
-          <textarea value={completionBody} onChange={(e) => setCompletionBody(e.target.value)} className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-wfd-crimson" rows={5} />
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-            <input type="checkbox" checked={completionActive} onChange={(e) => setCompletionActive(e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-wfd-crimson" /> Active
-          </label>
-          <Button type="button" onClick={handleSaveCompletion} loading={savingCompletion}>Save Completion Message</Button>
-        </div>
+        <ProtectedEditor title="Completion Message" description="Shown on the final Policy and Protocol Review screen." editing={editingCompletion} saving={savingCompletion} onEdit={() => { setCompletionTitle(persistedCompletion.title); setCompletionBody(persistedCompletion.body); setCompletionActive(persistedCompletion.active); setEditingCompletion(true); }} onCancel={() => { setCompletionTitle(persistedCompletion.title); setCompletionBody(persistedCompletion.body); setCompletionActive(persistedCompletion.active); setEditingCompletion(false); }} onSave={handleSaveCompletion} editLabel="Edit message" saveLabel="Save completion message">
+          {editingCompletion ? <div className="grid gap-3 md:grid-cols-2"><Input label="Title" value={completionTitle} onChange={(e) => setCompletionTitle(e.target.value)} /><textarea value={completionBody} onChange={(e) => setCompletionBody(e.target.value)} className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-wfd-crimson" rows={5} /><label className="flex items-center gap-2 text-sm font-medium text-gray-700"><input type="checkbox" checked={completionActive} onChange={(e) => setCompletionActive(e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-wfd-crimson" /> Active for students</label></div> : <p className="whitespace-pre-wrap text-sm text-gray-700">{persistedCompletion.title ? `${persistedCompletion.title}\n${persistedCompletion.body}` : 'No completion message configured.'}</p>}
+        </ProtectedEditor>
       </Card>
 
       <Card className="p-4">
-        <h3 className="font-bold text-wfd-charcoal mb-3">Help Email</h3>
-        <p className="text-sm text-gray-500 mb-3">Contact email shown on every onboarding step for student assistance.</p>
-        <div className="flex gap-3">
-          <Input label="Email address" type="email" value={helpEmail} onChange={(e) => setHelpEmail(e.target.value)} className="flex-1" />
-          <Button type="button" onClick={handleSaveHelpEmail} loading={savingHelpEmail} className="self-end">Save</Button>
-        </div>
+        <ProtectedEditor title="Help Email" description="Contact email shown on every onboarding step for student assistance." editing={editingHelpEmail} saving={savingHelpEmail} onEdit={() => { setHelpEmail(persistedHelpEmail); setEditingHelpEmail(true); }} onCancel={() => { setHelpEmail(persistedHelpEmail); setEditingHelpEmail(false); }} onSave={handleSaveHelpEmail} editLabel="Edit email" saveLabel="Save email">
+          {editingHelpEmail ? <Input label="Email address" type="email" value={helpEmail} onChange={(e) => setHelpEmail(e.target.value)} /> : <p className="text-sm text-gray-700">{persistedHelpEmail || 'No help email configured.'}</p>}
+        </ProtectedEditor>
       </Card>
     </div>
   );

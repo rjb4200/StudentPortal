@@ -26,8 +26,9 @@ const emptyForm = {
 
 export function RegistrationFieldsConfig() {
   const supabase = createClient();
-  const { items: fields, loading, error: loadError, reload, moveItem, canMoveUp, canMoveDown, nextSortOrder } = useSortableList<RegField>({ tableName: 'registration_fields' });
+  const { items: fields, loading, error: loadError, reload, moveItem, saveOrder, discardOrder, hasPendingOrder, canMoveUp, canMoveDown, nextSortOrder } = useSortableList<RegField>({ tableName: 'registration_fields' });
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -35,6 +36,7 @@ export function RegistrationFieldsConfig() {
 
   function startNew() {
     setEditingId(null);
+    setEditing(true);
     setForm({ ...emptyForm, sort_order: nextSortOrder() });
     setMessage(null);
     setError(null);
@@ -42,6 +44,7 @@ export function RegistrationFieldsConfig() {
 
   function startEdit(field: RegField) {
     setEditingId(field.id);
+    setEditing(true);
     setForm({
       field_key: field.field_key,
       label: field.label,
@@ -88,6 +91,7 @@ export function RegistrationFieldsConfig() {
       setMessage('Field saved.');
       setForm(emptyForm);
       setEditingId(null);
+      setEditing(false);
       await reload();
     }
     setSaving(false);
@@ -105,19 +109,6 @@ export function RegistrationFieldsConfig() {
     if (deleteError) setError(deleteError.message);
     else { setMessage('Field deleted.'); await reload(); }
     setSaving(false);
-  }
-
-  async function toggleActive(field: RegField) {
-    if (!field.is_active && field.is_permanent) {
-      setError('Permanent fields cannot be deactivated.');
-      return;
-    }
-    const { error: updateError } = await supabase
-      .from('registration_fields')
-      .update({ is_active: !field.is_active, updated_at: new Date().toISOString() })
-      .eq('id', field.id);
-    if (updateError) setError(updateError.message);
-    else await reload();
   }
 
   const displayError = error || loadError;
@@ -157,18 +148,20 @@ export function RegistrationFieldsConfig() {
                     <p className="text-xs text-gray-500">{field.field_key} | {field.field_type} {field.is_required ? '| required' : ''}</p>
                   </div>
                   <div className="flex items-center gap-1">
-                    <button onClick={() => toggleActive(field)} className={`rounded-full px-2 py-0.5 text-xs font-bold ${field.is_active ? 'bg-wfd-sage/15 text-wfd-sage' : 'bg-gray-100 text-gray-500'}`}>
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${field.is_active ? 'bg-wfd-sage/15 text-wfd-sage' : 'bg-gray-100 text-gray-500'}`}>
                       {field.is_active ? 'Active' : 'Off'}
-                    </button>
+                    </span>
                     <Button type="button" size="sm" variant="secondary" onClick={() => startEdit(field)}>Edit</Button>
                     {!field.is_permanent && <Button type="button" size="sm" variant="danger" onClick={() => deleteField(field)}>Del</Button>}
                   </div>
                 </div>
               </div>
             ))}
+            {hasPendingOrder && <div className="flex flex-wrap items-center gap-2 rounded-lg bg-wfd-gold/10 p-2 text-xs text-wfd-charcoal"><span className="font-semibold">Order changes are not live.</span><Button type="button" size="sm" onClick={() => void saveOrder()}>Save order</Button><Button type="button" size="sm" variant="secondary" onClick={discardOrder}>Discard order</Button></div>}
           </div>
 
           <div className="rounded-lg border border-gray-200 p-4">
+            {!editing ? <p className="text-sm text-gray-500">Select New Field or Edit to change registration fields. Saved active changes apply to future registration forms.</p> : <>
             <h4 className="mb-3 text-sm font-semibold text-wfd-charcoal">{editingId ? 'Edit Field' : 'Add Field'}</h4>
             <div className="space-y-3">
               <Input label="Field Key (snake_case)" value={form.field_key} onChange={(e) => setForm(f => ({ ...f, field_key: e.target.value }))} disabled={!!editingId} />
@@ -191,11 +184,12 @@ export function RegistrationFieldsConfig() {
                   <input type="checkbox" checked={form.is_required} onChange={(e) => setForm(f => ({ ...f, is_required: e.target.checked }))} className="h-4 w-4 rounded border-gray-300 text-wfd-crimson" /> Required
                 </label>
                 <label className="flex items-center gap-2 text-sm">
-                  <input type="checkbox" checked={form.is_active} onChange={(e) => setForm(f => ({ ...f, is_active: e.target.checked }))} className="h-4 w-4 rounded border-gray-300 text-wfd-crimson" /> Active
+                  <input type="checkbox" checked={form.is_active} disabled={Boolean(editingId && fields.find((field) => field.id === editingId)?.is_permanent)} onChange={(e) => setForm(f => ({ ...f, is_active: e.target.checked }))} className="h-4 w-4 rounded border-gray-300 text-wfd-crimson" /> Active
                 </label>
               </div>
-              <Button type="button" onClick={save} loading={saving}>Save Field</Button>
+              <div className="flex gap-2"><Button type="button" onClick={save} loading={saving}>Save Field</Button><Button type="button" variant="secondary" onClick={() => { setEditing(false); setEditingId(null); setForm(emptyForm); }}>Discard changes</Button></div>
             </div>
+            </>}
           </div>
         </div>
       )}
