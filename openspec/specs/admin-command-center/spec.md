@@ -4,19 +4,19 @@
 
 Admin dashboard interface with tabs for daily operations, analytics, and maintenance including student approval, schedule management, messaging, and roster tools.
 ## Requirements
-### Requirement: Three-tab admin layout
-The system SHALL present an admin interface with three tabs: Daily Operations, Preceptor Analytics, and Maintenance & Archive. Only users with admin role SHALL access this area.
+### Requirement: Five-tab admin layout
+The system SHALL present an admin interface with five primary tabs: Daily Operations, Calendar, Messages, Registry, and Maintenance & Archive. Preceptor Analytics SHALL be accessible from the hamburger secondary menu. Only users with admin role SHALL access this area.
 
 #### Scenario: Admin navigates between tabs
-- **WHEN** an authenticated admin clicks "Preceptor Analytics" tab
-- **THEN** the preceptor analytics content renders and the other tab content is hidden
+- **WHEN** an authenticated admin clicks "Messages" tab
+- **THEN** the messages content renders and the other tab content is hidden
 
 ### Requirement: Shared admin navigation across admin pages
-The system SHALL display the standard Admin Command Center navigation on admin pages, including the Admin Command Center title, hamburger menu, and primary navigation entries for Daily Operations, Calendar, Registry, Preceptor Analytics, and Maintenance & Archive. Admin subpages SHALL use this shared navigation instead of redundant "Back to Admin Command Center" links when the shared navigation provides the same route back to the command center.
+The system SHALL display the standard Admin Command Center navigation on admin pages, including the Admin Command Center title, hamburger menu, and primary navigation entries for Daily Operations, Calendar, Messages, Registry, and Maintenance & Archive. Preceptor Analytics SHALL appear in the hamburger secondary menu. Admin subpages SHALL use this shared navigation instead of redundant "Back to Admin Command Center" links when the shared navigation provides the same route back to the command center.
 
 #### Scenario: Admin views an admin subpage
 - **WHEN** an authenticated admin navigates to an admin subpage such as `/admin/setup`, `/admin/system`, `/admin/accounts`, or `/admin/students/<id>`
-- **THEN** the page displays the Admin Command Center title, hamburger menu, and primary admin navigation entries
+- **THEN** the page displays the Admin Command Center title, hamburger menu, and primary admin navigation entries for Daily Operations, Calendar, Messages, Registry, and Maintenance & Archive
 - **AND** the page does not display a redundant "Back to Admin Command Center" link above the page content
 
 #### Scenario: Admin navigates from subpage to Daily Operations
@@ -27,31 +27,36 @@ The system SHALL display the standard Admin Command Center navigation on admin p
 - **WHEN** an authenticated admin clicks "Calendar" in the shared admin navigation from an admin subpage
 - **THEN** the browser navigates to the Admin Command Center with the Calendar section selected
 
+#### Scenario: Admin navigates from subpage to Messages
+- **WHEN** an authenticated admin clicks "Messages" in the shared admin navigation from an admin subpage
+- **THEN** the browser navigates to the Admin Command Center with the Messages section selected
+
 #### Scenario: Admin navigates from subpage to Registry
 - **WHEN** an authenticated admin clicks "Registry" in the shared admin navigation from an admin subpage
 - **THEN** the browser navigates to the Admin Command Center with the Registry section selected
-
-#### Scenario: Admin navigates from subpage to Preceptor Analytics
-- **WHEN** an authenticated admin clicks "Preceptor Analytics" in the shared admin navigation from an admin subpage
-- **THEN** the browser navigates to the Admin Command Center with the Preceptor Analytics section selected
 
 #### Scenario: Admin navigates from subpage to Maintenance & Archive
 - **WHEN** an authenticated admin clicks "Maintenance & Archive" in the shared admin navigation from an admin subpage
 - **THEN** the browser navigates to the Admin Command Center with the Maintenance & Archive section selected
 
+#### Scenario: Preceptor Analytics accessible from hamburger
+- **WHEN** an authenticated admin opens the hamburger menu
+- **THEN** "Preceptor Analytics" appears as a secondary navigation destination
+- **AND** clicking it navigates to the Admin Command Center with the Preceptor Analytics section selected
+
 #### Scenario: Admin opens hamburger menu from subpage
 - **WHEN** an authenticated admin opens the hamburger menu from an admin subpage
-- **THEN** the menu displays the same secondary admin navigation destinations available from the Admin Command Center
+- **THEN** the menu displays the same secondary admin navigation destinations available from the Admin Command Center including Preceptor Analytics
 
 #### Scenario: Admin prints a printable admin page
 - **WHEN** an authenticated admin prints a printable admin page such as a student profile packet
 - **THEN** the shared admin navigation is omitted from the printed output
 
 ### Requirement: URL-addressable Admin Command Center sections
-The Admin Command Center SHALL support opening a specific primary section from the URL. Valid section values SHALL include Daily Operations, Calendar, Registry, Preceptor Analytics, and Maintenance & Archive. Invalid or missing section values SHALL fall back to Daily Operations.
+The Admin Command Center SHALL support opening a specific primary section from the URL. Valid section values SHALL include Daily Operations, Calendar, Messages, Registry, Preceptor Analytics, and Maintenance & Archive. Invalid or missing section values SHALL fall back to Daily Operations. Preceptor Analytics SHALL remain URL-addressable via `?tab=analytics` even though it is not a primary tab.
 
 #### Scenario: Admin opens a valid section URL
-- **WHEN** an authenticated admin navigates to `/admin` with a valid section value for Daily Operations, Calendar, Registry, Preceptor Analytics, or Maintenance & Archive
+- **WHEN** an authenticated admin navigates to `/admin` with a valid section value for Daily Operations, Calendar, Messages, Registry, Preceptor Analytics, or Maintenance & Archive
 - **THEN** the matching Admin Command Center section is selected
 - **AND** the matching section content is displayed
 
@@ -61,7 +66,21 @@ The Admin Command Center SHALL support opening a specific primary section from t
 - **AND** the Daily Operations content is displayed
 
 ### Requirement: Unified action required card with visual differentiation
-The admin daily operations tab SHALL display actionable items within a unified "Action Required" card. The card SHALL contain five item types, each visually differentiated by badge color and button style: Approvals for students with `status = 'pending'` and non-null `onboarding_completed_at` (sage green badge, crimson Approve button), Schedule Requests (blue badge, crimson Approve and red Reject buttons), Cancel Requests (amber/orange badge, amber Cancel Shift button), Quiz Flags (amber badge, secondary Acknowledge button), and MOU Signatures for class_mous with instructor signature but no WFEMS signature (charcoal badge, secondary "Sign as WFEMS" button). Items SHALL be ordered: approvals first, then schedule requests, then cancel requests, then quiz flags, then MOU signatures. Each category SHALL be sorted newest first within itself. Approval failures SHALL be displayed to the admin and SHALL NOT be represented as successful approvals unless the approval API confirms success.
+The admin daily operations tab SHALL display actionable items within a unified "Action Required" card. The card SHALL contain six item types, each visually differentiated by badge color and button style: Approvals for students with `status = 'pending'` and non-null `onboarding_completed_at` (sage green badge, crimson Approve button), Schedule Requests (blue badge, crimson Approve and red Reject buttons), Cancel Requests (amber/orange badge, amber Cancel Shift button), Quiz Flags (amber badge, secondary Acknowledge button), MOU Signatures for class_mous with instructor signature but no WFEMS signature (charcoal badge, secondary "Sign as WFEMS" button), and Unread Messages (crimson badge, View Messages button) showing the count of student threads with unread messages for the authenticated admin. Items SHALL be ordered: approvals first, then schedule requests, then cancel requests, then quiz flags, then unread messages, then MOU signatures. Each category SHALL be sorted newest first within itself. Approval failures SHALL be displayed to the admin and SHALL NOT be represented as successful approvals unless the approval API confirms success.
+
+#### Scenario: Unread messages appear in Action Required
+- **WHEN** one or more student threads have unread messages for the authenticated admin
+- **THEN** the Action Required card displays an Unread Messages item with a crimson badge and the count of unread threads
+- **AND** a "View Messages" button navigates to the Messages tab
+
+#### Scenario: No unread messages in Action Required
+- **WHEN** no student threads have unread messages for the authenticated admin
+- **THEN** the Unread Messages item does not appear in the Action Required card
+
+#### Scenario: View Messages navigates to messages tab
+- **WHEN** an admin clicks "View Messages" on the Unread Messages item in Action Required
+- **THEN** the browser navigates to the Messages tab
+- **AND** the messages tab displays the thread list
 
 #### Scenario: Approve a new student
 - **WHEN** the Training Major clicks "Approve" on a pending student in the unified Action Required list and the approval API confirms success
@@ -112,7 +131,7 @@ The admin daily operations tab SHALL display actionable items within a unified "
 - **THEN** the WFEMS signer details from portal settings are applied, the MOU record is updated, the completed PDF is generated and emailed, and the item is removed from the Action Required list
 
 #### Scenario: Empty unified list
-- **WHEN** no approval-ready pending students, schedule requests, cancel requests, quiz flags, or MOU signature items exist
+- **WHEN** no approval-ready pending students, schedule requests, cancel requests, quiz flags, unread message threads, or MOU signature items exist
 - **THEN** the Action Required card displays "Nothing requires your attention"
 
 ### Requirement: Crew context for pending schedule approval
@@ -151,7 +170,7 @@ The `admin_accounts` table SHALL support a notification preference for class MOU
 - **THEN** they do not receive completed MOU PDF emails
 
 ### Requirement: Threaded messaging
-The admin daily operations tab SHALL include a messaging window that supports threaded conversations between admin and individual students. Messages SHALL be scoped by `student_id` and include a sender role (`student` or `admin`). Student messages and admin replies SHALL be created through authenticated server endpoints and the messaging window SHALL display a visible error when a send fails. Daily Operations SHALL select a student's thread when opened with a valid `student` query parameter.
+The admin messages tab SHALL include a messaging view that supports threaded conversations between admin and individual students. Messages SHALL be scoped by `student_id` and include a sender role (`student` or `admin`). Student messages and admin replies SHALL be created through authenticated server endpoints and the messaging view SHALL display a visible error when a send fails. The messages tab SHALL select a student's thread when opened with a valid `student` query parameter.
 
 #### Scenario: Admin sends message to student
 - **WHEN** an admin selects a student from the message list, types a message, and sends
@@ -316,18 +335,3 @@ The Maintenance & Archive tab SHALL use WFD visual branding to communicate admin
 #### Scenario: Risk states use branded colors
 - **WHEN** the maintenance interface shows destructive, caution, success, and command states
 - **THEN** those states use WFD crimson, gold, sage, and charcoal styling consistently
-
-### Requirement: Daily Ops operational UI pattern
-The Daily Operations admin section SHALL use shared operational UI components for action queues, message panels, roster tables, alerts, empty states, and loading states where those components match existing behavior.
-
-#### Scenario: Action Required uses shared operational surfaces
-- **WHEN** an admin views the Action Required area
-- **THEN** the area uses shared section, alert, badge, and empty-state patterns while preserving the existing action ordering and approval behavior
-
-#### Scenario: Student roster uses shared data table styling
-- **WHEN** an admin views the Student Roster
-- **THEN** the roster uses the shared compact admin table pattern with consistent headers, row spacing, badges, and action placement
-
-#### Scenario: Message panel uses shared section styling
-- **WHEN** an admin views Student Messages
-- **THEN** the message list and conversation panel are presented within the shared operational section/card pattern without changing message threading behavior
