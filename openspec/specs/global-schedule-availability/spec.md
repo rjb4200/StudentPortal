@@ -74,6 +74,17 @@ The system SHALL let an authorized admin create global schedule blocks for every
 - **WHEN** an admin submits an end date before the start date or a range exceeding the configured maximum length
 - **THEN** the system rejects the range without creating any blocks
 
+### Requirement: Period block reason input
+The period-block form SHALL display its own optional student-visible reason input. The form SHALL submit that value for every newly created date in the selected period without changing the selected-day block reason input or its draft value.
+
+#### Scenario: Administrator explains a period closure
+- **WHEN** an administrator enters a reason in the period-block form and blocks a valid range
+- **THEN** the period request uses that reason for newly blocked dates
+
+#### Scenario: Selected day changes during period setup
+- **WHEN** an administrator enters a period reason and selects a different calendar day
+- **THEN** the period reason remains unchanged
+
 ### Requirement: Range block impact preview
 Before an admin confirms a date-range block, the system SHALL show the inclusive count of dates to be evaluated, the count of dates already blocked, and counts of existing pending and approved schedules within the range. The preview SHALL state that existing schedules remain unchanged.
 
