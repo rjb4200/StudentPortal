@@ -5,4 +5,4 @@
 ## 2. Verification
 
 - [x] 2.1 Run `npm run build` to verify no compilation errors
-- [ ] 2.2 Visual check: unread admin message shows crimson left bar, no clipping
+- [x] 2.2 Visual check: unread admin message shows crimson left bar, no clipping

@@ -56,7 +56,7 @@
 
 - [x] 8.1 Run `npm run build` to verify no compilation errors
 - [x] 8.2 Run `npm run test` to verify existing tests pass
-- [ ] 8.3 Manual test: student sends message, admin replies, student sees unread count on dashboard, count clears after opening Messages tab
-- [ ] 8.4 Manual test: admin sees unread count in Action Required, clicks View Messages, navigates to Messages tab
-- [ ] 8.5 Manual test: Preceptor Analytics accessible from hamburger menu
-- [ ] 8.6 Manual test: timestamps display correctly, character counter works, no layout breakage on mobile
+- [x] 8.3 Manual test: student sends message, admin replies, student sees unread count on dashboard, count clears after opening Messages tab
+- [x] 8.4 Manual test: admin sees unread count in Action Required, clicks View Messages, navigates to Messages tab
+- [x] 8.5 Manual test: Preceptor Analytics accessible from hamburger menu
+- [x] 8.6 Manual test: timestamps display correctly, character counter works, no layout breakage on mobile
