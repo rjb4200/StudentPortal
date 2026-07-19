@@ -154,15 +154,14 @@ export function Messages({ studentId, onMessagesRead }: MessagesProps) {
               className={`flex ${msg.sender === 'student' ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-[80%] px-4 py-2 rounded-xl text-sm relative ${
+                className={`max-w-[80%] px-4 py-2 rounded-xl text-sm ${
                   msg.sender === 'student'
                     ? 'bg-wfd-crimson text-white rounded-br-sm'
-                    : 'bg-gray-100 text-gray-800 rounded-bl-sm'
+                    : isUnreadAdminMessage(msg)
+                      ? 'bg-gray-100 text-gray-800 rounded-bl-sm border-l-[3px] border-l-wfd-crimson pl-1'
+                      : 'bg-gray-100 text-gray-800 rounded-bl-sm'
                 }`}
               >
-                {isUnreadAdminMessage(msg) && (
-                  <span className="absolute -top-1.5 -left-1.5 w-2.5 h-2.5 rounded-full bg-wfd-crimson border border-white" aria-label="Unread message" />
-                )}
                 {msg.message_text}
                 <div
                   className={`text-[10px] mt-1 ${
