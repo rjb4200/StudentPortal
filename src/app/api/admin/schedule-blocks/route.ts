@@ -3,7 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { canAccessAdmin } from '@/lib/roles';
 import { publicEnv } from '@/lib/env';
-import { scheduleBlockBody, scheduleBlockDeleteBody } from '@/lib/validation';
+import { scheduleBlockBody, scheduleBlockDeleteBody, scheduleBlockRangeBody } from '@/lib/validation';
 
 async function getAdmin(request: NextRequest) {
   const cookieHeader = request.headers.get('cookie') || '';
@@ -26,7 +26,24 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const user = await getAdmin(request);
   if (!user) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  const parsed = scheduleBlockBody.safeParse(await request.json());
+  const body = await request.json();
+
+  if (typeof body === 'object' && body !== null && 'startDate' in body) {
+    const parsedRange = scheduleBlockRangeBody.safeParse(body);
+    if (!parsedRange.success) return NextResponse.json({ error: parsedRange.error.issues[0].message }, { status: 400 });
+
+    const { data, error } = await createAdminClient().rpc('block_schedule_date_range', {
+      p_start_date: parsedRange.data.startDate,
+      p_end_date: parsedRange.data.endDate,
+      p_reason: parsedRange.data.reason?.trim() || '',
+      p_admin_id: user.id,
+    });
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ success: true, range: data?.[0] });
+  }
+
+  const parsed = scheduleBlockBody.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
 
   const reason = parsed.data.reason?.trim() || null;

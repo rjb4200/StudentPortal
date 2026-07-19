@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { addMonths, eachDayOfInterval, endOfMonth, endOfWeek, format, isSameMonth, startOfMonth, startOfWeek, subMonths } from 'date-fns';
 import { Alert, Button, Card, EmptyState, LoadingState } from '@/components/ui';
+import { getScheduleBlockRangeSummary } from '@/lib/schedule-blocks';
 import { to24Hour } from '@/lib/time-formats';
 
 type ScheduleStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
@@ -32,6 +33,8 @@ export function ScheduleCalendar() {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [blocks, setBlocks] = useState<ScheduleBlock[]>([]);
   const [reason, setReason] = useState('');
+  const [rangeStart, setRangeStart] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [rangeEnd, setRangeEnd] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,6 +60,7 @@ export function ScheduleCalendar() {
   const selectedBlock = blocks.find((block) => block.date === selectedDate);
   const selectedSchedules = schedules.filter((schedule) => schedule.date === selectedDate);
   const selectedPending = selectedSchedules.filter((schedule) => schedule.status === 'pending');
+  const rangeSummary = getScheduleBlockRangeSummary(rangeStart, rangeEnd, blocks, schedules);
   const days = eachDayOfInterval({
     start: startOfWeek(startOfMonth(month)),
     end: endOfWeek(endOfMonth(month)),
@@ -99,6 +103,25 @@ export function ScheduleCalendar() {
       await loadCalendar();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Unable to remove the blocked date.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveRange = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/admin/schedule-blocks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ startDate: rangeStart, endDate: rangeEnd, reason }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Unable to save the blocked period.');
+      await loadCalendar();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Unable to save the blocked period.');
     } finally {
       setSaving(false);
     }
@@ -165,6 +188,18 @@ export function ScheduleCalendar() {
             <Button size="sm" onClick={saveBlock} loading={saving}>{selectedBlock ? 'Update block' : 'Block day'}</Button>
             {selectedBlock && <Button size="sm" variant="secondary" onClick={removeBlock} loading={saving}>Remove block</Button>}
           </div>
+        </div>
+
+        <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-3">
+          <p className="text-sm font-bold text-wfd-charcoal">Block scheduling period</p>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <label className="text-xs font-bold text-gray-600">Start<input type="date" value={rangeStart} onChange={(event) => setRangeStart(event.target.value)} className="mt-1 w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900" /></label>
+            <label className="text-xs font-bold text-gray-600">End<input type="date" value={rangeEnd} onChange={(event) => setRangeEnd(event.target.value)} className="mt-1 w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900" /></label>
+          </div>
+          {rangeSummary && rangeSummary.totalDays <= 31 && <p className="mt-3 text-xs leading-5 text-gray-600">{rangeSummary.totalDays} days: {rangeSummary.alreadyBlocked} already blocked, {rangeSummary.pendingSchedules} pending schedules, {rangeSummary.approvedSchedules} approved schedules. Existing schedules remain unchanged.</p>}
+          {rangeEnd < rangeStart && <p className="mt-3 text-xs font-semibold text-wfd-crimson">End date must be on or after the start date.</p>}
+          {rangeSummary && rangeSummary.totalDays > 31 && <p className="mt-3 text-xs font-semibold text-wfd-crimson">Schedule block ranges cannot exceed 31 days.</p>}
+          <Button className="mt-3" size="sm" onClick={saveRange} loading={saving} disabled={!rangeSummary || rangeSummary.totalDays > 31}>Block period</Button>
         </div>
 
         <div className="mt-5">

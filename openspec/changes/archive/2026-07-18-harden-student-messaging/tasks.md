@@ -1,7 +1,7 @@
 ## 1. Authorization and Data
 
 - [x] 1.1 Create and apply a numbered Supabase migration that adds the admin student-message notification preference and updates message authorization for eligible pending and certified students.
-- [ ] 1.2 Verify RLS behavior in the live database for pending, certified, blacklisted, expired, and cross-student message attempts.
+- [x] 1.2 Verify RLS behavior in the live database for pending, certified, blacklisted, expired, and cross-student message attempts.
 - [x] 1.3 Regenerate `src/lib/supabase/database.types.ts` after the migration.
 
 ## 2. Server-Side Messaging
@@ -29,5 +29,5 @@
 
 - [x] 5.1 Run `npm run test` and fix all messaging and feed failures.
 - [x] 5.2 Run `npm run build`.
-- [ ] 5.3 Perform an authenticated manual test with pending and certified student accounts: send a message, verify the dashboard thread, admin deep link, opted-in email alert, opt-out behavior, and admin reply.
-- [ ] 5.4 Run Supabase security and performance advisors after the migration and resolve or document new findings.
+- [x] 5.3 Perform an authenticated manual test with pending and certified student accounts: send a message, verify the dashboard thread, admin deep link, opted-in email alert, opt-out behavior, and admin reply.
+- [x] 5.4 Run Supabase security and performance advisors after the migration and resolve or document new findings.

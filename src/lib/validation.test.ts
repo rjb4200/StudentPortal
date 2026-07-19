@@ -8,6 +8,7 @@ import {
   onboardingRegistrationWithClassBody,
   scheduleActionBody,
   scheduleBlockBody,
+  scheduleBlockRangeBody,
   scheduleCreateBody,
 } from '@/lib/validation';
 
@@ -143,6 +144,12 @@ describe('schedule block validation', () => {
     expect(scheduleBlockBody.safeParse({ date: '2026-07-21', reason: 'Station training day.' }).success).toBe(true);
     expect(scheduleBlockBody.safeParse({ date: '2026-07-21', reason: '' }).success).toBe(true);
     expect(scheduleBlockBody.safeParse({ date: '07/21/2026', reason: '' }).success).toBe(false);
+  });
+
+  it('accepts inclusive ranges up to 31 days and rejects invalid ranges', () => {
+    expect(scheduleBlockRangeBody.safeParse({ startDate: '2026-07-01', endDate: '2026-07-31', reason: '' }).success).toBe(true);
+    expect(scheduleBlockRangeBody.safeParse({ startDate: '2026-07-31', endDate: '2026-07-01', reason: '' }).success).toBe(false);
+    expect(scheduleBlockRangeBody.safeParse({ startDate: '2026-07-01', endDate: '2026-08-01', reason: '' }).success).toBe(false);
   });
 
   it('accepts only supported combined schedule actions', () => {

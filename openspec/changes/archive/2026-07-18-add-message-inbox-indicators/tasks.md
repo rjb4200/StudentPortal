@@ -23,7 +23,7 @@
 
 - [x] 4.1 Run `npm run test` and resolve inbox-related failures.
 - [x] 4.2 Run `npm run build`.
-- [ ] 4.3 Manually verify two admin sessions: each sees a new student message as unread, one admin opening it does not clear the other admin's indicator, and an admin reply retains the correct triage state.
+- [x] 4.3 Manually verify two admin sessions: each sees a new student message as unread, one admin opening it does not clear the other admin's indicator, and an admin reply retains the correct triage state.
 - [x] 4.4 Run Supabase security and performance advisors after the migration and resolve or document new findings.
 
 ## Verification Notes

@@ -1271,6 +1271,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      block_schedule_date_range: {
+        Args: {
+          p_admin_id: string
+          p_end_date: string
+          p_reason: string
+          p_start_date: string
+        }
+        Returns: {
+          already_blocked: number
+          approved_schedules: number
+          created_blocks: number
+          pending_schedules: number
+          total_days: number
+        }[]
+      }
       get_admin_message_inbox: {
         Args: { p_admin_account_id: string }
         Returns: {

@@ -81,11 +81,11 @@ The system SHALL display a calendar grid where students can click a date cell an
 - **THEN** the date cell displays the rejected state with appropriate styling
 
 ### Requirement: Per-student iCal calendar feed
-The system SHALL generate a unique iCal subscription URL for each student that displays all scheduled days. Days SHALL appear as pending once the student signs up and SHALL update to approved as each day is approved by an admin. The dashboard SHALL present this calendar feed in a single clear utility location and SHALL NOT duplicate calendar feed copy across pending and certified dashboard states.
+The system SHALL generate a unique absolute iCal subscription URL for each student that displays all scheduled days. The URL SHALL end in `.ics` and the calendar route SHALL resolve the associated student UUID correctly. Days SHALL appear as pending once the student signs up and SHALL update to approved as each day is approved by an admin. The dashboard SHALL present this calendar feed in a single clear utility location and SHALL NOT duplicate calendar feed copy across pending and certified dashboard states.
 
 #### Scenario: Subscribe to personal iCal feed
 - **WHEN** a student copies their unique iCal feed URL and subscribes in Google Calendar or Apple Calendar
-- **THEN** all scheduled days appear as calendar events with pending/approved status reflected in the event styling
+- **THEN** the `.ics` route returns that student's calendar events with pending/approved status reflected in the event styling
 
 #### Scenario: Calendar feed updates on approval
 - **WHEN** an admin approves a pending schedule request

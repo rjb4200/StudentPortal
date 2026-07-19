@@ -7,6 +7,7 @@ process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role-key';
 
 let isAdmin = true;
 let upsertPayload: unknown;
+let rpcPayload: unknown;
 
 vi.mock('@supabase/ssr', () => ({
   createServerClient: () => ({ auth: { getUser: vi.fn(async () => ({ data: { user: { id: 'admin-user-id' } } })) } }),
@@ -15,7 +16,13 @@ vi.mock('@supabase/ssr', () => ({
 vi.mock('@/lib/roles', () => ({ canAccessAdmin: () => isAdmin }));
 
 vi.mock('@/lib/supabase/admin', () => ({
-  createAdminClient: () => ({ from: () => createQueryBuilder() }),
+  createAdminClient: () => ({
+    from: () => createQueryBuilder(),
+    rpc: (_: string, payload: unknown) => {
+      rpcPayload = payload;
+      return Promise.resolve({ data: [{ total_days: 2, created_blocks: 1, already_blocked: 1, pending_schedules: 1, approved_schedules: 0 }], error: null });
+    },
+  }),
 }));
 
 function createQueryBuilder() {
@@ -35,6 +42,7 @@ beforeEach(() => {
   vi.resetModules();
   isAdmin = true;
   upsertPayload = undefined;
+  rpcPayload = undefined;
 });
 
 describe('schedule block administration', () => {
@@ -53,5 +61,15 @@ describe('schedule block administration', () => {
     }) as any);
     expect(response.status).toBe(200);
     expect(upsertPayload).toEqual(expect.objectContaining({ date: '2026-07-21', reason: null, created_by: 'admin-user-id' }));
+  });
+
+  it('creates an authorized date range through the atomic RPC', async () => {
+    const { POST } = await import('./route');
+    const response = await POST(new Request('https://example.test/api/admin/schedule-blocks', {
+      method: 'POST',
+      body: JSON.stringify({ startDate: '2026-07-21', endDate: '2026-07-22', reason: 'Training' }),
+    }) as any);
+    expect(response.status).toBe(200);
+    expect(rpcPayload).toEqual({ p_start_date: '2026-07-21', p_end_date: '2026-07-22', p_reason: 'Training', p_admin_id: 'admin-user-id' });
   });
 });

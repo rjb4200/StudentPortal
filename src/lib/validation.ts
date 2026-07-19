@@ -68,6 +68,20 @@ export const scheduleBlockBody = z.object({
   reason: textSchema(500).optional().or(z.literal('')),
 });
 
+export const scheduleBlockRangeBody = z.object({
+  startDate: dateOnlySchema,
+  endDate: dateOnlySchema,
+  reason: textSchema(500).optional().or(z.literal('')),
+}).superRefine(({ startDate, endDate }, context) => {
+  if (endDate < startDate) {
+    context.addIssue({ code: 'custom', path: ['endDate'], message: 'End date must be on or after the start date.' });
+    return;
+  }
+
+  const days = (Date.parse(`${endDate}T00:00:00Z`) - Date.parse(`${startDate}T00:00:00Z`)) / 86_400_000 + 1;
+  if (days > 31) context.addIssue({ code: 'custom', path: ['endDate'], message: 'Schedule block ranges cannot exceed 31 days.' });
+});
+
 export const scheduleBlockDeleteBody = z.object({
   date: dateOnlySchema,
 });
