@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { subscribeToAdminInbox, subscribeToAdminConversation } from '@/lib/realtime';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Alert, EmptyState, LoadingState } from '@/components/ui';
+import { Alert, EmptyState } from '@/components/ui';
 import { orderMessageThreads, type MessageThread } from '@/lib/message-inbox';
 
 function formatMessageTime(dateStr: string): string {
@@ -36,7 +36,6 @@ export function MessagesPage() {
   const [messageInboxError, setMessageInboxError] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
   const [replyError, setReplyError] = useState<string | null>(null);
-  const [initialLoading, setInitialLoading] = useState(true);
   const [broadcastTitle, setBroadcastTitle] = useState('');
   const [broadcastBody, setBroadcastBody] = useState('');
   const [broadcastSendEmail, setBroadcastSendEmail] = useState(false);
@@ -50,7 +49,7 @@ export function MessagesPage() {
   const orderedThreads = orderMessageThreads(messageThreads);
 
   useEffect(() => {
-    loadInbox().finally(() => setInitialLoading(false));
+    loadInbox();
   }, []);
 
   useEffect(() => {
@@ -207,9 +206,7 @@ export function MessagesPage() {
         </div>
 
         <div className="p-5">
-          {initialLoading ? (
-            <LoadingState label="Loading conversations..." />
-          ) : messageInboxError ? (
+          {messageInboxError ? (
             <Alert tone="danger">{messageInboxError}</Alert>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
