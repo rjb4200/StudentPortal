@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { subscribeToAdminInbox, subscribeToAdminConversation } from '@/lib/realtime';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -80,6 +81,8 @@ export function DailyOps({ onNavigateMessages }: { onNavigateMessages?: () => vo
   const [pendingMous, setPendingMous] = useState<any[]>([]);
   const [signingMou, setSigningMou] = useState<string | null>(null);
   const [confirmationAction, setConfirmationAction] = useState<ConfirmationAction | null>(null);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
+  const unsubConversationRef = useRef<(() => void) | null>(null);
 
   const supabase = createClient() as any;
 
@@ -92,6 +95,48 @@ export function DailyOps({ onNavigateMessages }: { onNavigateMessages?: () => vo
     const studentId = new URLSearchParams(window.location.search).get('student');
     if (studentId && messageThreads.some((thread) => thread.student_id === studentId)) void loadMessages(studentId);
   }, [students, messageThreads]);
+
+  useEffect(() => {
+    setSubscriptionStatus('connecting');
+    const unsub = subscribeToAdminInbox(
+      () => {
+        loadMessageInbox();
+      },
+      () => setSubscriptionStatus('error')
+    );
+    setSubscriptionStatus('connected');
+    return () => {
+      unsub();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (unsubConversationRef.current) {
+      unsubConversationRef.current();
+      unsubConversationRef.current = null;
+    }
+    if (activeStudentId) {
+      setSubscriptionStatus('connecting');
+      const unsub = subscribeToAdminConversation(
+        activeStudentId,
+        (msg) => {
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === msg.id)) return prev;
+            return [...prev, msg];
+          });
+        },
+        () => setSubscriptionStatus('error')
+      );
+      setSubscriptionStatus('connected');
+      unsubConversationRef.current = () => { unsub(); };
+    }
+    return () => {
+      if (unsubConversationRef.current) {
+        unsubConversationRef.current();
+        unsubConversationRef.current = null;
+      }
+    };
+  }, [activeStudentId]);
 
   const loadAll = async () => {
     const [

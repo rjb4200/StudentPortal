@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { subscribeToAdminInbox, subscribeToAdminConversation } from '@/lib/realtime';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, EmptyState, LoadingState } from '@/components/ui';
@@ -41,6 +42,8 @@ export function MessagesPage() {
   const [broadcastSendEmail, setBroadcastSendEmail] = useState(false);
   const [broadcasting, setBroadcasting] = useState(false);
   const [showBroadcast, setShowBroadcast] = useState(false);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
+  const unsubConversationRef = useRef<(() => void) | null>(null);
 
   const supabase = createClient() as any;
   const unreadCount = messageThreads.filter((t) => t.is_unread).length;
@@ -49,6 +52,48 @@ export function MessagesPage() {
   useEffect(() => {
     loadInbox();
   }, []);
+
+  useEffect(() => {
+    setSubscriptionStatus('connecting');
+    const unsub = subscribeToAdminInbox(
+      () => {
+        loadInbox();
+      },
+      () => setSubscriptionStatus('error')
+    );
+    setSubscriptionStatus('connected');
+    return () => {
+      unsub();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (unsubConversationRef.current) {
+      unsubConversationRef.current();
+      unsubConversationRef.current = null;
+    }
+    if (activeStudentId) {
+      setSubscriptionStatus('connecting');
+      const unsub = subscribeToAdminConversation(
+        activeStudentId,
+        (msg) => {
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === msg.id)) return prev;
+            return [...prev, msg];
+          });
+        },
+        () => setSubscriptionStatus('error')
+      );
+      setSubscriptionStatus('connected');
+      unsubConversationRef.current = () => { unsub(); };
+    }
+    return () => {
+      if (unsubConversationRef.current) {
+        unsubConversationRef.current();
+        unsubConversationRef.current = null;
+      }
+    };
+  }, [activeStudentId]);
 
   const loadInbox = async () => {
     setLoading(true);
@@ -156,6 +201,7 @@ export function MessagesPage() {
                 {unreadCount > 0
                   ? `${unreadCount} conversation${unreadCount === 1 ? '' : 's'} with unread messages`
                   : 'No unread student messages'}
+                {subscriptionStatus === 'error' && ' · Live updates disconnected'}
               </p>
             </div>
             <Button variant="secondary" size="sm" onClick={() => setShowBroadcast(true)}>

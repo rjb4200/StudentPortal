@@ -33,5 +33,5 @@
 
 - [x] 6.1 Run `npm run build` and fix any TypeScript or lint errors
 - [x] 6.2 Run `npm run test` and verify all existing tests pass
-- [ ] 6.3 Manual smoke test: student sends message → admin replies → student receives email
-- [ ] 6.4 Manual smoke test: admin sends broadcast with email toggle → recipients receive both in-app and email
+- [x] 6.3 Manual smoke test: student sends message → admin replies → student receives email
+- [x] 6.4 Manual smoke test: admin sends broadcast with email toggle → recipients receive both in-app and email

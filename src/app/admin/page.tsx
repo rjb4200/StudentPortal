@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { subscribeToAdminInbox } from '@/lib/realtime';
 import { DailyOps } from '@/components/admin/daily-ops';
 import { PreceptorAnalytics } from '@/components/admin/preceptor-analytics';
 import { MaintenanceArchive } from '@/components/admin/maintenance-archive';
@@ -45,7 +46,7 @@ export default function AdminPage() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  useEffect(() => {
+  const refreshUnreadCount = () => {
     fetch('/api/admin/message-inbox')
       .then((res) => res.json())
       .then((inbox) => {
@@ -53,7 +54,18 @@ export default function AdminPage() {
         setUnreadMessageCount(threads.filter((t: any) => t.is_unread).length);
       })
       .catch(() => {});
+  };
+
+  useEffect(() => {
+    refreshUnreadCount();
   }, [activeTab]);
+
+  useEffect(() => {
+    const unsub = subscribeToAdminInbox(() => {
+      refreshUnreadCount();
+    });
+    return () => { unsub(); };
+  }, []);
 
   if (loading) {
     return (

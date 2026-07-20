@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, FormEvent, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { subscribeToStudentMessages } from '@/lib/realtime';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Alert, EmptyState, LoadingState } from '@/components/ui';
@@ -47,12 +48,37 @@ export function Messages({ studentId, onMessagesRead }: MessagesProps) {
   const [error, setError] = useState<string | null>(null);
   const [failedMessageId, setFailedMessageId] = useState<string | null>(null);
   const [lastReadCursor, setLastReadCursor] = useState<string | null>(null);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const supabase = createClient();
 
   useEffect(() => {
     loadMessages();
+  }, [studentId]);
+
+  useEffect(() => {
+    if (!studentId) return;
+    setSubscriptionStatus('connecting');
+    const unsub = subscribeToStudentMessages(
+      studentId,
+      (msg) => {
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === (msg.id as string))) return prev;
+          return [...prev, msg as unknown as Message];
+        });
+        scrollToBottom();
+        if (msg.sender === 'admin') {
+          const createdAt = msg.created_at as string;
+          setLastReadCursor((prev) => prev && createdAt > prev ? createdAt : prev);
+        }
+      },
+      () => setSubscriptionStatus('error')
+    );
+    setSubscriptionStatus('connected');
+    return () => {
+      unsub();
+    };
   }, [studentId]);
 
   const scrollToBottom = useCallback(() => {
@@ -137,6 +163,9 @@ export function Messages({ studentId, onMessagesRead }: MessagesProps) {
   return (
     <Card className="p-4 flex flex-col min-h-[60vh] max-h-[calc(100vh-16rem)]">
       <h3 className="font-bold text-wfd-charcoal mb-4">Messages</h3>
+      {subscriptionStatus === 'error' && (
+        <p className="text-xs text-amber-600 mb-2">Live updates disconnected. New messages will appear when you refresh.</p>
+      )}
       {error && <div className="mb-3"><Alert tone="danger">{error}</Alert></div>}
 
       <div className="flex-1 overflow-y-auto space-y-3 mb-4" role="log" aria-label="Message thread">

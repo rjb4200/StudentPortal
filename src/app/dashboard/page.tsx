@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { subscribeToStudentMessages } from '@/lib/realtime';
 import { CalendarGrid } from '@/components/dashboard/calendar-grid';
 import { ShiftList } from '@/components/dashboard/shift-list';
 import { DayDetailModal } from '@/components/dashboard/day-detail';
@@ -63,12 +64,27 @@ export default function DashboardPage() {
   const [welcomeMsg, setWelcomeMsg] = useState<{ title: string; body: string } | null>(null);
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
   const [scheduleError, setScheduleError] = useState<string | null>(null);
+  const activeSectionRef = useRef(activeSection);
+  activeSectionRef.current = activeSection;
 
   const supabase = createClient() as any;
 
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (!student?.id) return;
+    const unsub = subscribeToStudentMessages(
+      student.id,
+      (msg) => {
+        if (msg.sender === 'admin' && activeSectionRef.current !== 'messages') {
+          setUnreadMessageCount((prev) => prev + 1);
+        }
+      }
+    );
+    return () => { unsub(); };
+  }, [student?.id]);
 
   const loadData = async () => {
     const { data: { user } } = await supabase.auth.getUser();
