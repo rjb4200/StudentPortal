@@ -113,6 +113,21 @@ export function OnboardingComplete({ studentId, password, email, isNewAccount, o
             <p className="text-xs text-amber-700 mt-2">You will need these to log in once an administrator approves your account.</p>
           </div>
 
+          <div className="inline-block p-4 bg-blue-50 border border-blue-200 rounded-lg text-left mb-4 w-full max-w-md">
+            <p className="text-sm font-bold text-blue-900 mb-2">Ensure you receive our emails</p>
+            <ol className="text-sm text-blue-800 space-y-1 list-decimal pl-5">
+              <li>Check your email (including your <strong>Spam</strong> or <strong>Junk</strong> folder) for a copy of your credentials.</li>
+              <li>If found in spam, mark it as <strong>"Not Spam"</strong>.</li>
+            </ol>
+            <p className="text-xs text-blue-700 mt-3 mb-3">
+              We'll send future communications from <strong>students@winchesterfireems.com</strong>. Add it to your contacts so you never miss shift reminders, approval notices, or messages from WFD staff.
+            </p>
+            <a href="/contact-card.vcf" download className="inline-flex items-center gap-1.5 text-sm font-semibold text-wfd-crimson hover:text-wfd-crimson/80 transition-colors">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+              Download Contact Card
+            </a>
+          </div>
+
           <div className="flex flex-col items-center gap-2">
             <Button onClick={handleContinue} loading={continuing} className="px-8">
               Continue to Dashboard

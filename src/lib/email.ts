@@ -20,7 +20,7 @@ interface SendEmailResult {
 const DEFAULT_TIMEOUT_MS = 5000;
 
 export async function sendEmail(params: SendEmailParams): Promise<SendEmailResult> {
-  const { to, subject, html, from = 'WFD EMS Portal <onboarding@winchesterfireems.com>' } = params;
+  const { to, subject, html, from = 'WFD EMS Portal <students@winchesterfireems.com>' } = params;
 
   if (!serverEnv.RESEND_API_KEY) {
     return { ok: false, error: 'RESEND_API_KEY not configured' };

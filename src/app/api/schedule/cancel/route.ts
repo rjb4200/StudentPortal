@@ -88,7 +88,6 @@ export async function POST(request: NextRequest) {
     });
     try {
       await sendEmail({
-        from: 'WFD EMS Portal <noreply@winchesterfireems.com>',
         to: student.email,
         subject,
         html,
@@ -111,7 +110,6 @@ export async function POST(request: NextRequest) {
       });
       try {
         await sendEmail({
-          from: 'WFD EMS Portal <onboarding@winchesterfireems.com>',
           to: admins.map((a: any) => a.email),
           subject,
           html,

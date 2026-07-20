@@ -40,7 +40,6 @@ export async function POST(request: NextRequest) {
 
     const { subject, html } = buildEvaluationReceiptEmail({ full_name: student.full_name });
     await sendEmail({
-      from: 'WFD EMS Portal <noreply@winchesterfireems.com>',
       to: student.email,
       subject,
       html,

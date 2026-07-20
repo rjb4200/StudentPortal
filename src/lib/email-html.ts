@@ -34,6 +34,7 @@ export function buildEmailHtml(title: string, bodyHtml: string, loginUrl?: strin
             <td style="padding:0 34px 32px 34px;">
               <hr style="border:none;border-top:1px solid #e5e7eb;margin:10px 0 18px 0;" />
               <p style="margin:0;color:#6b7280;font-size:12px;line-height:1.6;text-align:center;">Winchester Fire Department — Division of EMS<br />EMS Student Training & Rotation Portal</p>
+              <p style="margin:8px 0 0 0;color:#9ca3af;font-size:11px;line-height:1.5;text-align:center;">Add <strong>students@winchesterfireems.com</strong> to your contacts to ensure you receive all portal communications.</p>
             </td>
           </tr>
         </table>

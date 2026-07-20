@@ -57,7 +57,6 @@ export async function POST(request: NextRequest) {
         overall_rating: overallRating,
       });
       await sendEmail({
-        from: 'WFD EMS Portal <onboarding@winchesterfireems.com>',
         to: admins.map((a: any) => a.email),
         subject,
         html,

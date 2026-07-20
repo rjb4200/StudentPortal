@@ -110,7 +110,6 @@ export async function GET(request: NextRequest) {
         station_map_url: stationMapUrl,
       });
       const result = await sendEmail({
-        from: 'WFD EMS Portal <noreply@winchesterfireems.com>',
         to: schedule.students!.email,
         subject: content.subject,
         html: content.html,

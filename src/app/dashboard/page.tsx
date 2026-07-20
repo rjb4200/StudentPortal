@@ -63,6 +63,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [welcomeMsg, setWelcomeMsg] = useState<{ title: string; body: string } | null>(null);
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
+  const [deliverabilityDismissed, setDeliverabilityDismissed] = useState(false);
   const [scheduleError, setScheduleError] = useState<string | null>(null);
   const activeSectionRef = useRef(activeSection);
   activeSectionRef.current = activeSection;
@@ -416,6 +417,31 @@ export default function DashboardPage() {
               <Button onClick={showMessagesSection} variant="secondary">Message Staff</Button>
               <Button onClick={showFeedSection} variant="sage">Calendar Feed</Button>
             </div>
+          </div>
+        </Card>
+      )}
+
+      {isCertified && !deliverabilityDismissed && (
+        <Card className="border-blue-200 bg-blue-50 p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h3 className="font-bold text-blue-900">Don't miss important emails from WFD</h3>
+              <p className="mt-1 text-sm text-blue-800">
+                Add <strong>students@winchesterfireems.com</strong> to your contacts so shift reminders, approval notices, and staff messages always reach your inbox.
+                {' '}
+                <a href="/contact-card.vcf" download className="inline-flex items-center gap-1 text-sm font-semibold text-wfd-crimson hover:text-wfd-crimson/80 transition-colors">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                  Download Contact Card
+                </a>
+              </p>
+            </div>
+            <button
+              onClick={() => setDeliverabilityDismissed(true)}
+              className="shrink-0 text-lg leading-none text-blue-400 hover:text-blue-600"
+              aria-label="Dismiss deliverability notice"
+            >
+              ×
+            </button>
           </div>
         </Card>
       )}
