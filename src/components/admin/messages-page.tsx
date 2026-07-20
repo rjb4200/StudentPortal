@@ -43,6 +43,7 @@ export function MessagesPage() {
   const [showBroadcast, setShowBroadcast] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
   const unsubConversationRef = useRef<(() => void) | null>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
   const supabase = createClient() as any;
   const unreadCount = messageThreads.filter((t) => t.is_unread).length;
@@ -93,6 +94,12 @@ export function MessagesPage() {
       }
     };
   }, [activeStudentId]);
+
+  useEffect(() => {
+    if (messages.length > 0) {
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+    }
+  }, [messages]);
 
   const loadInbox = async () => {
     const response = await fetch('/api/admin/message-inbox');
@@ -238,8 +245,9 @@ export function MessagesPage() {
                       {thread.needs_reply && <span className="rounded-full bg-wfd-gold/20 px-1.5 py-0.5 text-[10px] font-semibold text-wfd-charcoal">Needs reply</span>}
                     </div>
                   </button>
-                ))}
-              </div>
+                        ))}
+                        <div ref={bottomRef} />
+                      </div>
 
               <div className="md:col-span-3">
                 {!activeStudentId ? (
