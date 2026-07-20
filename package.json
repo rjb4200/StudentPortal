@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",
-    "@supabase/supabase-js": "^2.108.1",
+    "@supabase/supabase-js": "^2.110.7",
     "autoprefixer": "^10.5.0",
     "date-fns": "^4.4.0",
     "ical-generator": "^11.0.0",
