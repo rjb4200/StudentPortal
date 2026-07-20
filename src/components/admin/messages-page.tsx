@@ -44,7 +44,7 @@ export function MessagesPage() {
   const [showBroadcast, setShowBroadcast] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
   const unsubConversationRef = useRef<(() => void) | null>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const conversationBottomRef = useRef<HTMLDivElement>(null);
 
   const { isTyping, typingSender, notifyTyping } = useTypingIndicator(
     activeStudentId ?? undefined,
@@ -103,7 +103,7 @@ export function MessagesPage() {
 
   useEffect(() => {
     if (messages.length > 0) {
-      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+      setTimeout(() => conversationBottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
     }
   }, [messages]);
 
@@ -252,7 +252,6 @@ export function MessagesPage() {
                     </div>
                   </button>
                         ))}
-                        <div ref={bottomRef} />
                       </div>
 
               <div className="md:col-span-3">
@@ -280,6 +279,7 @@ export function MessagesPage() {
                           </div>
                         </div>
                       ))}
+                      <div ref={conversationBottomRef} />
                     </div>
                     {isTyping && typingSender === 'student' && (
                       <p className="text-xs italic text-gray-400 mb-1">
