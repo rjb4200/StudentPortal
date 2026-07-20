@@ -17,67 +17,69 @@ function dedupById(channel: RealtimeChannel, newRecord: Record<string, unknown>)
   return false;
 }
 
-export function subscribeToStudentMessages(
-  studentId: string,
+function createSubscription(
+  topic: string,
+  filter: string,
   onInsert: OnInsertCallback,
   onError?: OnErrorCallback
 ): () => void {
   const supabase = createClient();
+  const uniqueTopic = `${topic}:${Math.random().toString(36).slice(2)}`;
+  const channel = supabase.channel(uniqueTopic);
 
-  const channel: RealtimeChannel = supabase
-    .channel(`messages:student:${studentId}`)
-    .on(
+  try {
+    channel.on(
       'postgres_changes',
-      { event: 'INSERT', schema: 'public', table: 'messages', filter: `student_id=eq.${studentId}` },
+      { event: 'INSERT', schema: 'public', table: 'messages', filter },
       (payload) => {
         const record = payload.new as Record<string, unknown>;
         if (!dedupById(channel, record)) {
           onInsert(record);
         }
       }
-    )
-    .subscribe((status, err) => {
+    );
+
+    channel.subscribe((status, err) => {
       if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
         const error = err ?? new Error(`Realtime subscription error: ${status}`);
-        console.error(`Student message subscription error (${studentId}):`, error);
+        console.error(`Realtime subscription error (${topic}):`, error);
         onError?.(error);
       }
     });
+  } catch (e) {
+    console.error(`Failed to set up realtime subscription (${topic}):`, e);
+    onError?.(e instanceof Error ? e : new Error(String(e)));
+  }
 
   return () => {
+    channel.unsubscribe();
     supabase.removeChannel(channel);
   };
+}
+
+export function subscribeToStudentMessages(
+  studentId: string,
+  onInsert: OnInsertCallback,
+  onError?: OnErrorCallback
+): () => void {
+  return createSubscription(
+    `messages:student:${studentId}`,
+    `student_id=eq.${studentId}`,
+    onInsert,
+    onError
+  );
 }
 
 export function subscribeToAdminInbox(
   onInsert: OnInsertCallback,
   onError?: OnErrorCallback
 ): () => void {
-  const supabase = createClient();
-
-  const channel: RealtimeChannel = supabase
-    .channel('messages:admin-inbox')
-    .on(
-      'postgres_changes',
-      { event: 'INSERT', schema: 'public', table: 'messages', filter: `sender=eq.student` },
-      (payload) => {
-        const record = payload.new as Record<string, unknown>;
-        if (!dedupById(channel, record)) {
-          onInsert(record);
-        }
-      }
-    )
-    .subscribe((status, err) => {
-      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-        const error = err ?? new Error(`Realtime subscription error: ${status}`);
-        console.error('Admin inbox subscription error:', error);
-        onError?.(error);
-      }
-    });
-
-  return () => {
-    supabase.removeChannel(channel);
-  };
+  return createSubscription(
+    'messages:admin-inbox',
+    'sender=eq.student',
+    onInsert,
+    onError
+  );
 }
 
 export function subscribeToAdminConversation(
@@ -85,29 +87,10 @@ export function subscribeToAdminConversation(
   onInsert: OnInsertCallback,
   onError?: OnErrorCallback
 ): () => void {
-  const supabase = createClient();
-
-  const channel: RealtimeChannel = supabase
-    .channel(`messages:admin-convo:${studentId}`)
-    .on(
-      'postgres_changes',
-      { event: 'INSERT', schema: 'public', table: 'messages', filter: `student_id=eq.${studentId}` },
-      (payload) => {
-        const record = payload.new as Record<string, unknown>;
-        if (!dedupById(channel, record)) {
-          onInsert(record);
-        }
-      }
-    )
-    .subscribe((status, err) => {
-      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-        const error = err ?? new Error(`Realtime subscription error: ${status}`);
-        console.error(`Admin conversation subscription error (${studentId}):`, error);
-        onError?.(error);
-      }
-    });
-
-  return () => {
-    supabase.removeChannel(channel);
-  };
+  return createSubscription(
+    `messages:admin-convo:${studentId}`,
+    `student_id=eq.${studentId}`,
+    onInsert,
+    onError
+  );
 }
