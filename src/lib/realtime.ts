@@ -18,7 +18,10 @@ function createChannel(
     { event: 'INSERT', schema: 'public', table: 'messages', filter },
     (payload) => {
       try {
-        onInsert(payload as Record<string, unknown>);
+        const record = (payload as Record<string, unknown>).new as Record<string, unknown>;
+        if (record) {
+          onInsert(record);
+        }
       } catch {}
     }
   );
