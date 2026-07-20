@@ -36,7 +36,7 @@ export function MessagesPage() {
   const [messageInboxError, setMessageInboxError] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
   const [replyError, setReplyError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [broadcastTitle, setBroadcastTitle] = useState('');
   const [broadcastBody, setBroadcastBody] = useState('');
   const [broadcastSendEmail, setBroadcastSendEmail] = useState(false);
@@ -50,7 +50,7 @@ export function MessagesPage() {
   const orderedThreads = orderMessageThreads(messageThreads);
 
   useEffect(() => {
-    loadInbox();
+    loadInbox().finally(() => setInitialLoading(false));
   }, []);
 
   useEffect(() => {
@@ -96,17 +96,14 @@ export function MessagesPage() {
   }, [activeStudentId]);
 
   const loadInbox = async () => {
-    setLoading(true);
     const response = await fetch('/api/admin/message-inbox');
     const inbox = await response.json().catch(() => null);
     if (!response.ok) {
       setMessageInboxError(inbox?.error || 'Unable to load student message status.');
-      setLoading(false);
       return;
     }
     setMessageThreads(inbox?.threads ?? []);
     setMessageInboxError(null);
-    setLoading(false);
   };
 
   const loadMessages = async (studentId: string) => {
@@ -148,9 +145,8 @@ export function MessagesPage() {
       setReplyError(result?.error || 'Unable to send the reply.');
       return;
     }
+    setMessages((prev) => [...prev, result.message]);
     setReplyText('');
-    await loadMessages(activeStudentId);
-    await loadInbox();
   };
 
   const handleSendBroadcast = async () => {
@@ -211,7 +207,7 @@ export function MessagesPage() {
         </div>
 
         <div className="p-5">
-          {loading ? (
+          {initialLoading ? (
             <LoadingState label="Loading conversations..." />
           ) : messageInboxError ? (
             <Alert tone="danger">{messageInboxError}</Alert>

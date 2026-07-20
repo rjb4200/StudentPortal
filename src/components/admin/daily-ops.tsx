@@ -278,9 +278,8 @@ export function DailyOps({ onNavigateMessages }: { onNavigateMessages?: () => vo
       setScheduleActionError(result?.error || 'Unable to send the reply.');
       return;
     }
+    setMessages((prev) => [...prev, result.message]);
     setReplyText('');
-    await loadMessages(activeStudentId);
-    await loadMessageInbox();
   };
 
   const handleKillSwitch = async (student: any) => {

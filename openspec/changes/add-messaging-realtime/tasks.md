@@ -48,5 +48,13 @@
 
 - [x] 8.1 Run `npm run build` and fix any TypeScript errors
 - [x] 8.2 Run `npm run test` and verify all existing tests pass
-- [ ] 8.3 Manual test: open student dashboard in one browser, admin in another — send messages, verify real-time delivery
-- [ ] 8.4 Manual test: verify broadcast appears in student Messages view in real-time
+- [x] 8.3 Manual test: open student dashboard in one browser, admin in another — send messages, verify real-time delivery
+- [x] 8.4 Manual test: verify broadcast appears in student Messages view in real-time
+
+## 9. Eliminate Spinner Flash on Reply / Incoming Messages
+
+- [x] 9.1 Replace `loading` with `initialLoading` in MessagesPage — `loadInbox()` silently updates thread list on subsequent calls; only shows spinner on first load
+- [x] 9.2 Remove `await loadMessages(activeStudentId)` from MessagesPage `handleSendReply` — optimistic insert + realtime subscription already handle it
+- [x] 9.3 Remove `await loadInbox()` from MessagesPage `handleSendReply` — admin's own replies don't change the inbox (inbox only tracks student-originated messages)
+- [x] 9.4 Remove `await loadMessages(activeStudentId)` from DailyOps `handleSendReply` — same redundancy
+- [x] 9.5 Remove `await loadMessageInbox()` from DailyOps `handleSendReply` — same redundancy
