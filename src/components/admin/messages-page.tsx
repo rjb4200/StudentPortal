@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { subscribeToAdminInbox, subscribeToAdminConversation } from '@/lib/realtime';
+import { useTypingIndicator } from '@/lib/use-typing-indicator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, EmptyState } from '@/components/ui';
@@ -44,6 +45,11 @@ export function MessagesPage() {
   const [subscriptionStatus, setSubscriptionStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
   const unsubConversationRef = useRef<(() => void) | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  const { isTyping, typingSender, notifyTyping } = useTypingIndicator(
+    activeStudentId ?? undefined,
+    'admin'
+  );
 
   const supabase = createClient() as any;
   const unreadCount = messageThreads.filter((t) => t.is_unread).length;
@@ -275,11 +281,16 @@ export function MessagesPage() {
                         </div>
                       ))}
                     </div>
+                    {isTyping && typingSender === 'student' && (
+                      <p className="text-xs italic text-gray-400 mb-1">
+                        {messageThreads.find((t) => t.student_id === activeStudentId)?.student_name ?? 'Student'} is typing...
+                      </p>
+                    )}
                     {replyError && <div className="mb-2"><Alert tone="danger">{replyError}</Alert></div>}
                     <div className="flex gap-2">
                       <input
                         value={replyText}
-                        onChange={(e) => setReplyText(e.target.value)}
+                        onChange={(e) => { setReplyText(e.target.value); notifyTyping(); }}
                         onKeyDown={(e) => e.key === 'Enter' && handleSendReply()}
                         placeholder="Reply..."
                         className="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-wfd-charcoal outline-none text-gray-900"

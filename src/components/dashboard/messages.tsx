@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, FormEvent, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { subscribeToStudentMessages } from '@/lib/realtime';
+import { useTypingIndicator } from '@/lib/use-typing-indicator';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Alert, EmptyState, LoadingState } from '@/components/ui';
@@ -50,6 +51,8 @@ export function Messages({ studentId, onMessagesRead }: MessagesProps) {
   const [lastReadCursor, setLastReadCursor] = useState<string | null>(null);
   const [subscriptionStatus, setSubscriptionStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  const { isTyping, typingSender, notifyTyping } = useTypingIndicator(studentId, 'student');
 
   const supabase = createClient();
 
@@ -207,6 +210,10 @@ export function Messages({ studentId, onMessagesRead }: MessagesProps) {
         <div ref={bottomRef} />
       </div>
 
+      {isTyping && typingSender === 'admin' && (
+        <p className="text-xs italic text-gray-400 mb-1">Staff is typing...</p>
+      )}
+
       <p className="text-xs text-gray-400 mb-3">
         Messages are typically answered within 24 hours on business days.
       </p>
@@ -215,7 +222,7 @@ export function Messages({ studentId, onMessagesRead }: MessagesProps) {
         <div className="flex-1 relative">
           <input
             value={newMessage}
-            onChange={(e) => { setNewMessage(e.target.value); setFailedMessageId(null); }}
+            onChange={(e) => { setNewMessage(e.target.value); setFailedMessageId(null); notifyTyping(); }}
             placeholder="Type a message..."
             maxLength={2000}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wfd-crimson outline-none text-sm text-gray-900"
