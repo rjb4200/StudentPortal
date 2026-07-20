@@ -44,7 +44,7 @@ export function MessagesPage() {
   const [showBroadcast, setShowBroadcast] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
   const unsubConversationRef = useRef<(() => void) | null>(null);
-  const conversationBottomRef = useRef<HTMLDivElement>(null);
+  const messageListRef = useRef<HTMLDivElement>(null);
 
   const { isTyping, typingSender, notifyTyping } = useTypingIndicator(
     activeStudentId ?? undefined,
@@ -102,10 +102,18 @@ export function MessagesPage() {
   }, [activeStudentId]);
 
   useEffect(() => {
-    if (messages.length > 0) {
-      setTimeout(() => conversationBottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
-    }
-  }, [messages]);
+    const messageList = messageListRef.current;
+    if (!messageList || messages.length === 0) return;
+
+    const frame = requestAnimationFrame(() => {
+      messageList.scrollTo({
+        top: messageList.scrollHeight,
+        behavior: 'smooth',
+      });
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [messages.length, activeStudentId]);
 
   const loadInbox = async () => {
     const response = await fetch('/api/admin/message-inbox');
@@ -251,17 +259,17 @@ export function MessagesPage() {
                       {thread.needs_reply && <span className="rounded-full bg-wfd-gold/20 px-1.5 py-0.5 text-[10px] font-semibold text-wfd-charcoal">Needs reply</span>}
                     </div>
                   </button>
-                        ))}
-                      </div>
+                ))}
+              </div>
 
-              <div className="md:col-span-3">
+              <div className="md:col-span-3 min-h-0">
                 {!activeStudentId ? (
                   <div className="flex flex-col items-center justify-center h-64 text-gray-400">
                     <p className="text-sm">Select a conversation to view messages</p>
                   </div>
                 ) : (
-                  <div className="flex flex-col h-[60vh]">
-                    <div className="flex-1 overflow-y-auto space-y-2 mb-3">
+                  <div className="flex min-h-0 flex-col h-[60vh]">
+                    <div ref={messageListRef} className="min-h-0 flex-1 overflow-y-auto space-y-2 mb-3">
                       {messages.length === 0 ? (
                         <EmptyState title="No messages" description="This conversation has no messages yet." />
                       ) : messages.map((m) => (
@@ -279,7 +287,6 @@ export function MessagesPage() {
                           </div>
                         </div>
                       ))}
-                      <div ref={conversationBottomRef} />
                     </div>
                     {isTyping && typingSender === 'student' && (
                       <p className="text-xs italic text-gray-400 mb-1">
