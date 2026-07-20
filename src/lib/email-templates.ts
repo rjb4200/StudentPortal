@@ -271,6 +271,22 @@ export function buildFlaggedEvaluationEmail(params: {
   };
 }
 
+export function buildAdminReplyStudentEmail(params: {
+  student_name: string;
+  message_text: string;
+  dashboard_url: string;
+}): EmailContent {
+  const excerpt = params.message_text.length > 500 ? `${params.message_text.slice(0, 497)}...` : params.message_text;
+  const bodyHtml = `<p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:16px;line-height:1.6;text-align:center;">The WFD EMS Training Division has replied to your message.</p>
+    <div style="margin:20px auto;padding:16px 18px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;max-width:480px;">
+      <p style="margin:0;color:#1c1c1e;font-size:14px;line-height:1.6;white-space:pre-wrap;">${escHtml(excerpt)}</p>
+    </div>`;
+  return {
+    subject: 'New reply from WFD EMS staff',
+    html: buildEmailHtml('Staff Reply', bodyHtml, params.dashboard_url, 'View Messages'),
+  };
+}
+
 export function buildStudentMessageAdminEmail(params: {
   student_name: string;
   student_email: string;

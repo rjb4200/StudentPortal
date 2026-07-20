@@ -12,6 +12,7 @@ import {
   buildShiftRejectedEmail,
   buildEvaluationReceiptEmail,
   buildFlaggedEvaluationEmail,
+  buildAdminReplyStudentEmail,
 } from '@/lib/email-templates';
 
 function containsNoRawSpecialChars(html: string, original: string): boolean {
@@ -306,5 +307,42 @@ describe('buildFlaggedEvaluationEmail', () => {
     expect(result.html).toContain('Dr. &quot;Ace&quot; &amp; Son');
     expect(result.html).toContain('(2/5)');
     expect(result.subject).toBe('WFD EMS: Flagged Evaluation');
+  });
+});
+
+describe('buildAdminReplyStudentEmail', () => {
+  it('renders reply notification with excerpt and dashboard link', () => {
+    const result = buildAdminReplyStudentEmail({
+      student_name: 'John Smith',
+      message_text: 'Your account has been approved. Please log in to schedule shifts.',
+      dashboard_url: 'https://example.com/dashboard',
+    });
+    expect(result.subject).toBe('New reply from WFD EMS staff');
+    expect(result.html).toContain('Staff Reply');
+    expect(result.html).toContain('has replied to your message');
+    expect(result.html).toContain('Your account has been approved.');
+    expect(result.html).toContain('View Messages');
+    expect(result.html).toContain('https://example.com/dashboard');
+  });
+
+  it('truncates long message excerpts', () => {
+    const longMessage = 'A'.repeat(600);
+    const result = buildAdminReplyStudentEmail({
+      student_name: 'John Smith',
+      message_text: longMessage,
+      dashboard_url: 'https://example.com/dashboard',
+    });
+    expect(result.html).toContain('A'.repeat(497) + '...');
+    expect(result.html).not.toContain(longMessage);
+  });
+
+  it('escapes HTML in message text', () => {
+    const result = buildAdminReplyStudentEmail({
+      student_name: 'John Smith',
+      message_text: '<script>alert("xss")</script>',
+      dashboard_url: 'https://example.com/dashboard',
+    });
+    expect(result.html).toContain('&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;');
+    expect(result.html).not.toContain('<script>');
   });
 });

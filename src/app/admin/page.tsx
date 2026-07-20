@@ -24,6 +24,7 @@ function getTabFromLocation() {
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<Tab>('daily');
   const [loading, setLoading] = useState(true);
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
 
   useEffect(() => {
     const supabase = createClient();
@@ -44,6 +45,16 @@ export default function AdminPage() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
+  useEffect(() => {
+    fetch('/api/admin/message-inbox')
+      .then((res) => res.json())
+      .then((inbox) => {
+        const threads = inbox?.threads ?? [];
+        setUnreadMessageCount(threads.filter((t: any) => t.is_unread).length);
+      })
+      .catch(() => {});
+  }, [activeTab]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -54,7 +65,7 @@ export default function AdminPage() {
 
   return (
     <div>
-      <AdminNavigation activeSection={activeTab} onSectionSelect={setActiveTab} />
+      <AdminNavigation activeSection={activeTab} onSectionSelect={setActiveTab} unreadMessageCount={unreadMessageCount} />
 
       {activeTab === 'daily' && <DailyOps onNavigateMessages={() => setActiveTab('messages')} />}
       {activeTab === 'calendar' && <ScheduleCalendar />}

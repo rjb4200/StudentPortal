@@ -38,6 +38,7 @@ export function MessagesPage() {
   const [loading, setLoading] = useState(true);
   const [broadcastTitle, setBroadcastTitle] = useState('');
   const [broadcastBody, setBroadcastBody] = useState('');
+  const [broadcastSendEmail, setBroadcastSendEmail] = useState(false);
   const [broadcasting, setBroadcasting] = useState(false);
   const [showBroadcast, setShowBroadcast] = useState(false);
 
@@ -131,8 +132,15 @@ export function MessagesPage() {
         }))
       );
       await supabase.from('broadcasts').update({ recipient_count: students.length }).eq('id', broadcast.id);
+      if (broadcastSendEmail) {
+        fetch('/api/admin/broadcast-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ studentIds: students.map((s: any) => s.id), title: broadcastTitle.trim(), body: broadcastBody.trim() }),
+        }).catch(() => {});
+      }
     }
-    setBroadcastTitle(''); setBroadcastBody(''); setShowBroadcast(false); setBroadcasting(false);
+    setBroadcastTitle(''); setBroadcastBody(''); setBroadcastSendEmail(false); setShowBroadcast(false); setBroadcasting(false);
     await loadInbox();
   };
 
@@ -250,6 +258,15 @@ export function MessagesPage() {
               <label className="block text-sm font-medium text-gray-700">
                 Message
                 <textarea value={broadcastBody} onChange={(e) => setBroadcastBody(e.target.value)} className="mt-1 min-h-32 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-wfd-crimson" />
+              </label>
+              <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={broadcastSendEmail}
+                  onChange={(e) => setBroadcastSendEmail(e.target.checked)}
+                  className="rounded border-gray-300 text-wfd-crimson focus:ring-wfd-crimson"
+                />
+                Also send by email
               </label>
               <div className="flex gap-2">
                 <Button type="button" onClick={handleSendBroadcast} loading={broadcasting}>

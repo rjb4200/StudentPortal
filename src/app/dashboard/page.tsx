@@ -418,6 +418,11 @@ export default function DashboardPage() {
           >
             <div className="flex items-center justify-between gap-2">
               <span className="font-black">{section.label}</span>
+              {section.key === 'messages' && unreadMessageCount > 0 && (
+                <span className="inline-flex items-center justify-center min-w-[20px] h-5 rounded-full bg-wfd-crimson px-1.5 text-[11px] font-bold text-white">
+                  {unreadMessageCount}
+                </span>
+              )}
               {section.locked && <span className="text-xs font-bold uppercase">Locked</span>}
             </div>
             <p className={`mt-1 text-xs ${activeSection === section.key ? 'text-white/80' : 'text-gray-500'}`}>{section.description}</p>

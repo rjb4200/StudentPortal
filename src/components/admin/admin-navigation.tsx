@@ -24,10 +24,11 @@ const secondaryItems = [
 type AdminNavigationProps = {
   activeSection?: AdminSection;
   onSectionSelect?: (section: AdminSection) => void;
+  unreadMessageCount?: number;
   printHidden?: boolean;
 };
 
-export function AdminNavigation({ activeSection, onSectionSelect, printHidden = false }: AdminNavigationProps) {
+export function AdminNavigation({ activeSection, onSectionSelect, unreadMessageCount, printHidden = false }: AdminNavigationProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -99,6 +100,11 @@ export function AdminNavigation({ activeSection, onSectionSelect, printHidden = 
                 className={className}
               >
                 {item.label}
+                {item.key === 'messages' && unreadMessageCount !== undefined && unreadMessageCount > 0 && (
+                  <span className="ml-1.5 inline-flex items-center justify-center min-w-[20px] h-5 rounded-full bg-wfd-crimson px-1.5 text-[11px] font-bold text-white">
+                    {unreadMessageCount}
+                  </span>
+                )}
               </button>
             );
           }
@@ -106,6 +112,11 @@ export function AdminNavigation({ activeSection, onSectionSelect, printHidden = 
           return (
             <Link key={item.key} href={item.href} className={className}>
               {item.label}
+              {item.key === 'messages' && unreadMessageCount !== undefined && unreadMessageCount > 0 && (
+                <span className="ml-1.5 inline-flex items-center justify-center min-w-[20px] h-5 rounded-full bg-wfd-crimson px-1.5 text-[11px] font-bold text-white">
+                  {unreadMessageCount}
+                </span>
+              )}
             </Link>
           );
         })}
