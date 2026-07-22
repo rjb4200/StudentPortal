@@ -77,10 +77,22 @@ export function CalendarLinkPanel() {
       const res = await fetch(`/api/admin/calendar-feeds?${params}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to load feed');
-      setFeed(data.feed);
-      setFeedUrl(data.feedUrl);
-      if (data.feed?.emailed_at && !recipient) {
-        // Don't populate recipient; leave it to admin to enter
+
+      if (data.feed?.token) {
+        // Feed already exists with a token
+        setFeed(data.feed);
+        setFeedUrl(data.feedUrl);
+      } else {
+        // No token yet — auto-generate on first access
+        const genRes = await fetch('/api/admin/calendar-feeds', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ feed_type: feedType, entity_id: entityId ?? null }),
+        });
+        const genData = await genRes.json();
+        if (!genRes.ok) throw new Error(genData.error || 'Failed to generate feed');
+        setFeed(genData.feed);
+        setFeedUrl(genData.feedUrl);
       }
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Failed to load feed');
