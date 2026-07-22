@@ -201,6 +201,7 @@ export const adminRegistryUpsertBody = z.discriminatedUnion('table', [
       trainingSiteId: uuidSchema,
       instructorId: uuidSchema,
       name: textSchema(160).min(1),
+      level: optionalTextSchema(50),
       classStartDate: dateOnlySchema,
       rideTimeEndDate: dateOnlySchema,
       notes: optionalTextSchema(1000),

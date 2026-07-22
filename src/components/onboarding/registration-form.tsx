@@ -24,6 +24,7 @@ type TrainingClassOption = {
   instructorName: string;
   classStartDate: string;
   rideTimeEndDate: string;
+  level: string | null;
 };
 
 const BUILT_IN_FIELD_KEYS = [

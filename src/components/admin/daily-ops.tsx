@@ -48,11 +48,12 @@ function getStudentClass(student: any) {
 
 function getStudentClassLabel(student: any) {
   const trainingClass = getStudentClass(student);
-  if (!trainingClass) return `${student.school_name ?? ''} — ${student.instructor_name ?? ''}`.trim();
+  if (!trainingClass) return `${student.school_name ?? ''} -- ${student.instructor_name ?? ''}`.trim();
   const site = Array.isArray(trainingClass.training_sites) ? trainingClass.training_sites[0] : trainingClass.training_sites;
   const instructor = Array.isArray(trainingClass.instructors) ? trainingClass.instructors[0] : trainingClass.instructors;
   const instructorName = instructor ? `${instructor.first_name ?? ''} ${instructor.last_name ?? ''}`.trim() : '';
-  return [site?.name, trainingClass.name, instructorName].filter(Boolean).join(' — ');
+  const levelSuffix = trainingClass.level ? ` [${trainingClass.level}]` : '';
+  return [site?.name, trainingClass.name + levelSuffix, instructorName].filter(Boolean).join(' -- ');
 }
 
 export function DailyOps({ onNavigateMessages }: { onNavigateMessages?: () => void }) {
@@ -150,9 +151,9 @@ export function DailyOps({ onNavigateMessages }: { onNavigateMessages?: () => vo
       { data: pendingMousData },
       inboxResponse,
     ] = await Promise.all([
-      supabase.from('students').select('*, training_classes(name, class_start_date, ride_time_end_date, training_sites(name), instructors(first_name, last_name))').eq('status', 'pending').not('onboarding_completed_at', 'is', null).order('created_at', { ascending: false }),
-      supabase.from('students').select('*, training_classes(name, class_start_date, ride_time_end_date, training_sites(name), instructors(first_name, last_name))').order('created_at', { ascending: false }),
-      supabase.from('schedules').select('*, students!inner(full_name, email, training_classes(name, class_start_date, ride_time_end_date))').order('created_at', { ascending: false }),
+      supabase.from('students').select('*, training_classes(name, level, class_start_date, ride_time_end_date, training_sites(name), instructors(first_name, last_name))').eq('status', 'pending').not('onboarding_completed_at', 'is', null).order('created_at', { ascending: false }),
+      supabase.from('students').select('*, training_classes(name, level, class_start_date, ride_time_end_date, training_sites(name), instructors(first_name, last_name))').order('created_at', { ascending: false }),
+      supabase.from('schedules').select('*, students!inner(full_name, email, training_classes(name, level, class_start_date, ride_time_end_date))').order('created_at', { ascending: false }),
       supabase.from('quiz_flags').select('*').eq('acknowledged', false).order('created_at', { ascending: false }),
       supabase.from('training_sites').select('*').eq('status', 'pending').order('created_at', { ascending: false }),
       supabase.from('instructors').select('*, training_sites(name)').eq('status', 'pending').order('created_at', { ascending: false }),

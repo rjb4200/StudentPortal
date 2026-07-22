@@ -76,6 +76,7 @@ export async function POST(request: NextRequest) {
       training_site_id: data.trainingSiteId,
       instructor_id: data.instructorId,
       name: data.name,
+      level: data.level || null,
       class_start_date: data.classStartDate,
       ride_time_end_date: data.rideTimeEndDate,
       notes: data.notes || null,

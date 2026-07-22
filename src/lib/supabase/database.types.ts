@@ -1192,6 +1192,7 @@ export type Database = {
           created_at: string
           id: string
           instructor_id: string
+          level: string | null
           name: string
           notes: string | null
           ride_time_end_date: string
@@ -1206,6 +1207,7 @@ export type Database = {
           created_at?: string
           id?: string
           instructor_id: string
+          level?: string | null
           name: string
           notes?: string | null
           ride_time_end_date: string
@@ -1220,6 +1222,7 @@ export type Database = {
           created_at?: string
           id?: string
           instructor_id?: string
+          level?: string | null
           name?: string
           notes?: string | null
           ride_time_end_date?: string

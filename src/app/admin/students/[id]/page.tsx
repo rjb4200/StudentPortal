@@ -118,6 +118,7 @@ export default async function StudentProfilePage({
 
             <FactGrid className="lg:grid-cols-4 text-sm">
               <FactItem label="Class">{trainingClass ? trainingClass.name : '—'}</FactItem>
+              {trainingClass?.level && <FactItem label="Level">{trainingClass.level}</FactItem>}
               <FactItem label="Instructor">{instructor ? `${instructor.first_name} ${instructor.last_name}` : (student.instructor_name || '—')}</FactItem>
               <FactItem label="TEI">{trainingSite ? trainingSite.name : '—'}</FactItem>
               <div className="bg-gray-50/50 rounded-lg p-3">
@@ -281,7 +282,7 @@ export default async function StudentProfilePage({
           {/* === Training Class === */}
           <Disclosure
             title="Training Class"
-            summary={trainingClass ? `${trainingClass.name} — ${trainingClass.class_start_date ? 'Starts ' + new Date(trainingClass.class_start_date).toLocaleDateString() : 'No start date'}` : 'Not assigned'}
+            summary={trainingClass ? `${trainingClass.name}${trainingClass.level ? ` [${trainingClass.level}]` : ''} — ${trainingClass.class_start_date ? 'Starts ' + new Date(trainingClass.class_start_date).toLocaleDateString() : 'No start date'}` : 'Not assigned'}
             className={`border-l-4 ${trainingClass ? (trainingClass.status === 'active' ? 'border-green-500' : 'border-amber-400') : 'border-red-400'}`}
           >
             {trainingClass ? (
@@ -291,6 +292,10 @@ export default async function StudentProfilePage({
                     <span className="text-gray-500 text-xs uppercase tracking-wide font-semibold">Name</span>
                     <p className="font-semibold text-wfd-charcoal text-base">{trainingClass.name}</p>
                   </div>
+                  {trainingClass.level && <div>
+                    <span className="text-gray-500 text-xs uppercase tracking-wide font-semibold">Level</span>
+                    <p className="font-semibold text-wfd-charcoal">{trainingClass.level}</p>
+                  </div>}
                   <div>
                     <span className="text-gray-500 text-xs uppercase tracking-wide font-semibold">Status</span>
                     <Badge variant={trainingClass.status === 'active' ? 'green' : 'gold'}>{trainingClass.status || '—'}</Badge>
