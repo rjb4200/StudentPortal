@@ -7,12 +7,13 @@ Define reliable authenticated student messaging, admin alerts, and conversation 
 ## Requirements
 
 ### Requirement: Reliable student message submission
-The system SHALL accept a student message through an authenticated server endpoint that resolves the enrollment from the authenticated user, validates non-empty bounded content, persists the message, and returns the persisted message to the dashboard.
+The system SHALL accept a student message through an authenticated server endpoint that resolves the enrollment from the authenticated user, validates non-empty bounded content, persists the message, and returns the persisted message to the dashboard. When the admin is subscribed to real-time inbox updates, the system SHALL deliver the new message to the admin inbox via Supabase Realtime in addition to email notification.
 
 #### Scenario: Pending student sends a message
 - **WHEN** a non-blacklisted pending student submits a valid message from the dashboard
 - **THEN** the message is stored with the student's enrollment ID and `sender = 'student'`
 - **AND** the dashboard shows the message and a successful send state
+- **AND** subscribed admin clients receive the message in their inbox in real-time
 
 #### Scenario: Message submission fails
 - **WHEN** a student message cannot be validated or persisted
@@ -24,20 +25,36 @@ The system SHALL accept a student message through an authenticated server endpoi
 - **THEN** the system ignores the supplied identifier and uses the enrollment resolved from the authenticated user
 
 ### Requirement: Admin email notifications for student messages
-The system SHALL send an email notification for each persisted student message to every active admin account with student-message notifications enabled. Email delivery failure SHALL NOT undo the persisted message.
+The system SHALL send an email notification for each persisted student message to every active admin account with student-message notifications enabled. Email delivery failure SHALL NOT undo the persisted message. Real-time delivery to subscribed admin clients SHALL occur independently of email delivery.
 
 #### Scenario: Opted-in admins receive a new message alert
 - **WHEN** a student message is persisted and active admins have student-message notifications enabled
 - **THEN** each opted-in admin receives an email containing the student context, message excerpt, and conversation link
+- **AND** subscribed admin clients receive the message in their inbox in real-time
 
 #### Scenario: Admin opts out of message alerts
 - **WHEN** an admin disables student-message notifications in Account Management
 - **THEN** that admin does not receive future student-message email alerts
+- **AND** the admin still receives real-time inbox updates if subscribed
 
 #### Scenario: Email provider fails
 - **WHEN** the message notification email cannot be delivered
 - **THEN** the student message remains stored and visible in the admin conversation
+- **AND** real-time delivery to subscribed clients is unaffected
 - **AND** the delivery failure is logged server-side
+
+### Requirement: Student email notification on admin reply
+The system SHALL send a best-effort email notification to the student when an admin replies to their message thread. The email SHALL include the admin's reply text, student context, and a link to the dashboard Messages tab using the WFD-branded HTML template. Email delivery failure SHALL NOT undo the persisted message or prevent the reply from being returned to the client.
+
+#### Scenario: Student receives reply notification
+- **WHEN** an admin replies to a student conversation
+- **THEN** the student receives an email containing the admin's message excerpt and a link to the dashboard Messages section
+- **AND** the reply message is available in the conversation regardless of email delivery
+
+#### Scenario: Student email address is missing
+- **WHEN** an admin replies to a student with no email address on file
+- **THEN** the system skips email delivery without error
+- **AND** the reply is persisted and returned normally
 
 ### Requirement: Conversation reply deep link
 Student-message notification emails SHALL include an authenticated link that opens Daily Operations with the sending student's conversation selected.

@@ -21,7 +21,7 @@ The student dashboard SHALL present a status-first command page that makes the s
 - **AND** the primary action allows the student to view shift details
 
 ### Requirement: Dashboard summary cards
-The student dashboard SHALL display summary cards for account status, next scheduled shift, pending requests, and unread messages. The messages summary card SHALL display the count of unread admin messages rather than the total message count. Summary cards SHALL use concise labels, clear state indicators, and direct actions where applicable.
+The student dashboard SHALL display summary cards for account status, next scheduled shift, pending requests, and unread messages. The messages summary card SHALL display the count of unread admin messages rather than the total message count. The unread count SHALL update in real-time when new admin messages arrive and the student is not actively viewing the Messages section. Summary cards SHALL use concise labels, clear state indicators, and direct actions where applicable.
 
 #### Scenario: Summary cards show key student state
 - **WHEN** a student opens the dashboard
@@ -31,6 +31,7 @@ The student dashboard SHALL display summary cards for account status, next sched
 #### Scenario: Unread messages shown on summary card
 - **WHEN** a student has one or more unread admin messages
 - **THEN** the messages summary card displays the unread count with a label indicating messages from staff
+- **AND** the count updates in real-time without page refresh
 
 #### Scenario: No unread messages
 - **WHEN** a student has read all admin messages in their thread
@@ -39,6 +40,29 @@ The student dashboard SHALL display summary cards for account status, next sched
 #### Scenario: Empty states include direct actions
 - **WHEN** a summary card has no data, such as no next shift or no messages
 - **THEN** the card displays a concise empty state with a relevant action or explanation
+
+### Requirement: Unread badge on Messages section navigation
+The student dashboard section navigation SHALL display a crimson unread count badge on the Messages button when the student has one or more unread admin messages. The badge SHALL use the same unread count already computed for the messages summary card.
+
+#### Scenario: Messages button shows unread badge
+- **WHEN** the student has one or more unread admin messages
+- **THEN** the Messages section navigation button displays a crimson badge with the unread count
+- **AND** the badge is visible without selecting the Messages section
+
+#### Scenario: Badge disappears when all messages are read
+- **WHEN** the student opens the Messages section and all messages are marked as read
+- **THEN** the badge disappears from the Messages navigation button
+
+### Requirement: Live unread count on section navigation
+The unread count badge on the Messages section navigation button SHALL update in real-time when new admin messages arrive while the student is not viewing the Messages section.
+
+#### Scenario: Badge increments on new admin message
+- **WHEN** a student is viewing a non-Messages dashboard section and an admin sends a reply or broadcast
+- **THEN** the unread badge on the Messages nav button increments in real-time
+
+#### Scenario: Badge decrements when student opens Messages
+- **WHEN** a student navigates to the Messages section
+- **THEN** the system marks messages as read and the badge disappears in real-time
 
 ### Requirement: Clear dashboard section navigation
 The dashboard SHALL replace opaque local feature tabs with clearer section navigation organized around student jobs-to-be-done: Schedule, Resources, Messages, and Calendar Feed. Resources, Messages, and Calendar Feed SHALL be available to pending and certified students; Schedule SHALL remain locked until certification.

@@ -5,7 +5,7 @@ Track when a student last read admin messages and display unread count on the da
 ## Requirements
 
 ### Requirement: Student per-thread read cursor
-The system SHALL track when a student last read admin messages in their conversation thread using a single read-cursor timestamp stored in `student_message_read_state`. The cursor SHALL be updatable only by the authenticated student who owns the row.
+The system SHALL track when a student last read admin messages in their conversation thread using a single read-cursor timestamp stored in `student_message_read_state`. The cursor SHALL be updatable only by the authenticated student who owns the row. The unread count derived from this cursor SHALL update in real-time on the dashboard when new admin messages arrive.
 
 #### Scenario: First-time read tracking
 - **WHEN** a student opens their messages tab for the first time and one or more admin messages exist
@@ -22,8 +22,15 @@ The system SHALL track when a student last read admin messages in their conversa
 - **THEN** the system does not create or update a read-cursor row
 - **AND** the unread count remains zero
 
+### Requirement: Unread count available for navigation badge
+The student message read cursor tracked in `student_message_read_state` SHALL be used to compute the unread admin message count, which MAY be surfaced on navigation elements such as the dashboard section navigation button badge in addition to the existing summary card.
+
+#### Scenario: Same unread count used across dashboard
+- **WHEN** the student dashboard computes the unread admin message count
+- **THEN** the same count value is available to both the messages summary card and the Messages section navigation button badge
+
 ### Requirement: Dashboard unread message count
-The student dashboard message summary card SHALL display the count of unread admin messages instead of the total message count. An unread admin message is one where `sender = 'admin'` and `created_at` is greater than the student's `last_read_admin_message_at` cursor (or all admin messages if no cursor exists).
+The student dashboard message summary card SHALL display the count of unread admin messages instead of the total message count. An unread admin message is one where `sender = 'admin'` and `created_at` is greater than the student's `last_read_admin_message_at` cursor (or all admin messages if no cursor exists). The unread count SHALL update in real-time when new admin messages arrive and the student is not actively viewing the Messages section.
 
 #### Scenario: Unread admin messages are visually distinguished
 - **WHEN** a student views their messages and an admin message is newer than their read cursor
@@ -33,6 +40,7 @@ The student dashboard message summary card SHALL display the count of unread adm
 #### Scenario: Unread messages shown on dashboard
 - **WHEN** a student opens their dashboard and one or more admin messages are newer than their read cursor
 - **THEN** the message summary card displays the unread count with a label indicating unread messages from staff
+- **AND** the unread count updates in real-time when new admin messages arrive
 
 #### Scenario: No unread messages
 - **WHEN** a student opens their dashboard and no admin messages are newer than their read cursor
