@@ -369,3 +369,89 @@ export function buildMouCompletedAdminEmail(params: {
     html: buildEmailHtml('MOU Completed', bodyHtml),
   };
 }
+
+export function buildStudentRejectionEmail(params: {
+  full_name: string;
+  reason: string;
+  site_url: string;
+}): EmailContent {
+  const { full_name, reason, site_url } = params;
+  const bodyHtml = `<p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:16px;line-height:1.6;text-align:center;">Hi ${escHtml(full_name)}, your application to the WFD EMS Student Portal has been <strong>declined</strong>.</p>
+    <div style="margin:20px auto;padding:16px 18px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;max-width:440px;">
+      <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Reason:</strong> ${escHtml(reason)}</p>
+    </div>
+    <p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:14px;line-height:1.6;text-align:center;">You may reapply if your circumstances change. Contact your instructor or training site coordinator for more information.</p>
+    <div style="margin:30px 0;text-align:center;">
+      <a href="${escHtml(site_url)}" style="display:inline-block;background:#A40104;color:#ffffff;text-decoration:none;font-size:16px;font-weight:800;padding:15px 30px;border-radius:10px;box-shadow:0 4px 12px rgba(164,1,4,0.25);">Reapply</a>
+    </div>`;
+  return {
+    subject: 'WFD EMS Student Portal — Application Declined',
+    html: buildEmailHtml('Application Declined', bodyHtml),
+  };
+}
+
+export function buildInstructorRejectionEmail(params: {
+  instructor_name: string;
+  student_name: string;
+  class_name?: string | null;
+  reason: string;
+}): EmailContent {
+  const { instructor_name, student_name, class_name, reason } = params;
+  const classLine = class_name
+    ? `<p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Class:</strong> ${escHtml(class_name)}</p>`
+    : '';
+  const bodyHtml = `<p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:16px;line-height:1.6;text-align:center;">Hi ${escHtml(instructor_name)}, a student application has been <strong>declined</strong>.</p>
+    <div style="margin:20px auto;padding:16px 18px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;max-width:440px;">
+      <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Student:</strong> ${escHtml(student_name)}</p>
+      ${classLine}
+      <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Reason:</strong> ${escHtml(reason)}</p>
+    </div>
+    <p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:14px;line-height:1.6;text-align:center;">The student may reapply if circumstances change.</p>`;
+  return {
+    subject: 'Student Application Declined — WFD EMS Student Portal',
+    html: buildEmailHtml('Student Application Declined', bodyHtml),
+  };
+}
+
+export function buildAdminRejectionNotification(params: {
+  student_name: string;
+  student_email: string;
+  student_phone?: string | null;
+  school_name: string;
+  class_name?: string | null;
+  class_start_date?: string | null;
+  ride_time_end_date?: string | null;
+  site_name?: string | null;
+  instructor_name?: string | null;
+  instructor_contact?: string | null;
+  reason: string;
+  rejected_by: string;
+}): EmailContent {
+  const { student_name, student_email, student_phone, school_name, class_name, class_start_date, ride_time_end_date, site_name, instructor_name, instructor_contact, reason, rejected_by } = params;
+  const classBlock = class_name
+    ? `<div style="margin:16px 0;padding:12px 14px;background:#fff;border-radius:6px;border:1px solid #e5e7eb;">
+        <p style="margin:0;color:#4b5563;font-size:13px;line-height:1.8;"><strong>Class:</strong> ${escHtml(class_name)}</p>
+        <p style="margin:0;color:#4b5563;font-size:13px;line-height:1.8;"><strong>Site:</strong> ${escHtml(site_name ?? school_name)}</p>
+        <p style="margin:0;color:#4b5563;font-size:13px;line-height:1.8;"><strong>Window:</strong> ${escHtml(class_start_date ?? 'N/A')} to ${escHtml(ride_time_end_date ?? 'N/A')}</p>
+        <p style="margin:0;color:#4b5563;font-size:13px;line-height:1.8;"><strong>Instructor:</strong> ${escHtml(instructor_name ?? 'N/A')}</p>
+        <p style="margin:0;color:#4b5563;font-size:13px;line-height:1.8;"><strong>Instructor Contact:</strong> ${escHtml(instructor_contact ?? 'N/A')}</p>
+      </div>`
+    : `<div style="margin:16px 0;padding:12px 14px;background:#fff;border-radius:6px;border:1px solid #e5e7eb;">
+        <p style="margin:0;color:#4b5563;font-size:13px;line-height:1.8;"><strong>School/Site:</strong> ${escHtml(school_name)}</p>
+        <p style="margin:0;color:#4b5563;font-size:13px;line-height:1.8;"><strong>Instructor:</strong> ${escHtml(instructor_name ?? 'N/A')}</p>
+        <p style="margin:0;color:#4b5563;font-size:13px;line-height:1.8;"><strong>Instructor Contact:</strong> ${escHtml(instructor_contact ?? 'N/A')}</p>
+      </div>`;
+  const bodyHtml = `<p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:16px;line-height:1.6;text-align:center;">A student application has been <strong>rejected</strong>.</p>
+    <div style="margin:20px auto;padding:16px 18px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;max-width:440px;">
+      <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Student:</strong> ${escHtml(student_name)}</p>
+      <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Email:</strong> ${escHtml(student_email)}</p>
+      ${student_phone ? `<p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Phone:</strong> ${escHtml(student_phone)}</p>` : ''}
+      ${classBlock}
+      <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Reason:</strong> ${escHtml(reason)}</p>
+      <p style="margin:0;color:#9ca3af;font-size:13px;line-height:1.8;margin-top:8px;">Rejected by ${escHtml(rejected_by)}</p>
+    </div>`;
+  return {
+    subject: 'Student Rejected — WFD EMS',
+    html: buildEmailHtml('Student Rejected', bodyHtml),
+  };
+}

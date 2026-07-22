@@ -48,7 +48,8 @@ export async function GET(request: NextRequest) {
       .select('id')
       .lt('access_until', new Date().toISOString())
       .neq('status', 'expired')
-      .neq('status', 'archived');
+      .neq('status', 'archived')
+      .neq('status', 'rejected');
 
     if (expiredError) throw expiredError;
 

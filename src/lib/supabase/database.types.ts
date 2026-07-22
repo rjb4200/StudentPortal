@@ -1070,6 +1070,9 @@ export type Database = {
           password_changed: boolean
           phone: string | null
           previous_student_id: string | null
+          rejected_at: string | null
+          rejected_by: string | null
+          rejection_reason: string | null
           school_name: string
           signature_ip: string | null
           signature_timestamp: string | null
@@ -1095,6 +1098,9 @@ export type Database = {
           password_changed?: boolean
           phone?: string | null
           previous_student_id?: string | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
           school_name: string
           signature_ip?: string | null
           signature_timestamp?: string | null
@@ -1120,6 +1126,9 @@ export type Database = {
           password_changed?: boolean
           phone?: string | null
           previous_student_id?: string | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
           school_name?: string
           signature_ip?: string | null
           signature_timestamp?: string | null
@@ -1385,7 +1394,7 @@ export type Database = {
         | "Station 1 - Downtown HQ"
         | "Station 2 - West Side"
         | "Station 3 - Industrial"
-      student_status: "pending" | "certified" | "expired" | "archived"
+      student_status: "pending" | "certified" | "expired" | "archived" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1529,7 +1538,7 @@ export const Constants = {
         "Station 2 - West Side",
         "Station 3 - Industrial",
       ],
-      student_status: ["pending", "certified", "expired", "archived"],
+      student_status: ["pending", "certified", "expired", "archived", "rejected"],
     },
   },
 } as const

@@ -11,6 +11,7 @@ import { to24Hour } from '@/lib/time-formats';
 import { getShiftRotation } from '@/lib/shift-rotation';
 import { ShiftManagement } from '@/components/admin/shift-management';
 import { Alert, ConfirmDialog, DataTable, DataTableCell, DataTableHead, DataTableRow, EmptyState, SectionCard } from '@/components/ui';
+import { Modal } from '@/components/ui/modal';
 import { orderMessageThreads, type MessageThread } from '@/lib/message-inbox';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -67,6 +68,10 @@ export function DailyOps({ onNavigateMessages }: { onNavigateMessages?: () => vo
   const [replyText, setReplyText] = useState('');
   const [approving, setApproving] = useState<string | null>(null);
   const [approvalError, setApprovalError] = useState<string | null>(null);
+  const [rejecting, setRejecting] = useState<string | null>(null);
+  const [rejectionError, setRejectionError] = useState<string | null>(null);
+  const [studentToReject, setStudentToReject] = useState<any | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
   const [broadcastTitle, setBroadcastTitle] = useState('');
   const [broadcastBody, setBroadcastBody] = useState('');
   const [broadcastSendEmail, setBroadcastSendEmail] = useState(false);
@@ -225,6 +230,51 @@ export function DailyOps({ onNavigateMessages }: { onNavigateMessages?: () => vo
       setApprovalError(e instanceof Error ? e.message : 'Approval failed. Please try again.');
     } finally {
       setApproving(null);
+    }
+  };
+
+  const handleRejectClick = (student: any) => {
+    setStudentToReject(student);
+    setRejectionReason('');
+    setRejectionError(null);
+  };
+
+  const handleRejectConfirm = async () => {
+    if (!studentToReject || !rejectionReason.trim()) return;
+    setRejecting(studentToReject.id);
+    setRejectionError(null);
+    try {
+      const response = await fetch('/api/admin/reject-student', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studentId: studentToReject.id, reason: rejectionReason.trim() }),
+      });
+
+      let result: any = null;
+      try {
+        result = await response.json();
+      } catch {}
+
+      if (!response.ok || result?.success !== true) {
+        const serverMessage = typeof result?.error === 'string' && result.error.trim()
+          ? result.error
+          : typeof result?.message === 'string' && result.message.trim()
+            ? result.message
+            : null;
+        throw new Error(serverMessage ?? (response.ok
+          ? 'Rejection failed. The server did not confirm success.'
+          : `Rejection failed with status ${response.status}.`));
+      }
+
+      setStudentToReject(null);
+      setRejectionReason('');
+      await loadAll();
+      setRejectionError(null);
+    } catch (e) {
+      console.error('Rejection failed:', e);
+      setRejectionError(e instanceof Error ? e.message : 'Rejection failed. Please try again.');
+    } finally {
+      setRejecting(null);
     }
   };
 
@@ -451,6 +501,9 @@ export function DailyOps({ onNavigateMessages }: { onNavigateMessages?: () => vo
         {approvalError && (
           <Alert tone="danger">Approval failed: {approvalError}</Alert>
         )}
+        {rejectionError && (
+          <Alert tone="danger">Rejection failed: {rejectionError}</Alert>
+        )}
         {deleteError && (
           <Alert tone="danger">Deletion failed: {deleteError}</Alert>
         )}
@@ -467,14 +520,22 @@ export function DailyOps({ onNavigateMessages }: { onNavigateMessages?: () => vo
                     <p className="text-xs text-gray-500">{getStudentClassLabel(s)}</p>
                   </div>
                 </div>
-                <Button
-                  size="sm"
-                  onClick={() => handleApprove(s)}
-                  loading={approving === s.id}
-                  className="ml-3 flex-shrink-0"
-                >
-                  Approve
-                </Button>
+                <div className="flex flex-wrap gap-2 sm:ml-3 sm:flex-shrink-0">
+                  <Button
+                    size="sm"
+                    onClick={() => handleApprove(s)}
+                    loading={approving === s.id}
+                  >
+                    Approve
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="danger"
+                    onClick={() => handleRejectClick(s)}
+                  >
+                    Reject
+                  </Button>
+                </div>
               </div>
             ))}
             {registryItems.map((item) => {
@@ -738,6 +799,44 @@ export function DailyOps({ onNavigateMessages }: { onNavigateMessages?: () => vo
             </div>
           </div>
         </div>
+      )}
+      {studentToReject && (
+        <Modal
+          open
+          onClose={() => { if (!rejecting) { setStudentToReject(null); setRejectionReason(''); } }}
+          title={`Reject ${studentToReject.full_name}?`}
+        >
+          <p className="text-sm text-gray-600 mb-4">
+            This will permanently decline the application and notify the student and instructor. The student may reapply later.
+          </p>
+          <label className="block text-sm font-semibold text-wfd-charcoal mb-1">
+            Reason <span className="text-wfd-crimson">*</span>
+          </label>
+          <textarea
+            value={rejectionReason}
+            onChange={(e) => setRejectionReason(e.target.value)}
+            placeholder="Enter the reason for rejection..."
+            className="w-full min-h-24 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-wfd-crimson resize-y"
+            disabled={!!rejecting}
+          />
+          <div className="mt-6 flex justify-end gap-3">
+            <Button
+              variant="secondary"
+              onClick={() => { setStudentToReject(null); setRejectionReason(''); }}
+              disabled={!!rejecting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              onClick={handleRejectConfirm}
+              loading={rejecting === studentToReject.id}
+              disabled={!rejectionReason.trim() || !!rejecting}
+            >
+              Reject Student
+            </Button>
+          </div>
+        </Modal>
       )}
       {confirmationAction && (
         <ConfirmDialog

@@ -67,6 +67,10 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/login?reason=archived', request.url));
     }
 
+    if (student.status === 'rejected') {
+      return NextResponse.redirect(new URL('/login?reason=rejected', request.url));
+    }
+
     if (student.status === 'pending' && !student.onboarding_completed_at) {
       return NextResponse.redirect(new URL('/login?reason=not-registered', request.url));
     }
