@@ -455,3 +455,20 @@ export function buildAdminRejectionNotification(params: {
     html: buildEmailHtml('Student Rejected', bodyHtml),
   };
 }
+
+export function buildCalendarLinkEmail(params: {
+  feedUrl: string;
+}): EmailContent {
+  const googleCalendarHelpUrl = 'https://support.google.com/calendar/answer/37118?hl=en&co=GENIE.Platform%3DDesktop';
+  const bodyHtml = `<p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:16px;line-height:1.6;text-align:center;">A WFD EMS calendar subscription has been shared with you. Add the link below to your calendar application to automatically see approved shift dates.</p>
+    <div style="margin:20px auto;padding:16px 18px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;max-width:440px;">
+      <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Calendar Feed URL:</strong></p>
+      <p style="margin:8px 0 0 0;color:#1c1c1e;font-size:13px;line-height:1.5;word-break:break-all;font-family:monospace;">${escHtml(params.feedUrl)}</p>
+    </div>
+    <p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:14px;line-height:1.6;text-align:center;">Copy the URL above and add it to Google Calendar, Apple Calendar, or Outlook as a subscription. Your calendar will automatically update when shifts are approved or changed.</p>
+    <p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:14px;line-height:1.6;text-align:center;"><a href="${escHtml(googleCalendarHelpUrl)}" style="color:#A40104;font-weight:700;">Google Calendar: How to subscribe to a calendar</a></p>`;
+  return {
+    subject: 'WFD EMS Calendar Subscription',
+    html: buildEmailHtml('Calendar Subscription', bodyHtml),
+  };
+}

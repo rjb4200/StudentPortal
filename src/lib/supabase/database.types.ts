@@ -220,6 +220,36 @@ export type Database = {
         }
         Relationships: []
       }
+      calendar_feeds: {
+        Row: {
+          created_at: string
+          emailed_at: string | null
+          entity_id: string | null
+          feed_type: Database["public"]["Enums"]["calendar_feed_type"]
+          generated_at: string | null
+          id: string
+          token: string | null
+        }
+        Insert: {
+          created_at?: string
+          emailed_at?: string | null
+          entity_id?: string | null
+          feed_type: Database["public"]["Enums"]["calendar_feed_type"]
+          generated_at?: string | null
+          id?: string
+          token?: string | null
+        }
+        Update: {
+          created_at?: string
+          emailed_at?: string | null
+          entity_id?: string | null
+          feed_type?: Database["public"]["Enums"]["calendar_feed_type"]
+          generated_at?: string | null
+          id?: string
+          token?: string | null
+        }
+        Relationships: []
+      }
       broadcasts: {
         Row: {
           body: string
@@ -1380,6 +1410,7 @@ export type Database = {
           }
     }
     Enums: {
+      calendar_feed_type: "student" | "training_site" | "aggregate"
       message_sender: "student" | "admin"
       note_priority: "normal" | "high_accessibility"
       registry_status:
@@ -1522,6 +1553,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      calendar_feed_type: ["student", "training_site", "aggregate"],
       message_sender: ["student", "admin"],
       note_priority: ["normal", "high_accessibility"],
       registry_status: [

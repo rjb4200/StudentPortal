@@ -86,6 +86,17 @@ export const scheduleBlockDeleteBody = z.object({
   date: dateOnlySchema,
 });
 
+export const calendarFeedBody = z.object({
+  feed_type: z.enum(['student', 'training_site', 'aggregate']),
+  entity_id: uuidSchema.nullable().optional(),
+});
+
+export const calendarFeedEmailBody = z.object({
+  feed_type: z.enum(['student', 'training_site', 'aggregate']),
+  entity_id: uuidSchema.nullable().optional(),
+  recipient: emailSchema,
+});
+
 export const messageBody = z.object({
   message: textSchema(2000).min(1, 'Message cannot be empty'),
 });
