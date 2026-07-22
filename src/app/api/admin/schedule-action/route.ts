@@ -6,6 +6,7 @@ import { publicEnv } from '@/lib/env';
 import { sendEmail } from '@/lib/email';
 import { buildShiftApprovedEmail, buildShiftCancelledByAdminEmail, buildShiftRejectedEmail } from '@/lib/email-templates';
 import { scheduleActionBody } from '@/lib/validation';
+import { resolveCalendarFeedUrl } from '@/lib/calendar-feed-server';
 
 export async function POST(request: NextRequest) {
   const cookieHeader = request.headers.get('cookie') || '';
@@ -100,7 +101,9 @@ export async function POST(request: NextRequest) {
         ? `${schedule.start_time} – ${schedule.end_time}`
         : schedule.shift_type;
 
-      const templateParams = { full_name: student.full_name, date_str: dateStr, time_display: timeDisplay };
+      const feedUrl = await resolveCalendarFeedUrl('student', schedule.student_id).catch(() => null);
+
+      const templateParams = { full_name: student.full_name, date_str: dateStr, time_display: timeDisplay, feedUrl };
       let result;
 
       if (resolvedAction === 'approved') {

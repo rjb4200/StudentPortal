@@ -5,6 +5,7 @@ import { publicEnv } from '@/lib/env';
 import { sendEmail } from '@/lib/email';
 import { buildShiftCancelledByStudentEmail, buildShiftCancelledByStudentAdminEmail } from '@/lib/email-templates';
 import { scheduleCancelBody } from '@/lib/validation';
+import { resolveCalendarFeedUrl } from '@/lib/calendar-feed-server';
 
 export async function POST(request: NextRequest) {
   const cookieHeader = request.headers.get('cookie') || '';
@@ -78,6 +79,8 @@ export async function POST(request: NextRequest) {
     ? `${schedule.start_time} – ${schedule.end_time}`
     : schedule.shift_type;
 
+  const feedUrl = await resolveCalendarFeedUrl('student', student.id).catch(() => null);
+
   {
     const { subject, html } = buildShiftCancelledByStudentEmail({
       full_name: student.full_name,
@@ -85,6 +88,7 @@ export async function POST(request: NextRequest) {
       time_display: timeDisplay,
       note: note || null,
       login_url: loginUrl,
+      feedUrl,
     });
     try {
       await sendEmail({

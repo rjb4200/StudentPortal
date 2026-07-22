@@ -94,7 +94,14 @@ export function buildInstructorClassApprovedEmail(params: {
   ride_time_end_date: string;
   site_name?: string | null;
   registration_url?: string | null;
+  feedUrl?: string | null;
 }): EmailContent {
+  const teiLinkSection = params.feedUrl
+    ? `<div style="margin:20px auto 0 auto;max-width:480px;text-align:center;">
+        <p style="margin:0;color:#4b5563;font-size:13px;line-height:1.5;">Subscribe to your TEI calendar feed to see all approved shifts for this training site:</p>
+        <a href="${escHtml(params.feedUrl)}" style="display:inline-block;margin-top:8px;color:#A40104;font-size:13px;font-weight:700;word-break:break-all;">${escHtml(params.feedUrl)}</a>
+      </div>`
+    : '';
   const registrationLink = params.registration_url
     ? `<div style="margin:28px 0;text-align:center;">
         <a href="${escHtml(params.registration_url)}" style="display:inline-block;background:#A40104;color:#ffffff;text-decoration:none;font-size:16px;font-weight:800;padding:15px 30px;border-radius:10px;box-shadow:0 4px 12px rgba(164,1,4,0.25);">Student Registration Link</a>
@@ -109,6 +116,7 @@ export function buildInstructorClassApprovedEmail(params: {
         <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Ride-Time End:</strong> ${escHtml(params.ride_time_end_date)}</p>
       </div>
       ${registrationLink}
+      ${teiLinkSection}
       <p style="margin:0 auto 20px auto;max-width:500px;color:#4b5563;font-size:14px;line-height:1.6;text-align:center;">Students can register once the class start date has been reached and may schedule ride time through the approved ride-time end date.</p>`;
   return {
     subject: 'Class Approved — WFD EMS Student Portal',
@@ -122,15 +130,23 @@ export function buildShiftCancelledByStudentEmail(params: {
   time_display: string;
   note: string | null;
   login_url: string;
+  feedUrl?: string | null;
 }): EmailContent {
-  const { full_name, date_str, time_display, note, login_url } = params;
+  const { full_name, date_str, time_display, note, login_url, feedUrl } = params;
+  const feedLinkSection = feedUrl
+    ? `<div style="margin:20px auto 0 auto;max-width:480px;text-align:center;">
+        <p style="margin:0;color:#4b5563;font-size:13px;line-height:1.5;">Subscribe to your calendar feed to see your updated schedule:</p>
+        <a href="${escHtml(feedUrl)}" style="display:inline-block;margin-top:8px;color:#A40104;font-size:13px;font-weight:700;word-break:break-all;">${escHtml(feedUrl)}</a>
+      </div>`
+    : '';
   const bodyHtml = `<p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:16px;line-height:1.6;text-align:center;">Hi ${escHtml(full_name)}, your shift has been <strong>cancelled</strong>.</p>
       <div style="margin:20px auto;padding:16px 18px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;max-width:400px;">
         <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Date:</strong> ${escHtml(date_str)}</p>
         <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Time:</strong> ${escHtml(time_display)}</p>
         <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Status:</strong> Student-initiated</p>
         ${note ? `<p style="margin:10px 0 0 0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Note:</strong> ${escHtml(note)}</p>` : ''}
-      </div>`;
+      </div>
+      ${feedLinkSection}`;
   return {
     subject: 'Shift Cancelled — WFD EMS Student Portal',
     html: buildEmailHtml('Shift Cancelled', bodyHtml, login_url),
@@ -181,13 +197,21 @@ export function buildShiftApprovedEmail(params: {
   date_str: string;
   time_display: string;
   login_url: string;
+  feedUrl?: string | null;
 }): EmailContent {
-  const { full_name, date_str, time_display, login_url } = params;
+  const { full_name, date_str, time_display, login_url, feedUrl } = params;
+  const feedLinkSection = feedUrl
+    ? `<div style="margin:20px auto 0 auto;max-width:480px;text-align:center;">
+        <p style="margin:0;color:#4b5563;font-size:13px;line-height:1.5;">Subscribe to your personal calendar feed to automatically see approved shifts:</p>
+        <a href="${escHtml(feedUrl)}" style="display:inline-block;margin-top:8px;color:#A40104;font-size:13px;font-weight:700;word-break:break-all;">${escHtml(feedUrl)}</a>
+      </div>`
+    : '';
   const bodyHtml = `<p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:16px;line-height:1.6;text-align:center;">Hi ${escHtml(full_name)}, your shift request has been <strong>approved</strong>.</p>
            <div style="margin:20px auto;padding:16px 18px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;max-width:400px;">
              <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Date:</strong> ${escHtml(date_str)}</p>
              <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Time:</strong> ${escHtml(time_display)}</p>
-           </div>`;
+           </div>
+           ${feedLinkSection}`;
   return {
     subject: 'Shift Approved — WFD EMS Student Portal',
     html: buildEmailHtml('Shift Approved', bodyHtml, login_url),
@@ -202,7 +226,14 @@ export function buildShiftReminderEmail(params: {
   chief_name: string;
   dashboard_url: string;
   station_map_url?: string | null;
+  feedUrl?: string | null;
 }): EmailContent {
+  const feedLinkSection = params.feedUrl
+    ? `<div style="margin:20px auto 0 auto;max-width:480px;text-align:center;">
+        <p style="margin:0;color:#4b5563;font-size:13px;line-height:1.5;">Add your personal calendar feed to see all upcoming shifts:</p>
+        <a href="${escHtml(params.feedUrl)}" style="display:inline-block;margin-top:8px;color:#A40104;font-size:13px;font-weight:700;word-break:break-all;">${escHtml(params.feedUrl)}</a>
+      </div>`
+    : '';
   const stationMapLink = params.station_map_url
     ? `<p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:14px;line-height:1.6;text-align:center;"><a href="${escHtml(params.station_map_url)}" style="color:#A40104;font-weight:700;">View the Station 1 map</a></p>`
     : '';
@@ -214,7 +245,8 @@ export function buildShiftReminderEmail(params: {
       <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>On-Duty Brigade Chief:</strong> ${escHtml(params.chief_name)}</p>
     </div>
     <p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:16px;line-height:1.6;text-align:center;">Report to Station 1 at 0700 for assignment by the on-duty Brigade Chief.</p>
-    ${stationMapLink}`;
+    ${stationMapLink}
+    ${feedLinkSection}`;
   return {
     subject: 'Shift Reminder — WFD EMS Student Portal',
     html: buildEmailHtml('Ride Reminder', bodyHtml, params.dashboard_url),
@@ -227,14 +259,22 @@ export function buildShiftCancelledByAdminEmail(params: {
   time_display: string;
   note: string | null;
   login_url: string;
+  feedUrl?: string | null;
 }): EmailContent {
-  const { full_name, date_str, time_display, note, login_url } = params;
+  const { full_name, date_str, time_display, note, login_url, feedUrl } = params;
+  const feedLinkSection = feedUrl
+    ? `<div style="margin:20px auto 0 auto;max-width:480px;text-align:center;">
+        <p style="margin:0;color:#4b5563;font-size:13px;line-height:1.5;">Subscribe to your calendar feed to see your updated schedule:</p>
+        <a href="${escHtml(feedUrl)}" style="display:inline-block;margin-top:8px;color:#A40104;font-size:13px;font-weight:700;word-break:break-all;">${escHtml(feedUrl)}</a>
+      </div>`
+    : '';
   const bodyHtml = `<p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:16px;line-height:1.6;text-align:center;">Hi ${escHtml(full_name)}, your shift has been <strong>cancelled</strong> by the EMS Training Division.</p>
            <div style="margin:20px auto;padding:16px 18px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;max-width:400px;">
              <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Date:</strong> ${escHtml(date_str)}</p>
              <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Time:</strong> ${escHtml(time_display)}</p>
              ${note ? `<p style="margin:10px 0 0 0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Note:</strong> ${escHtml(note)}</p>` : ''}
            </div>
+           ${feedLinkSection}
            <p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:14px;line-height:1.6;text-align:center;">Please contact the Training Division if you have questions.</p>`;
   return {
     subject: 'Shift Cancelled — WFD EMS Student Portal',
@@ -247,13 +287,21 @@ export function buildShiftRejectedEmail(params: {
   date_str: string;
   time_display: string;
   login_url: string;
+  feedUrl?: string | null;
 }): EmailContent {
-  const { full_name, date_str, time_display, login_url } = params;
+  const { full_name, date_str, time_display, login_url, feedUrl } = params;
+  const feedLinkSection = feedUrl
+    ? `<div style="margin:20px auto 0 auto;max-width:480px;text-align:center;">
+        <p style="margin:0;color:#4b5563;font-size:13px;line-height:1.5;">Subscribe to your calendar feed to manage your schedule:</p>
+        <a href="${escHtml(feedUrl)}" style="display:inline-block;margin-top:8px;color:#A40104;font-size:13px;font-weight:700;word-break:break-all;">${escHtml(feedUrl)}</a>
+      </div>`
+    : '';
   const bodyHtml = `<p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:16px;line-height:1.6;text-align:center;">Hi ${escHtml(full_name)}, your shift request was <strong>not approved</strong>.</p>
            <div style="margin:20px auto;padding:16px 18px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;max-width:400px;">
              <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Date:</strong> ${escHtml(date_str)}</p>
              <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Time:</strong> ${escHtml(time_display)}</p>
            </div>
+           ${feedLinkSection}
            <p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:14px;line-height:1.6;text-align:center;">Please contact your preceptor or the Training Major for more information.</p>`;
   return {
     subject: 'Shift Request Update — WFD EMS Student Portal',

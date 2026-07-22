@@ -4,6 +4,7 @@ import type { Json } from '@/lib/supabase/database.types';
 import { publicEnv } from '@/lib/env';
 import { sendEmail } from '@/lib/email';
 import { buildShiftReminderEmail } from '@/lib/email-templates';
+import { resolveCalendarFeedUrl } from '@/lib/calendar-feed-server';
 import { completeScheduleReminder, claimScheduleReminder, getReminderDeliveryOutcome, isEligibleReminderSchedule, tomorrowInEastern } from '@/lib/schedule-reminders';
 import { getShiftRotation } from '@/lib/shift-rotation';
 import { getStationOneMapUrl } from '@/lib/station-map';
@@ -14,6 +15,7 @@ const SHIFT_REMINDER_JOB = 'shift_reminders';
 
 type ReminderSchedule = {
   id: string;
+  student_id: string;
   date: string;
   shift_type: string;
   start_time: string | null;
@@ -74,7 +76,7 @@ export async function GET(request: NextRequest) {
   try {
     const { data, error } = await supabase
       .from('schedules')
-      .select('id, date, shift_type, start_time, end_time, status, students!inner(email, full_name)')
+      .select('id, student_id, date, shift_type, start_time, end_time, status, students!inner(email, full_name)')
       .eq('status', 'approved')
       .eq('date', reminderDate);
     if (error) throw error;
@@ -100,6 +102,7 @@ export async function GET(request: NextRequest) {
       summary.claimed += 1;
 
       const rotation = getShiftRotation(schedule.date);
+      const feedUrl = await resolveCalendarFeedUrl('student', schedule.student_id).catch(() => null);
       const content = buildShiftReminderEmail({
         full_name: schedule.students!.full_name,
         date_str: formatRideDate(schedule.date),
@@ -108,6 +111,7 @@ export async function GET(request: NextRequest) {
         chief_name: rotation.chief,
         dashboard_url: `${publicEnv.SITE_URL}/dashboard`,
         station_map_url: stationMapUrl,
+        feedUrl,
       });
       const result = await sendEmail({
         to: schedule.students!.email,

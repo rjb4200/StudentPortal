@@ -6,6 +6,7 @@ import { canAccessAdmin } from '@/lib/roles';
 import { registryStatusBody } from '@/lib/validation';
 import { sendEmail } from '@/lib/email';
 import { buildInstructorClassApprovedEmail } from '@/lib/email-templates';
+import { resolveCalendarFeedUrl } from '@/lib/calendar-feed-server';
 
 function firstRelation<T>(value: T | T[] | null | undefined): T | null {
   if (!value) return null;
@@ -41,12 +42,13 @@ export async function POST(request: NextRequest) {
     classStartDate: string;
     rideTimeEndDate: string;
     siteName: string | null;
+    siteId: string | null;
   } | null = null;
 
   if (table === 'training_classes' && status === 'active') {
     const { data: existingClass, error: existingClassError } = await adminClient
       .from('training_classes')
-      .select('id, status, name, class_start_date, ride_time_end_date, instructors(first_name, last_name, email), training_sites(name)')
+      .select('id, status, name, class_start_date, ride_time_end_date, training_site_id, instructors(first_name, last_name, email), training_sites(id, name)')
       .eq('id', id)
       .single();
 
@@ -64,6 +66,7 @@ export async function POST(request: NextRequest) {
           classStartDate: existingClass.class_start_date,
           rideTimeEndDate: existingClass.ride_time_end_date,
           siteName: site?.name ?? null,
+          siteId: existingClass.training_site_id ?? null,
         };
       }
     }
@@ -81,6 +84,9 @@ export async function POST(request: NextRequest) {
   }
 
   if (classApprovalEmail) {
+    const feedUrl = classApprovalEmail.siteId
+      ? await resolveCalendarFeedUrl('training_site', classApprovalEmail.siteId).catch(() => null)
+      : null;
     const { subject, html } = buildInstructorClassApprovedEmail({
       instructor_name: classApprovalEmail.instructorName,
       class_name: classApprovalEmail.className,
@@ -88,6 +94,7 @@ export async function POST(request: NextRequest) {
       ride_time_end_date: classApprovalEmail.rideTimeEndDate,
       site_name: classApprovalEmail.siteName,
       registration_url: `${publicEnv.SITE_URL}/onboarding?class=${encodeURIComponent(classApprovalEmail.classId)}`,
+      feedUrl,
     });
     const emailResult = await sendEmail({ to: classApprovalEmail.instructorEmail, subject, html });
     if (!emailResult.ok) {

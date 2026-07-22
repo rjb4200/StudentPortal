@@ -49,6 +49,7 @@ function formatShiftTime(schedule?: Schedule | null) {
 
 export default function DashboardPage() {
   const [student, setStudent] = useState<any>(null);
+  const [calendarFeedToken, setCalendarFeedToken] = useState<string | null>(null);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [blocks, setBlocks] = useState<ScheduleBlock[]>([]);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
@@ -99,6 +100,15 @@ export default function DashboardPage() {
 
     if (student) {
       setStudent(student);
+
+      // Fetch token-based calendar feed URL
+      supabase
+        .from('calendar_feeds')
+        .select('token')
+        .eq('feed_type', 'student')
+        .eq('entity_id', student.id)
+        .maybeSingle()
+        .then(({ data: feed }: { data: { token: string } | null }) => { if (feed?.token) setCalendarFeedToken(feed.token); });
 
       const [{ data: schedules }, { data: welcome }, { data: readState }, availabilityResponse] = await Promise.all([
         supabase.from('schedules').select('*').eq('student_id', student.id).order('date', { ascending: true }),
@@ -307,10 +317,15 @@ export default function DashboardPage() {
 
   const copyCalendarFeed = () => {
     if (!student?.id) return;
-    navigator.clipboard.writeText(getCalendarFeedUrl(publicEnv.SITE_URL, student.id));
+    const url = calendarFeedToken
+      ? `${publicEnv.SITE_URL}/api/calendar/${calendarFeedToken}.ics`
+      : getCalendarFeedUrl(publicEnv.SITE_URL, student.id);
+    navigator.clipboard.writeText(url);
   };
 
-  const calendarFeedUrl = student?.id ? getCalendarFeedUrl(publicEnv.SITE_URL, student.id) : null;
+  const calendarFeedUrl = calendarFeedToken
+    ? `${publicEnv.SITE_URL}/api/calendar/${calendarFeedToken}.ics`
+    : (student?.id ? getCalendarFeedUrl(publicEnv.SITE_URL, student.id) : null);
 
   const sections: { key: DashboardSection; label: string; description: string; locked?: boolean }[] = [
     { key: 'schedule', label: 'Schedule', description: 'Request and manage shifts', locked: isPending },

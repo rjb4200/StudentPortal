@@ -58,6 +58,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
   }
 
+  // Auto-generate student calendar feed token
+  try {
+    await adminClient.from('calendar_feeds').insert({
+      feed_type: 'student',
+      entity_id: studentId,
+      token: crypto.randomUUID(),
+      generated_at: new Date().toISOString(),
+    });
+  } catch {}
+
   {
     const loginUrl = `${publicEnv.SITE_URL}/login`;
     let stationMapUrl: string | null = null;

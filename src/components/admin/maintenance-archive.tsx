@@ -69,6 +69,7 @@ export function MaintenanceArchive() {
   const [deletingAbandoned, setDeletingAbandoned] = useState(false);
   const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
+  const [aggregateFeedUrl, setAggregateFeedUrl] = useState<string | null>(null);
   const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([]);
   const [auditError, setAuditError] = useState<string | null>(null);
   const [loadingAudit, setLoadingAudit] = useState(true);
@@ -84,6 +85,7 @@ export function MaintenanceArchive() {
     loadAbandonedRegistrations();
     loadAuditEntries();
     loadMouSettings();
+    loadAggregateFeedUrl();
   }, []);
 
   const loadAbandonedRegistrations = async () => {
@@ -272,9 +274,21 @@ export function MaintenanceArchive() {
     setDeletingAbandoned(false);
   };
 
+  const loadAggregateFeedUrl = async () => {
+    const { data } = await supabase
+      .from('calendar_feeds')
+      .select('token')
+      .eq('feed_type', 'aggregate')
+      .is('entity_id', null)
+      .maybeSingle();
+    if (data?.token) {
+      setAggregateFeedUrl(`${window.location.origin}/api/calendar/${data.token}.ics`);
+    }
+  };
+
   const handleCopyCalendar = async () => {
     try {
-      const url = `${window.location.origin}/api/calendar/all.ics`;
+      const url = aggregateFeedUrl ?? `${window.location.origin}/api/calendar/all.ics`;
       await navigator.clipboard.writeText(url);
       setCopyStatus('Aggregate calendar feed URL copied. Share only with authorized users.');
     } catch {
@@ -284,7 +298,7 @@ export function MaintenanceArchive() {
 
   const canPurge = exported && Boolean(purgeSummary) && purgeReason.trim().length >= 3 && purgeConfirmation === PURGE_CONFIRMATION && !purging && !purgeDone;
   const canDelete = Boolean(deleteTarget) && deleteReason.trim().length >= 3 && deleteConfirmation === (deleteTarget?.email ?? '') && !deletingAbandoned;
-  const calendarUrl = typeof window === 'undefined' ? '/api/calendar/all.ics' : `${window.location.origin}/api/calendar/all.ics`;
+  const calendarUrl = aggregateFeedUrl ?? (typeof window === 'undefined' ? '/api/calendar/all.ics' : `${window.location.origin}/api/calendar/all.ics`);
 
   return (
     <div className="space-y-6">
