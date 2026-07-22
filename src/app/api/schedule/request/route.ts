@@ -3,6 +3,8 @@ import { createServerClient } from '@supabase/ssr';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { publicEnv } from '@/lib/env';
 import { scheduleCreateBody } from '@/lib/validation';
+import { sendEmail } from '@/lib/email';
+import { buildShiftRequestedAdminEmail } from '@/lib/email-templates';
 
 export async function POST(request: NextRequest) {
   const cookieHeader = request.headers.get('cookie') || '';
@@ -27,7 +29,7 @@ export async function POST(request: NextRequest) {
   const adminClient = createAdminClient() as any;
   const { data: student, error: studentError } = await adminClient
     .from('students')
-    .select('id, status, is_blacklisted, training_classes(class_start_date, ride_time_end_date)')
+    .select('id, full_name, email, status, is_blacklisted, training_classes(class_start_date, ride_time_end_date)')
     .eq('auth_user_id', user.id)
     .single();
 
@@ -71,6 +73,36 @@ export async function POST(request: NextRequest) {
 
   if (insertError) {
     return NextResponse.json({ error: insertError.message }, { status: 500 });
+  }
+
+  {
+    const { data: admins } = await adminClient
+      .from('admin_accounts')
+      .select('email')
+      .eq('is_active', true)
+      .eq('notify_schedule_requested', true);
+
+    if (admins?.length) {
+      const dateStr = new Date(date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      const timeDisplay = startTime && endTime
+        ? `${startTime} – ${endTime}`
+        : shiftType;
+      const { subject, html } = buildShiftRequestedAdminEmail({
+        full_name: student.full_name,
+        date_str: dateStr,
+        time_display: timeDisplay,
+        shift_type: shiftType,
+      });
+      try {
+        await sendEmail({
+          to: admins.map((a: any) => a.email),
+          subject,
+          html,
+        });
+      } catch (e) {
+        console.error('Failed to send admin shift request notification:', e);
+      }
+    }
   }
 
   return NextResponse.json({ success: true, schedule });

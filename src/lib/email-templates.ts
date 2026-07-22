@@ -157,6 +157,25 @@ export function buildShiftCancelledByStudentAdminEmail(params: {
   };
 }
 
+export function buildShiftRequestedAdminEmail(params: {
+  full_name: string;
+  date_str: string;
+  time_display: string;
+  shift_type: string;
+}): EmailContent {
+  const { full_name, date_str, time_display, shift_type } = params;
+  const bodyHtml = `<p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:16px;line-height:1.6;text-align:center;">${escHtml(full_name)} has submitted a new shift request.</p>
+      <div style="margin:20px auto;padding:16px 18px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;max-width:400px;">
+        <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Date:</strong> ${escHtml(date_str)}</p>
+        <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Time:</strong> ${escHtml(time_display)}</p>
+        <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Shift Type:</strong> ${escHtml(shift_type)}</p>
+      </div>`;
+  return {
+    subject: 'New Shift Request — WFD EMS',
+    html: buildEmailHtml('Shift Request Submitted', bodyHtml),
+  };
+}
+
 export function buildShiftApprovedEmail(params: {
   full_name: string;
   date_str: string;

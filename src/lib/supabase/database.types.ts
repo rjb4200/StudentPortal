@@ -26,6 +26,7 @@ export type Database = {
           notify_daily_report: boolean
           notify_evaluation_flagged: boolean
           notify_onboarding_complete: boolean
+          notify_schedule_requested: boolean
           notify_student_messages: boolean
           rank: string | null
           updated_at: string
@@ -41,6 +42,7 @@ export type Database = {
           notify_daily_report?: boolean
           notify_evaluation_flagged?: boolean
           notify_onboarding_complete?: boolean
+          notify_schedule_requested?: boolean
           notify_student_messages?: boolean
           rank?: string | null
           updated_at?: string
@@ -56,6 +58,7 @@ export type Database = {
           notify_daily_report?: boolean
           notify_evaluation_flagged?: boolean
           notify_onboarding_complete?: boolean
+          notify_schedule_requested?: boolean
           notify_student_messages?: boolean
           rank?: string | null
           updated_at?: string
