@@ -62,7 +62,7 @@ The system SHALL allow admin users to edit student personal information (name, e
 - **THEN** the browser navigates to `/admin/accounts?edit=<student-id>` with the student's edit form open
 
 ### Requirement: Notification recipient configuration
-The system SHALL use per-account notification preferences from `admin_accounts` and `preceptors` to determine email recipients for system notifications, replacing hard-coded email addresses. Active admin accounts SHALL support an independently configurable student-message email notification preference.
+The system SHALL use per-account notification preferences from `admin_accounts` and `preceptors` to determine email recipients for system notifications, replacing hard-coded email addresses. Active admin accounts SHALL support an independently configurable student-message email notification preference. Active admin accounts SHALL support an independently configurable shift request email notification preference via the `notify_schedule_requested` toggle.
 
 #### Scenario: Onboarding complete notification
 - **WHEN** a student completes onboarding
@@ -75,6 +75,10 @@ The system SHALL use per-account notification preferences from `admin_accounts` 
 #### Scenario: Student-message notification preference
 - **WHEN** an admin enables or disables student-message email notifications and saves the account
 - **THEN** future student-message alerts include or exclude that active admin according to the saved preference
+
+#### Scenario: Shift request notification preference
+- **WHEN** an admin enables or disables shift request email notifications and saves the account
+- **THEN** future student shift request notifications include or exclude that active admin according to the `notify_schedule_requested` preference
 
 ### Requirement: Long-lived admin and preceptor sessions
 The system SHALL configure Supabase Auth JWT expiry to 1 year for admin and preceptor accounts so they rarely need to re-authenticate.
