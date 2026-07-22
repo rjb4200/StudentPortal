@@ -37,18 +37,32 @@ export async function POST(request: NextRequest) {
   const newToken = crypto.randomUUID();
   const now = new Date().toISOString();
 
-  // Upsert: if feed row exists, replace token; otherwise insert
+  // Manual upsert: onConflict can't use expression-based unique indexes
+  let query = supabase.from('calendar_feeds').select('id, token').eq('feed_type', feed_type);
+  if (entity_id) {
+    query = query.eq('entity_id', entity_id);
+  } else {
+    query = query.is('entity_id', null);
+  }
+
+  const { data: existing } = await query.maybeSingle();
+
+  if (existing) {
+    const { data, error } = await supabase
+      .from('calendar_feeds')
+      .update({ token: newToken, generated_at: now })
+      .eq('id', existing.id)
+      .select()
+      .single();
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    const feedUrl = `${publicEnv.SITE_URL}/api/calendar/${newToken}.ics`;
+    return NextResponse.json({ success: true, feed: data, feedUrl });
+  }
+
   const { data, error } = await supabase
     .from('calendar_feeds')
-    .upsert(
-      {
-        feed_type,
-        entity_id: entity_id ?? null,
-        token: newToken,
-        generated_at: now,
-      },
-      { onConflict: 'feed_type, COALESCE(entity_id, \'00000000-0000-0000-0000-000000000000\')' },
-    )
+    .insert({ feed_type, entity_id: entity_id ?? null, token: newToken, generated_at: now })
     .select()
     .single();
 
