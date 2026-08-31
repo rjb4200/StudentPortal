@@ -13,6 +13,7 @@ import {
   buildEvaluationReceiptEmail,
   buildFlaggedEvaluationEmail,
   buildAdminReplyStudentEmail,
+  buildMouAwaitingAdminSignatureEmail,
 } from '@/lib/email-templates';
 
 function containsNoRawSpecialChars(html: string, original: string): boolean {
@@ -344,5 +345,45 @@ describe('buildAdminReplyStudentEmail', () => {
     });
     expect(result.html).toContain('&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;');
     expect(result.html).not.toContain('<script>');
+  });
+});
+
+describe('buildMouAwaitingAdminSignatureEmail', () => {
+  it('renders MOU pending notification with all details', () => {
+    const result = buildMouAwaitingAdminSignatureEmail({
+      site_name: 'Training Site A',
+      class_name: 'Summer EMT',
+      instructor_name: 'Jane Instructor',
+      training_organization_name: 'ABC Community College',
+      admin_portal_url: 'https://studentportal.winchesterfireems.com/admin',
+    });
+
+    expect(result.subject).toBe('MOU Awaiting Signature — WFD EMS');
+    expect(result.html).toContain('MOU Awaiting Signature');
+    expect(result.html).toContain('requires your signature');
+    expect(result.html).toContain('ABC Community College');
+    expect(result.html).toContain('Training Site A');
+    expect(result.html).toContain('Summer EMT');
+    expect(result.html).toContain('Jane Instructor');
+    expect(result.html).toContain('Go to Admin Portal');
+    expect(result.html).toContain('https://studentportal.winchesterfireems.com/admin');
+  });
+
+  it('escapes special characters in all fields', () => {
+    const result = buildMouAwaitingAdminSignatureEmail({
+      site_name: `Site "A"`,
+      class_name: `Class <EMT> & Paramedic`,
+      instructor_name: `O'Brien <x>`,
+      training_organization_name: `College & University "Main"`,
+      admin_portal_url: `https://example.com/admin?from=<test>`,
+    });
+
+    expect(result.html).toContain('Site &quot;A&quot;');
+    expect(result.html).toContain('Class &lt;EMT&gt; &amp; Paramedic');
+    expect(result.html).toContain('O&#39;Brien &lt;x&gt;');
+    expect(result.html).toContain('College &amp; University &quot;Main&quot;');
+    expect(result.html).toContain('from=&lt;test&gt;');
+    expect(result.html).not.toContain('<EMT>');
+    expect(result.html).not.toContain('<x>');
   });
 });

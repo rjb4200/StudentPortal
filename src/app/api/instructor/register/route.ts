@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { publicEnv } from '@/lib/env';
 import { instructorRegistrationBody, uuidSchema } from '@/lib/validation';
+import { sendEmail } from '@/lib/email';
+import { buildMouAwaitingAdminSignatureEmail } from '@/lib/email-templates';
 
 function duplicateEmailResponse() {
   return NextResponse.json(
@@ -197,6 +200,43 @@ export async function POST(request: NextRequest) {
 
     if (mouError) {
       console.error('MOU creation failed:', mouError.message);
+    }
+
+    if (!mouError) {
+      try {
+        const { data: admins } = await adminClient
+          .from('admin_accounts')
+          .select('email')
+          .eq('is_active', true)
+          .eq('notify_class_mou', true);
+
+        if (admins?.length) {
+          const instructorName = (
+            payload.instructor.mode === 'new'
+              ? `${payload.instructor.firstName} ${payload.instructor.lastName}`
+              : 'Instructor'
+          ).trim();
+          const siteName = (
+            payload.site.mode === 'new'
+              ? payload.site.name
+              : payload.mou.trainingOrganizationName
+          );
+          const { subject, html } = buildMouAwaitingAdminSignatureEmail({
+            site_name: siteName,
+            class_name: payload.class.name,
+            instructor_name: instructorName,
+            training_organization_name: payload.mou.trainingOrganizationName,
+            admin_portal_url: `${publicEnv.SITE_URL}/admin`,
+          });
+          await sendEmail({
+            to: admins.map((a: any) => a.email),
+            subject,
+            html,
+          });
+        }
+      } catch (e) {
+        console.error('MOU awaiting signature email failed:', e);
+      }
     }
 
     return NextResponse.json({ success: true });

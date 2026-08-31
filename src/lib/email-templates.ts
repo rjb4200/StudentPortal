@@ -504,6 +504,31 @@ export function buildAdminRejectionNotification(params: {
   };
 }
 
+export function buildMouAwaitingAdminSignatureEmail(params: {
+  site_name: string;
+  class_name: string;
+  instructor_name: string;
+  training_organization_name: string;
+  admin_portal_url: string;
+}): EmailContent {
+  const { site_name, class_name, instructor_name, training_organization_name, admin_portal_url } = params;
+  const bodyHtml = `<p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:16px;line-height:1.6;text-align:center;">A new Memorandum of Understanding requires your signature.</p>
+    <div style="margin:20px auto;padding:16px 18px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;max-width:440px;">
+      <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Training Organization:</strong> ${escHtml(training_organization_name)}</p>
+      <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Training Site:</strong> ${escHtml(site_name)}</p>
+      <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Class:</strong> ${escHtml(class_name)}</p>
+      <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Instructor:</strong> ${escHtml(instructor_name)}</p>
+    </div>
+    <p style="margin:0 auto 20px auto;max-width:480px;color:#4b5563;font-size:14px;line-height:1.6;text-align:center;">The instructor has completed their portion of the MOU. Your signature is required to finalize the agreement.</p>
+    <div style="margin:30px 0;text-align:center;">
+      <a href="${escHtml(admin_portal_url)}" style="display:inline-block;background:#A40104;color:#ffffff;text-decoration:none;font-size:16px;font-weight:800;padding:15px 30px;border-radius:10px;box-shadow:0 4px 12px rgba(164,1,4,0.25);">Go to Admin Portal</a>
+    </div>`;
+  return {
+    subject: 'MOU Awaiting Signature — WFD EMS',
+    html: buildEmailHtml('MOU Awaiting Signature', bodyHtml),
+  };
+}
+
 export function buildCalendarLinkEmail(params: {
   feedUrl: string;
 }): EmailContent {
