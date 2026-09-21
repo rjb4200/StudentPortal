@@ -85,6 +85,20 @@ export async function POST(request: NextRequest) {
 
     authUserId = authMatch.id;
 
+    if (!isNewAccount) {
+      const { error: detachError } = await supabase
+        .from('students')
+        .update({ auth_user_id: null })
+        .eq('auth_user_id', authUserId)
+        .neq('id', student.id)
+        .in('status', ['expired', 'archived', 'rejected']);
+
+      if (detachError) {
+        console.error('Failed to detach prior student enrollment:', detachError);
+        return NextResponse.json({ success: false, error: 'Failed to prepare renewed enrollment' }, { status: 500 });
+      }
+    }
+
     const { error: linkError } = await supabase
       .from('students')
       .update({ auth_user_id: authUserId, onboarding_completed_at: new Date().toISOString() })

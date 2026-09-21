@@ -37,9 +37,12 @@ function createQueryBuilder(table: string) {
     updatePayload: null,
     select: vi.fn(() => builder),
     eq: vi.fn(() => builder),
+    neq: vi.fn(() => builder),
+    in: vi.fn(() => builder),
     is: vi.fn(() => builder),
     update: vi.fn((payload) => {
       builder.updatePayload = payload;
+      if (table === 'students') mockState.studentUpdates?.push(payload);
       return builder;
     }),
     maybeSingle: vi.fn(async () => {
@@ -54,6 +57,9 @@ function createQueryBuilder(table: string) {
     }),
     then: (resolve: any) => {
       if (table === 'admin_accounts') return Promise.resolve({ data: mockState.admins ?? [], error: null }).then(resolve);
+      if (table === 'students' && builder.updatePayload?.auth_user_id === null) {
+        return Promise.resolve({ data: null, error: mockState.studentDetachError ?? null }).then(resolve);
+      }
       return Promise.resolve({ data: null, error: null }).then(resolve);
     },
   };
@@ -89,6 +95,7 @@ beforeEach(() => {
     },
     users: [],
     admins: [{ email: 'admin@example.com' }],
+    studentUpdates: [],
   };
 });
 
@@ -105,6 +112,25 @@ describe('POST /api/notify/onboarding-complete', () => {
     expect(data.password).toMatch(/^\d{6}$/);
     expect(data.email).toBe('student@example.com');
     expect(data.isNewAccount).toBe(true);
+  });
+
+  it('detaches a terminal prior enrollment before linking a renewed enrollment', async () => {
+    mockState.users = [{ id: 'existing-auth-user-id', email: mockState.student.email }];
+
+    const res = await post({
+      studentId: mockState.student.id,
+      onboardingToken: 'abcdefghijklmnopqrstuvwxyz123456',
+    });
+    const data = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(data.success).toBe(true);
+    expect(data.isNewAccount).toBe(false);
+    expect(data.password).toBeNull();
+    expect(mockState.studentUpdates).toEqual([
+      { auth_user_id: null },
+      { auth_user_id: 'existing-auth-user-id', onboarding_completed_at: expect.any(String) },
+    ]);
   });
 
   it('rejects missing onboarding token without returning credentials', async () => {

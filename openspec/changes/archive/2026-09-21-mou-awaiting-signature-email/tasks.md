@@ -14,4 +14,4 @@
 
 - [x] 3.1 Run `npm run build` to verify no TypeScript or bundling errors
 - [x] 3.2 Run `npm run test` to verify all existing tests pass and new template tests pass
-- [ ] 3.3 Manual verification: submit an instructor registration and confirm email arrives to opted-in admins (or check Resend dashboard for delivery)
+- [x] 3.3 Manual verification: submit an instructor registration and confirm email arrives to opted-in admins (or check Resend dashboard for delivery)

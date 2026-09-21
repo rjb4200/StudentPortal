@@ -5,7 +5,7 @@
 End-to-end onboarding completion experience including auth user creation with temp password on quiz finish, admin-configurable completion screen, pending-approval dashboard, and login email validation.
 ## Requirements
 ### Requirement: Quiz completion creates auth user with temp password
-The system SHALL create or reuse a Supabase Auth user with a cryptographically secure random 6-digit temporary PIN/password when the onboarding quiz is completed through a verified onboarding session. Completion SHALL link the auth user to the student enrollment through `students.auth_user_id`, set `students.onboarding_completed_at` to a server-generated timestamp, and SHALL NOT change `students.id`. Auth user creation, auth linking, and completion timestamp recording SHALL succeed independently of notification email delivery — the temp PIN SHALL always be returned in the API response payload when auth setup succeeds for the verified onboarding session.
+The system SHALL create or reuse a Supabase Auth user with a cryptographically secure random 6-digit temporary PIN/password when the onboarding quiz is completed through a verified onboarding session. Completion SHALL link the auth user to the student enrollment through `students.auth_user_id`, set `students.onboarding_completed_at` to a server-generated timestamp, and SHALL NOT change `students.id`. When an existing Auth user is reused for a renewed enrollment, the system SHALL clear `auth_user_id` from any other expired, archived, or rejected student rows linked to that Auth user before linking the renewed enrollment. Auth user creation, auth linking, and completion timestamp recording SHALL succeed independently of notification email delivery — the temp PIN SHALL always be returned in the API response payload when auth setup succeeds for the verified onboarding session.
 
 #### Scenario: Quiz completed by new student
 - **WHEN** a student completes the onboarding quiz and the notification API is called with matching onboarding session proof
@@ -18,6 +18,11 @@ The system SHALL create or reuse a Supabase Auth user with a cryptographically s
 - **WHEN** a student completes the quiz with matching onboarding session proof and an auth user already exists for their email
 - **THEN** creation is skipped, the current enrollment row is linked through `students.auth_user_id`, and a null password is returned (student uses existing credentials)
 - **AND** `students.onboarding_completed_at` is set to a non-null server timestamp
+
+#### Scenario: Re-enrollment detaches terminal prior enrollment
+- **WHEN** a student with an expired, archived, or rejected prior enrollment completes onboarding with an existing Auth user
+- **THEN** the prior terminal enrollment row has `auth_user_id` cleared before the renewed pending enrollment is linked to that Auth user
+- **AND** the Auth user resolves to exactly one current student enrollment after completion
 
 #### Scenario: Quiz completion preserves enrollment identity
 - **WHEN** onboarding completion links or reuses an auth user

@@ -78,15 +78,15 @@ The admin daily-ops "Action Required" panel SHALL display pending schedule reque
 - **THEN** a Cancel Request entry appears in the Action Required feed with an amber badge and a "Cancel Shift" button
 
 ### Requirement: iCal feed regeneration on state change
-Any change to a schedule record's status SHALL trigger regeneration of the affected student's iCal feed and the aggregate feed.
+Any change to a schedule record's status SHALL trigger regeneration of the affected student's iCal feed and the aggregate feed. The student's feed URL SHALL be constructed from the `calendar_feeds` token when one exists, falling back to the student-ID-based URL otherwise.
 
 #### Scenario: Feed regenerates on approval
 - **WHEN** an admin approves a pending shift
-- **THEN** the student's iCal feed and the aggregate feed are both regenerated with the updated status
+- **THEN** the student's iCal feed is regenerated with the updated status, served via the token-based URL when available
 
 #### Scenario: Feed regenerates on new request
 - **WHEN** a student submits a new shift request
-- **THEN** the student's iCal feed is regenerated to include the new pending entry
+- **THEN** the student's iCal feed is regenerated to include the new pending entry, served via the token-based URL when available
 
 ### Requirement: Schedule data isolation
 RLS policies SHALL ensure students can only view and create their own schedule records. Admin users SHALL have full read and write access to all schedule records.
@@ -136,15 +136,15 @@ The dashboard SHALL make shift scheduling discoverable through a prominent prima
 - **AND** the dashboard explains that scheduling unlocks after approval
 
 ### Requirement: iCal feed includes time ranges
-The system SHALL include the shift time range in iCal event summaries and descriptions when `start_time` and `end_time` are present on the schedule record.
+The system SHALL include the shift time range in iCal event summaries and descriptions when `start_time` and `end_time` are present on the schedule record. The feed SHALL be accessible via both the legacy student-ID URL and the token-based URL.
 
 #### Scenario: Subscribe to personal iCal feed with times
-- **WHEN** a student copies their unique iCal feed URL and subscribes in Google Calendar or Apple Calendar
+- **WHEN** a student copies their calendar link from the student dashboard and subscribes in Google Calendar or Apple Calendar
 - **THEN** all scheduled days appear as calendar events with pending/approved status reflected in the event styling, and event summaries include the time range when available
 
 #### Scenario: Calendar feed updates on approval
 - **WHEN** an admin approves a pending schedule request
-- **THEN** the student's iCal feed reflects the change on the next calendar client refresh, showing the day as approved with the time range
+- **THEN** the student's iCal feed reflects the change on the next calendar client refresh, showing the day as approved with the time range, regardless of whether the subscription uses the token URL or the legacy student-ID URL
 
 ### Requirement: Cancel modal on existing shift click
 When a student clicks a calendar date that already has a pending or approved shift, the system SHALL open a cancel confirmation modal instead of ignoring the click. The modal SHALL display the date, time range, current status, and a "Cancel Shift" button.

@@ -20,13 +20,14 @@ When an admin approves a student, the system SHALL attempt to send the student a
 - **AND** the email failure is logged
 
 ### Requirement: Instructor class approval email includes student registration link
-When an admin approves a class, the system SHALL attempt to send the associated instructor a WFD-branded class approval email that includes a class-specific student registration link. The link SHALL use the canonical production site URL and the approved class id so the instructor can forward it to students for class-specific onboarding. Email delivery SHALL remain best-effort; class approval SHALL succeed regardless of email delivery outcome.
+When an admin approves a class, the system SHALL attempt to send the associated instructor a WFD-branded class approval email that includes a class-specific student registration link and the training site's TEI calendar feed URL from `calendar_feeds`. The link SHALL use the canonical production site URL and the approved class id so the instructor can forward it to students for class-specific onboarding. The TEI token SHALL be auto-generated if one does not yet exist. Email delivery SHALL remain best-effort; class approval SHALL succeed regardless of email delivery outcome.
 
 #### Scenario: Class approval email contains registration link
 - **WHEN** an admin approves a pending class
 - **THEN** the system attempts to send the associated instructor an email with subject "Class Approved — WFD EMS Student Portal"
 - **AND** the email contains a student registration link in the form `https://studentportal.winchesterfireems.com/onboarding?class=<training_class_id>`
 - **AND** the email explains that the instructor can share the link with students for that class
+- **AND** the email contains the training site's token-based TEI calendar feed URL and explains how to subscribe to the TEI calendar
 
 #### Scenario: Already active class does not send duplicate link email
 - **WHEN** an admin approves a class that is already active
@@ -38,18 +39,18 @@ When an admin approves a class, the system SHALL attempt to send the associated 
 - **AND** the email delivery failure is logged
 
 ### Requirement: Schedule approved email
-When an admin approves a scheduled shift day, the system SHALL attempt to send the student a WFD-branded email with the date, shift type, and a link to their dashboard. The schedule update and email delivery SHALL happen in a single server-side API route. The schedule update SHALL succeed even if email delivery fails.
+When an admin approves a scheduled shift day, the system SHALL attempt to send the student a WFD-branded email with the date, shift type, a link to their dashboard, and their personal calendar feed subscription URL from `calendar_feeds`. The schedule update and email delivery SHALL happen in a single server-side API route. The schedule update SHALL succeed even if email delivery fails.
 
 #### Scenario: Admin approves a schedule request
 - **WHEN** an admin clicks "Approve" on a pending schedule request in the daily ops panel
-- **THEN** the system updates the schedule status to 'approved' and attempts to send the student an email with subject "Shift Approved — WFD EMS Student Portal" containing the date, shift type, and a link to `/dashboard`
+- **THEN** the system updates the schedule status to 'approved' and attempts to send the student an email with subject "Shift Approved — WFD EMS Student Portal" containing the date, shift type, a link to `/dashboard`, and the student's token-based calendar feed URL
 
 ### Requirement: Schedule rejected email
-When an admin rejects a scheduled shift day, the system SHALL attempt to send the student a WFD-branded email with the date, shift type, and instructions to contact their preceptor or the Training Major. The rejection SHALL succeed even if email delivery fails.
+When an admin rejects a scheduled shift day, the system SHALL attempt to send the student a WFD-branded email with the date, shift type, instructions to contact their preceptor or the Training Major, and their personal calendar feed subscription URL. The rejection SHALL succeed even if email delivery fails.
 
 #### Scenario: Admin rejects a schedule request
 - **WHEN** an admin clicks "Reject" on a pending schedule request in the daily ops panel
-- **THEN** the system updates the schedule status to 'rejected' and attempts to send the student an email with subject "Shift Request Update — WFD EMS Student Portal" containing the date, shift type, and instructions to contact staff for more information
+- **THEN** the system updates the schedule status to 'rejected' and attempts to send the student an email with subject "Shift Request Update — WFD EMS Student Portal" containing the date, shift type, instructions to contact staff for more information, and the student's token-based calendar feed URL
 
 ### Requirement: WFD-branded email template consistency
 All student-facing emails SHALL use a consistent WFD-branded HTML template with crimson `#A40104` header background, charcoal `#1C1C1E` bottom border, WFD logo from branding storage, body text in `#4b5563`, footer text in `#6b7280`, and CTA buttons in crimson `#A40104` with no secondary border color. The `from` address SHALL be `students@winchesterfireems.com` for all transactional emails. Brand colors SHALL be centralized in shared constants imported from `src/lib/email.ts`.
@@ -69,15 +70,15 @@ All student-facing emails SHALL use a consistent WFD-branded HTML template with 
 - **THEN** the button uses `#A40104` for background and shadow with no secondary border color
 
 ### Requirement: Shift cancellation email
-When a shift is cancelled (by student or admin), the system SHALL attempt to send a WFD-branded email to the student. Admin-initiated cancellations SHALL include the optional note text when present. Student-initiated cancellations SHALL include a "Student-initiated" label. The email SHALL use the standard WFD template with crimson header, logo, and credential-box body. The cancellation SHALL succeed even if email delivery fails.
+When a shift is cancelled (by student or admin), the system SHALL attempt to send a WFD-branded email to the student. Admin-initiated cancellations SHALL include the optional note text when present. Student-initiated cancellations SHALL include a "Student-initiated" label. All cancellation emails SHALL include the student's personal calendar feed subscription URL. The email SHALL use the standard WFD template with crimson header, logo, and credential-box body. The cancellation SHALL succeed even if email delivery fails.
 
 #### Scenario: Admin cancels with note email
 - **WHEN** an admin cancels a shift with the note "Class cancelled due to weather"
-- **THEN** the student receives an email with subject "Shift Cancelled — WFD EMS Student Portal" containing the date, time range, and the note text
+- **THEN** the student receives an email with subject "Shift Cancelled — WFD EMS Student Portal" containing the date, time range, the note text, and the student's token-based calendar feed URL
 
 #### Scenario: Student self-cancels confirmation email
 - **WHEN** a student cancels their own shift
-- **THEN** the student receives an email with subject "Shift Cancelled — WFD EMS Student Portal" confirming their cancellation with the date and time range
+- **THEN** the student receives an email with subject "Shift Cancelled — WFD EMS Student Portal" confirming their cancellation with the date, time range, and the student's token-based calendar feed URL
 
 #### Scenario: Email provider unavailable during cancellation
 - **WHEN** a student cancels their own shift and the email provider is unreachable
