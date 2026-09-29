@@ -74,6 +74,11 @@ export default function InstructorRegistrationPage() {
   const [mouSignature, setMouSignature] = useState('');
   const [mouBody, setMouBody] = useState('');
   const [loadingMou, setLoadingMou] = useState(true);
+  const [showMouSkip, setShowMouSkip] = useState(false);
+  const [skipReason, setSkipReason] = useState<'existing_mou' | 'will_execute_separately' | ''>('');
+  const [skipAcknowledgedName, setSkipAcknowledgedName] = useState('');
+  const [skipConfirmed, setSkipConfirmed] = useState(false);
+  const [submittedWithoutMou, setSubmittedWithoutMou] = useState(false);
 
   useEffect(() => {
     async function loadSites() {
@@ -205,12 +210,20 @@ export default function InstructorRegistrationPage() {
       ? `${selectedInstructor?.first_name ?? ''} ${selectedInstructor?.last_name ?? ''}`.trim()
       : `${instructorForm.firstName} ${instructorForm.lastName}`.trim();
     setMouRepName(repName);
+    setSkipAcknowledgedName(repName);
     setMouRepTitle(instructorMode === 'existing' ? (selectedInstructor?.title ?? '') : instructorForm.title);
     setStep(4);
   };
 
-  const handleSubmit = async (event: FormEvent) => {
-    event.preventDefault();
+  const submitRegistration = async (mode: 'signed' | 'skipped') => {
+    if (mode === 'signed' && (!mouSignature || mouSignature !== mouRepName)) {
+      setError('Type the representative name to sign the MOU.');
+      return;
+    }
+    if (mode === 'skipped' && (!skipReason || !skipAcknowledgedName.trim() || !skipConfirmed)) {
+      setError('Select a reason, enter your name, and acknowledge the MOU requirement before skipping.');
+      return;
+    }
     setSubmitting(true);
     setError('');
 
@@ -229,7 +242,12 @@ export default function InstructorRegistrationPage() {
         site: sitePayload,
         instructor: instructorPayload,
         class: classForm,
-        mou: {
+        mou: mode === 'skipped' ? {
+          mode: 'skipped',
+          reason: skipReason,
+          acknowledgedName: skipAcknowledgedName.trim(),
+        } : {
+          mode: 'signed',
           effectiveDate: new Date().toISOString().split('T')[0],
           trainingOrganizationName: siteMode === 'existing' ? (selectedSite?.organization_name ?? '') : siteForm.organizationName,
           representativeName: mouRepName,
@@ -247,8 +265,14 @@ export default function InstructorRegistrationPage() {
       return;
     }
 
+    setSubmittedWithoutMou(mode === 'skipped');
     setSubmitted(true);
     setSubmitting(false);
+  };
+
+  const handleSubmit = (event: FormEvent) => {
+    event.preventDefault();
+    void submitRegistration('signed');
   };
 
   const goNextFromSite = () => {
@@ -275,7 +299,9 @@ export default function InstructorRegistrationPage() {
         <div className="rounded-xl border border-wfd-sage/30 bg-wfd-sage/10 p-5 text-center">
           <h2 className="text-xl font-bold text-wfd-charcoal">Registration Submitted</h2>
           <p className="mt-2 text-sm leading-6 text-gray-600">
-            Your TEI, instructor, and class information has been submitted for admin review along with your signed MOU. Students cannot register until the class is approved and the class start date has been reached. You will receive an email when the class is approved. A completed MOU with both party signatures will be emailed after the WFEMS signer has signed.
+            {submittedWithoutMou
+              ? 'Your TEI, instructor, and class information has been submitted for admin review without signing a MOU in the portal. You acknowledged that a MOU with WFEMS is still required for students to ride and is handled separately. Students cannot register until the class is approved and the class start date has been reached. You will receive an email when the class is approved.'
+              : 'Your TEI, instructor, and class information has been submitted for admin review along with your signed MOU. Students cannot register until the class is approved and the class start date has been reached. You will receive an email when the class is approved. A completed MOU with both party signatures will be emailed after the WFEMS signer has signed.'}
           </p>
         </div>
         <Link href="/" className="block text-center text-sm font-semibold text-wfd-crimson hover:underline">
@@ -523,6 +549,31 @@ export default function InstructorRegistrationPage() {
                   <Button type="button" variant="secondary" onClick={() => setStep(3)}>Back to Class</Button>
                   <Button type="submit" loading={submitting} disabled={mouSignature !== mouRepName || !mouSignature}>Submit Registration</Button>
                 </div>
+                <button type="button" onClick={() => { setShowMouSkip((value) => !value); setError(''); }} className="text-xs text-gray-500 underline hover:text-wfd-charcoal">
+                  {showMouSkip ? 'Return to MOU signing' : 'Already have a MOU or handling one separately? Skip signing here'}
+                </button>
+                {showMouSkip && (
+                  <div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
+                    <p className="font-semibold text-wfd-charcoal">Submit without signing the portal MOU</p>
+                    <p>Skipping this signature does not waive the MOU requirement. Select the situation that applies to your organization:</p>
+                    <label className="flex items-start gap-2">
+                      <input type="radio" name="mou-skip-reason" className="mt-1" checked={skipReason === 'existing_mou'} onChange={() => setSkipReason('existing_mou')} />
+                      We already have an executed MOU with WFEMS
+                    </label>
+                    <label className="flex items-start gap-2">
+                      <input type="radio" name="mou-skip-reason" className="mt-1" checked={skipReason === 'will_execute_separately'} onChange={() => setSkipReason('will_execute_separately')} />
+                      We will execute an MOU with WFEMS separately
+                    </label>
+                    <Input label="Acknowledging representative name" value={skipAcknowledgedName} onChange={(e) => setSkipAcknowledgedName(e.target.value)} />
+                    <label className="flex items-start gap-2 font-medium text-wfd-charcoal">
+                      <input type="checkbox" className="mt-1" checked={skipConfirmed} onChange={(e) => setSkipConfirmed(e.target.checked)} />
+                      I understand that a MOU with WFEMS is required before students can ride, whether executed here or separately.
+                    </label>
+                    <Button type="button" variant="secondary" loading={submitting} disabled={submitting || !skipReason || !skipAcknowledgedName.trim() || !skipConfirmed} onClick={() => void submitRegistration('skipped')}>
+                      Submit without signing
+                    </Button>
+                  </div>
+                )}
               </>
             )}
           </section>

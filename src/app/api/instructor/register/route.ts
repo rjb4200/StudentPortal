@@ -69,11 +69,12 @@ export async function POST(request: NextRequest) {
     const adminClient = createAdminClient() as any;
     let trainingSiteId: string;
     let instructorId: string;
+    let organizationName: string;
 
     if (payload.site.mode === 'existing') {
       const { data: site, error: siteError } = await adminClient
         .from('training_sites')
-        .select('id')
+        .select('id, organization_name')
         .eq('id', payload.site.trainingSiteId)
         .eq('status', 'active')
         .single();
@@ -82,6 +83,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: false, error: 'Selected TEI is not available.' }, { status: 400 });
       }
       trainingSiteId = site.id;
+      organizationName = site.organization_name;
     } else {
       const { data: site, error: siteError } = await adminClient
         .from('training_sites')
@@ -103,6 +105,7 @@ export async function POST(request: NextRequest) {
       }
       createdSiteId = site.id;
       trainingSiteId = site.id;
+      organizationName = payload.site.organizationName;
     }
 
     if (payload.instructor.mode === 'existing') {
@@ -186,56 +189,66 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: classError?.message || 'Unable to create class.' }, { status: 500 });
     }
 
-    const { error: mouError } = await adminClient
-      .from('class_mous')
-      .insert({
-        training_class_id: trainingClass.id,
-        effective_date: payload.mou.effectiveDate,
-        training_organization_name: payload.mou.trainingOrganizationName,
-        representative_name: payload.mou.representativeName,
-        representative_title: payload.mou.representativeTitle,
-        representative_signature: payload.mou.representativeSignature,
-        mou_body_snapshot: payload.mou.mouBodySnapshot,
-      });
+    if (payload.mou.mode === 'skipped') {
+      const { error: skipError } = await adminClient
+        .from('class_mou_skips')
+        .insert({
+          training_class_id: trainingClass.id,
+          reason: payload.mou.reason,
+          organization_name: organizationName,
+          acknowledged_name: payload.mou.acknowledgedName,
+        });
+      if (skipError) console.error('MOU skip creation failed:', skipError.message);
+    } else {
+      const { error: mouError } = await adminClient
+        .from('class_mous')
+        .insert({
+          training_class_id: trainingClass.id,
+          effective_date: payload.mou.effectiveDate,
+          training_organization_name: payload.mou.trainingOrganizationName,
+          representative_name: payload.mou.representativeName,
+          representative_title: payload.mou.representativeTitle,
+          representative_signature: payload.mou.representativeSignature,
+          mou_body_snapshot: payload.mou.mouBodySnapshot,
+        });
 
-    if (mouError) {
-      console.error('MOU creation failed:', mouError.message);
-    }
+      if (mouError) {
+        console.error('MOU creation failed:', mouError.message);
+      } else {
+        try {
+          const { data: admins } = await adminClient
+            .from('admin_accounts')
+            .select('email')
+            .eq('is_active', true)
+            .eq('notify_class_mou', true);
 
-    if (!mouError) {
-      try {
-        const { data: admins } = await adminClient
-          .from('admin_accounts')
-          .select('email')
-          .eq('is_active', true)
-          .eq('notify_class_mou', true);
-
-        if (admins?.length) {
-          const instructorName = (
-            payload.instructor.mode === 'new'
-              ? `${payload.instructor.firstName} ${payload.instructor.lastName}`
-              : 'Instructor'
-          ).trim();
-          const siteName = (
-            payload.site.mode === 'new'
-              ? payload.site.name
-              : payload.mou.trainingOrganizationName
-          );
-          const { subject, html } = buildMouAwaitingAdminSignatureEmail({
-            site_name: siteName,
-            class_name: payload.class.name,
-            instructor_name: instructorName,
-            training_organization_name: payload.mou.trainingOrganizationName,
-            admin_portal_url: `${publicEnv.SITE_URL}/admin`,
-          });
-          await sendEmail({
-            to: admins.map((a: any) => a.email),
-            subject,
-            html,
-          });
+          if (admins?.length) {
+            const instructorName = (
+              payload.instructor.mode === 'new'
+                ? `${payload.instructor.firstName} ${payload.instructor.lastName}`
+                : 'Instructor'
+            ).trim();
+            const siteName = (
+              payload.site.mode === 'new'
+                ? payload.site.name
+                : payload.mou.trainingOrganizationName
+            );
+            const { subject, html } = buildMouAwaitingAdminSignatureEmail({
+              site_name: siteName,
+              class_name: payload.class.name,
+              instructor_name: instructorName,
+              training_organization_name: payload.mou.trainingOrganizationName,
+              admin_portal_url: `${publicEnv.SITE_URL}/admin`,
+            });
+            await sendEmail({
+              to: admins.map((a: any) => a.email),
+              subject,
+              html,
+            });
+          }
+        } catch (e) {
+          console.error('MOU awaiting signature email failed:', e);
         }
-      } catch (e) {
-        console.error('MOU awaiting signature email failed:', e);
       }
     }
 

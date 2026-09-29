@@ -101,6 +101,60 @@ export type Database = {
           },
         ]
       }
+      class_mou_skips: {
+        Row: {
+          acknowledged_at: string
+          acknowledged_name: string
+          created_at: string
+          dismissed_at: string | null
+          dismissed_by: string | null
+          id: string
+          organization_name: string
+          reason: string
+          training_class_id: string
+          updated_at: string
+        }
+        Insert: {
+          acknowledged_at?: string
+          acknowledged_name: string
+          created_at?: string
+          dismissed_at?: string | null
+          dismissed_by?: string | null
+          id?: string
+          organization_name: string
+          reason: string
+          training_class_id: string
+          updated_at?: string
+        }
+        Update: {
+          acknowledged_at?: string
+          acknowledged_name?: string
+          created_at?: string
+          dismissed_at?: string | null
+          dismissed_by?: string | null
+          id?: string
+          organization_name?: string
+          reason?: string
+          training_class_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_mou_skips_dismissed_by_fkey"
+            columns: ["dismissed_by"]
+            isOneToOne: false
+            referencedRelation: "admin_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_mou_skips_training_class_id_fkey"
+            columns: ["training_class_id"]
+            isOneToOne: true
+            referencedRelation: "training_classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       class_mous: {
         Row: {
           created_at: string

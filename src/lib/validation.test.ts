@@ -80,6 +80,7 @@ describe('instructorRegistrationBody', () => {
       notes: '',
     },
     mou: {
+      mode: 'signed' as const,
       effectiveDate: '2026-06-15',
       trainingOrganizationName: 'School A',
       representativeName: 'Jane Instructor',
@@ -91,6 +92,20 @@ describe('instructorRegistrationBody', () => {
 
   it('accepts valid instructor registrations', () => {
     expect(instructorRegistrationBody.safeParse(valid).success).toBe(true);
+  });
+
+  it.each(['existing_mou', 'will_execute_separately'] as const)('accepts a skipped MOU with reason %s', (reason) => {
+    expect(instructorRegistrationBody.safeParse({
+      ...valid,
+      mou: { mode: 'skipped', reason, acknowledgedName: 'Jane Instructor' },
+    }).success).toBe(true);
+  });
+
+  it('rejects missing or invalid skip acknowledgment details', () => {
+    expect(instructorRegistrationBody.safeParse({ ...valid, mou: { mode: 'skipped', reason: 'other', acknowledgedName: 'Jane Instructor' } }).success).toBe(false);
+    expect(instructorRegistrationBody.safeParse({ ...valid, mou: { mode: 'skipped', reason: 'existing_mou', acknowledgedName: '  ' } }).success).toBe(false);
+    expect(instructorRegistrationBody.safeParse({ ...valid, mou: { mode: 'skipped', reason: 'existing_mou' } }).success).toBe(false);
+    expect(instructorRegistrationBody.safeParse({ ...valid, mou: { mode: 'signed', representativeSignature: '' } }).success).toBe(false);
   });
 
   it('rejects invalid class windows', () => {

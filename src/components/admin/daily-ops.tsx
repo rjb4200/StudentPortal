@@ -86,6 +86,9 @@ export function DailyOps({ onNavigateMessages }: { onNavigateMessages?: () => vo
   const [scheduleActionError, setScheduleActionError] = useState<string | null>(null);
   const [pendingMous, setPendingMous] = useState<any[]>([]);
   const [signingMou, setSigningMou] = useState<string | null>(null);
+  const [mouSkips, setMouSkips] = useState<any[]>([]);
+  const [acknowledgingMouSkip, setAcknowledgingMouSkip] = useState<string | null>(null);
+  const [mouSkipError, setMouSkipError] = useState<string | null>(null);
   const [confirmationAction, setConfirmationAction] = useState<ConfirmationAction | null>(null);
   const [subscriptionStatus, setSubscriptionStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
   const unsubConversationRef = useRef<(() => void) | null>(null);
@@ -154,6 +157,7 @@ export function DailyOps({ onNavigateMessages }: { onNavigateMessages?: () => vo
       { data: pendingInstructors },
       { data: pendingClasses },
       { data: pendingMousData },
+      { data: mouSkipsData, error: mouSkipsError },
       inboxResponse,
     ] = await Promise.all([
       supabase.from('students').select('*, training_classes(name, level, class_start_date, ride_time_end_date, training_sites(name), instructors(first_name, last_name))').eq('status', 'pending').not('onboarding_completed_at', 'is', null).order('created_at', { ascending: false }),
@@ -164,6 +168,7 @@ export function DailyOps({ onNavigateMessages }: { onNavigateMessages?: () => vo
       supabase.from('instructors').select('*, training_sites(name)').eq('status', 'pending').order('created_at', { ascending: false }),
       supabase.from('training_classes').select('*, training_sites(name), instructors(first_name, last_name)').eq('status', 'pending').order('created_at', { ascending: false }),
       supabase.from('class_mous').select('*, training_classes!inner(name, training_sites!inner(name), instructors!inner(first_name, last_name, email))').is('wfems_signed_at', null).not('representative_signature', 'eq', '').order('created_at', { ascending: false }),
+      supabase.from('class_mou_skips').select('id, reason, created_at, training_classes!inner(name, training_sites!inner(name), instructors!inner(first_name, last_name))').is('dismissed_at', null).order('created_at', { ascending: false }),
       fetch('/api/admin/message-inbox'),
     ]);
 
@@ -177,6 +182,9 @@ export function DailyOps({ onNavigateMessages }: { onNavigateMessages?: () => vo
       ...(pendingClasses ?? []).map((item: any) => ({ ...item, registryTable: 'training_classes', registryLabel: 'Class' })),
     ]);
     setPendingMous(pendingMousData ?? []);
+    setMouSkips(mouSkipsData ?? []);
+    if (mouSkipsError) setMouSkipError('Unable to load skipped MOU notices.');
+    else setMouSkipError(null);
     if (inboxResponse.ok) {
       const inbox = await inboxResponse.json();
       setMessageThreads(inbox.threads ?? []);
@@ -460,11 +468,32 @@ export function DailyOps({ onNavigateMessages }: { onNavigateMessages?: () => vo
     setAcknowledgingFlag(null);
   };
 
+  const handleAcknowledgeMouSkip = async (skipId: string) => {
+    setAcknowledgingMouSkip(skipId);
+    setMouSkipError(null);
+    try {
+      const response = await fetch('/api/admin/acknowledge-mou-skip', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ skipId }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || result?.success !== true) {
+        throw new Error(result?.error || 'Unable to acknowledge the MOU notice.');
+      }
+      setMouSkips((previous) => previous.filter((item) => item.id !== skipId));
+    } catch (error) {
+      setMouSkipError(error instanceof Error ? error.message : 'Unable to acknowledge the MOU notice.');
+    } finally {
+      setAcknowledgingMouSkip(null);
+    }
+  };
+
   const pendingSchedules = schedules.filter((s: any) => s.status === 'pending');
   const cancelRequests = schedules.filter((s: any) => s.status === 'cancelled' && s.cancelled_by === 'student');
   const rosterStudents = students.filter((s: any) => s.status === 'certified');
   const unreadMessageCount = messageThreads.filter((thread) => thread.is_unread).length;
-  const totalActions = pendingStudents.length + pendingSchedules.length + cancelRequests.length + quizFlags.length + registryItems.length + pendingMous.length + (unreadMessageCount > 0 ? 1 : 0);
+  const totalActions = pendingStudents.length + pendingSchedules.length + cancelRequests.length + quizFlags.length + registryItems.length + pendingMous.length + mouSkips.length + (unreadMessageCount > 0 ? 1 : 0);
   const orderedMessageThreads = orderMessageThreads(messageThreads);
 
   const handleWfemsSign = async (mouId: string) => {
@@ -507,6 +536,7 @@ export function DailyOps({ onNavigateMessages }: { onNavigateMessages?: () => vo
         {deleteError && (
           <Alert tone="danger">Deletion failed: {deleteError}</Alert>
         )}
+        {mouSkipError && <Alert tone="danger">{mouSkipError}</Alert>}
         {totalActions === 0 ? (
           <EmptyState title="Nothing requires your attention" />
         ) : (
@@ -690,6 +720,27 @@ export function DailyOps({ onNavigateMessages }: { onNavigateMessages?: () => vo
                     className="ml-3 flex-shrink-0"
                   >
                     Sign as WFEMS
+                  </Button>
+                </div>
+              );
+            })}
+            {mouSkips.map((skip) => {
+              const trainingClass = Array.isArray(skip.training_classes) ? skip.training_classes[0] : skip.training_classes;
+              const site = Array.isArray(trainingClass?.training_sites) ? trainingClass.training_sites[0] : trainingClass?.training_sites;
+              const instructor = Array.isArray(trainingClass?.instructors) ? trainingClass.instructors[0] : trainingClass?.instructors;
+              return (
+                <div key={`mou-skip-${skip.id}`} className="flex flex-col gap-2 rounded-lg bg-gray-50 p-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <span className="shrink-0 rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-700">No MOU</span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">{trainingClass?.name ?? 'Class'}</p>
+                      <p className="text-xs text-gray-500">
+                        {site?.name ?? 'Site'} — {instructor ? `${instructor.first_name} ${instructor.last_name}` : 'Instructor'} — {skip.reason === 'existing_mou' ? 'Existing MOU with WFEMS' : 'Will execute MOU separately'}
+                      </p>
+                    </div>
+                  </div>
+                  <Button size="sm" variant="secondary" onClick={() => void handleAcknowledgeMouSkip(skip.id)} loading={acknowledgingMouSkip === skip.id} className="ml-3 flex-shrink-0">
+                    Acknowledge
                   </Button>
                 </div>
               );

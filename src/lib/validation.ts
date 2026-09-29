@@ -174,7 +174,14 @@ export const instructorRegistrationBody = z.object({
     instructorDetailsSchema.extend({ mode: z.literal('new') }),
   ]),
   class: trainingClassDetailsSchema,
-  mou: mouSchema,
+  mou: z.discriminatedUnion('mode', [
+    mouSchema.extend({ mode: z.literal('signed') }),
+    z.object({
+      mode: z.literal('skipped'),
+      reason: z.enum(['existing_mou', 'will_execute_separately']),
+      acknowledgedName: nameSchema,
+    }),
+  ]),
 }).refine((value) => value.class.rideTimeEndDate >= value.class.classStartDate, {
   message: 'Ride-time end date must be on or after class start date',
   path: ['class', 'rideTimeEndDate'],
