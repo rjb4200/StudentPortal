@@ -66,7 +66,7 @@ The Admin Command Center SHALL support opening a specific primary section from t
 - **AND** the Daily Operations content is displayed
 
 ### Requirement: Unified action required card with visual differentiation
-The admin daily operations tab SHALL display actionable items within a unified "Action Required" card. The card SHALL contain six item types, each visually differentiated by badge color and button style: Approvals for students with `status = 'pending'` and non-null `onboarding_completed_at` (sage green badge, crimson Approve button), Schedule Requests (blue badge, crimson Approve and red Reject buttons), Cancel Requests (amber/orange badge, amber Cancel Shift button), Quiz Flags (amber badge, secondary Acknowledge button), MOU Signatures for class_mous with instructor signature but no WFEMS signature (charcoal badge, secondary "Sign as WFEMS" button), and Unread Messages (crimson badge, View Messages button) showing the count of student threads with unread messages for the authenticated admin. Items SHALL be ordered: approvals first, then schedule requests, then cancel requests, then quiz flags, then unread messages, then MOU signatures. Each category SHALL be sorted newest first within itself. Approval failures SHALL be displayed to the admin and SHALL NOT be represented as successful approvals unless the approval API confirms success.
+The admin daily operations tab SHALL display actionable items within a unified "Action Required" card. The card SHALL contain seven item types, each visually differentiated by badge color and button style: Approvals for students with `status = 'pending'` and non-null `onboarding_completed_at` (sage green badge, crimson Approve button), Schedule Requests (blue badge, crimson Approve and red Reject buttons), Cancel Requests (amber/orange badge, amber Cancel Shift button), Quiz Flags (amber badge, secondary Acknowledge button), MOU Signatures for class_mous with instructor signature but no WFEMS signature (charcoal badge, secondary "Sign as WFEMS" button), No MOU items for class_mou_skips records that have not been dismissed (slate gray badge, secondary Acknowledge button), and Unread Messages (crimson badge, View Messages button) showing the count of student threads with unread messages for the authenticated admin. Items SHALL be ordered: approvals first, then schedule requests, then cancel requests, then quiz flags, then unread messages, then MOU signatures, then No MOU items. Each category SHALL be sorted newest first within itself. Approval failures SHALL be displayed to the admin and SHALL NOT be represented as successful approvals unless the approval API confirms success.
 
 #### Scenario: Unread messages appear in Action Required
 - **WHEN** one or more student threads have unread messages for the authenticated admin
@@ -130,8 +130,21 @@ The admin daily operations tab SHALL display actionable items within a unified "
 - **WHEN** an admin clicks "Sign as WFEMS" on an MOU Signature item
 - **THEN** the WFEMS signer details from portal settings are applied, the MOU record is updated, the completed PDF is generated and emailed, and the item is removed from the Action Required list
 
+#### Scenario: No MOU item appears for a skipped class
+- **WHEN** a class registration was submitted with a skipped MOU and the skip record has not been dismissed
+- **THEN** a No MOU item appears in the Action Required card with a slate gray badge labeled "No MOU", the class name, TEI, instructor name, and the skip reason
+
+#### Scenario: Admin acknowledges a No MOU item
+- **WHEN** an admin clicks "Acknowledge" on a No MOU item
+- **THEN** the skip record is marked dismissed with the dismissing admin and timestamp recorded
+- **AND** the item is removed from the Action Required list
+
+#### Scenario: Dismissed No MOU item does not reappear
+- **WHEN** a class_mou_skips record has a non-null `dismissed_at`
+- **THEN** the No MOU item does not appear in the Action Required card
+
 #### Scenario: Empty unified list
-- **WHEN** no approval-ready pending students, schedule requests, cancel requests, quiz flags, unread message threads, or MOU signature items exist
+- **WHEN** no approval-ready pending students, schedule requests, cancel requests, quiz flags, unread message threads, MOU signature items, or undismissed No MOU items exist
 - **THEN** the Action Required card displays "Nothing requires your attention"
 
 ### Requirement: Crew context for pending schedule approval
