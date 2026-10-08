@@ -61,6 +61,15 @@ type InstructorForm = { trainingSiteId: string; firstName: string; lastName: str
 type ClassForm = { trainingSiteId: string; instructorId: string; name: string; level: string; classStartDate: string; rideTimeEndDate: string; notes: string };
 type Editor = { table: RegistryTable; row?: Site | Instructor | TrainingClass } | null;
 type PendingAction = { table: RegistryTable; id: string; status: RegistryStatus; title: string } | null;
+type ViewFilters = { query: string; status: 'all' | RegistryStatus; lifecycle?: 'all' | ClassLifecycle };
+
+function initialFilters(): Record<RegistryView, ViewFilters> {
+  return {
+    classes: { query: '', status: 'active', lifecycle: 'in_progress' },
+    instructors: { query: '', status: 'active' },
+    sites: { query: '', status: 'active' },
+  };
+}
 
 const emptySite = (): SiteForm => ({ name: '', organizationName: '', address: '', city: '', state: '', zipCode: '', mainPhone: '' });
 const emptyInstructor = (): InstructorForm => ({ trainingSiteId: '', firstName: '', lastName: '', email: '', mobilePhone: '', businessPhone: '', credentials: '', title: '', preferredContactMethod: 'email', preferredContactHours: '', contactInstructions: '' });
@@ -119,9 +128,7 @@ export function RegistryManagement() {
   const [classes, setClasses] = useState<TrainingClass[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedView, setSelectedView] = useState<RegistryView>('classes');
-  const [query, setQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | RegistryStatus>('all');
-  const [lifecycleFilter, setLifecycleFilter] = useState<'all' | ClassLifecycle>('all');
+  const [filters, setFilters] = useState<Record<RegistryView, ViewFilters>>(initialFilters);
   const [editor, setEditor] = useState<Editor>(null);
   const [siteForm, setSiteForm] = useState<SiteForm>(emptySite);
   const [instructorForm, setInstructorForm] = useState<InstructorForm>(emptyInstructor);
@@ -219,18 +226,36 @@ export function RegistryManagement() {
   const emptyClasses = classes.filter((trainingClass) => studentsForClass(trainingClass.id).length === 0);
   const inProgressCount = classes.filter((trainingClass) => trainingClass.status === 'active' && lifecycleFor(trainingClass) === 'in_progress').length;
 
-  const filteredClasses = classes.filter((trainingClass) => {
-    const haystack = `${trainingClass.name} ${trainingClass.training_sites?.name ?? ''} ${trainingClass.instructors ? `${trainingClass.instructors.first_name} ${trainingClass.instructors.last_name}` : ''}`.toLowerCase();
-    return haystack.includes(query.toLowerCase()) && (statusFilter === 'all' || trainingClass.status === statusFilter) && (lifecycleFilter === 'all' || lifecycleFor(trainingClass) === lifecycleFilter);
-  });
-  const filteredInstructors = instructors.filter((instructor) => `${instructor.first_name} ${instructor.last_name} ${instructor.email} ${instructor.training_sites?.name ?? ''}`.toLowerCase().includes(query.toLowerCase()) && (statusFilter === 'all' || instructor.status === statusFilter));
-  const filteredSites = sites.filter((site) => `${site.name} ${site.organization_name} ${site.city} ${site.state}`.toLowerCase().includes(query.toLowerCase()) && (statusFilter === 'all' || site.status === statusFilter));
+  const current = filters[selectedView];
+  const query = current.query;
+  const statusFilter = current.status;
+  const lifecycleFilter = current.lifecycle ?? 'all';
+  const q = query.trim().toLowerCase();
+
+  const setQuery = (value: string) => setFilters((prev) => ({ ...prev, [selectedView]: { ...prev[selectedView], query: value } }));
+  const setStatusFilter = (value: 'all' | RegistryStatus) => setFilters((prev) => ({ ...prev, [selectedView]: { ...prev[selectedView], status: value } }));
+  const setLifecycleFilter = (value: 'all' | ClassLifecycle) => setFilters((prev) => ({ ...prev, classes: { ...prev.classes, lifecycle: value } }));
+
+  const classText = (trainingClass: TrainingClass) => `${trainingClass.name} ${trainingClass.training_sites?.name ?? ''} ${trainingClass.instructors ? `${trainingClass.instructors.first_name} ${trainingClass.instructors.last_name}` : ''}`.toLowerCase();
+  const instructorText = (instructor: Instructor) => `${instructor.first_name} ${instructor.last_name} ${instructor.email} ${instructor.training_sites?.name ?? ''}`.toLowerCase();
+  const siteText = (site: Site) => `${site.name} ${site.organization_name} ${site.city} ${site.state}`.toLowerCase();
+  const oldestFirst = <T,>(a: T, b: T) => String((a as { created_at?: string }).created_at ?? '').localeCompare(String((b as { created_at?: string }).created_at ?? ''));
+
+  const pinnedClasses = classes.filter((row) => row.status === 'pending' && classText(row).includes(q)).sort(oldestFirst);
+  const pinnedInstructors = instructors.filter((row) => row.status === 'pending' && instructorText(row).includes(q)).sort(oldestFirst);
+  const pinnedSites = sites.filter((row) => row.status === 'pending' && siteText(row).includes(q)).sort(oldestFirst);
+  const pinnedRows = selectedView === 'classes' ? pinnedClasses : selectedView === 'instructors' ? pinnedInstructors : pinnedSites;
+  const pinnedIdSet = new Set(pinnedRows.map((row) => row.id));
+  const filterHidesPending = statusFilter !== 'all' && statusFilter !== 'pending';
+  const showPinned = filterHidesPending && pinnedRows.length > 0;
+  const currentTable: RegistryTable = selectedView === 'classes' ? 'training_classes' : selectedView === 'instructors' ? 'instructors' : 'training_sites';
+
+  const filteredClasses = classes.filter((trainingClass) => classText(trainingClass).includes(q) && (statusFilter === 'all' || trainingClass.status === statusFilter) && (lifecycleFilter === 'all' || lifecycleFor(trainingClass) === lifecycleFilter) && !pinnedIdSet.has(trainingClass.id));
+  const filteredInstructors = instructors.filter((instructor) => instructorText(instructor).includes(q) && (statusFilter === 'all' || instructor.status === statusFilter) && !pinnedIdSet.has(instructor.id));
+  const filteredSites = sites.filter((site) => siteText(site).includes(q) && (statusFilter === 'all' || site.status === statusFilter) && !pinnedIdSet.has(site.id));
 
   const changeView = (view: string) => {
     setSelectedView(view as RegistryView);
-    setQuery('');
-    setStatusFilter('all');
-    setLifecycleFilter('all');
   };
 
   const statusAction = (table: RegistryTable, row: Site | Instructor | TrainingClass, action: { status: RegistryStatus; label: string; confirm: boolean }) => {
@@ -260,7 +285,10 @@ export function RegistryManagement() {
         <StatusBanner tone="warning">
           <p className="font-semibold">Registry attention needed</p>
           <p className="mt-1 text-sm">{activeExpired.length > 0 && `${activeExpired.length} active class${activeExpired.length === 1 ? '' : 'es'} ${activeExpired.length === 1 ? 'has' : 'have'} expired. `}{emptyClasses.length > 0 && `${emptyClasses.length} class${emptyClasses.length === 1 ? '' : 'es'} ${emptyClasses.length === 1 ? 'has' : 'have'} no enrolled students. `}{pendingCount > 0 && `${pendingCount} record${pendingCount === 1 ? '' : 's'} await review.`}</p>
-          {activeExpired.length > 0 && <Button size="sm" variant="secondary" className="mt-3" onClick={() => { setSelectedView('classes'); setStatusFilter('active'); setLifecycleFilter('expired'); }}>Review expired classes</Button>}
+          <div className="mt-3 flex flex-wrap gap-2">
+            {activeExpired.length > 0 && <Button size="sm" variant="secondary" onClick={() => { setSelectedView('classes'); setFilters((prev) => ({ ...prev, classes: { ...prev.classes, status: 'active', lifecycle: 'expired' } })); }}>Review expired classes</Button>}
+            {pendingCount > 0 && <Button size="sm" variant="secondary" onClick={() => setStatusFilter('pending')}>Review pending</Button>}
+          </div>
         </StatusBanner>
       ) : <StatusBanner tone="success">No registry records require attention.</StatusBanner>}
 
@@ -268,9 +296,11 @@ export function RegistryManagement() {
       <SectionCard className="p-4">
         <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_12rem_12rem]">
           <Input label={`Search ${selectedView === 'classes' ? 'classes, sites, or instructors' : selectedView === 'instructors' ? 'instructors' : 'training sites'}`} value={query} onChange={(event) => setQuery(event.target.value)} />
-          <Select label="Status" value={statusFilter} onChange={(value) => setStatusFilter(value as 'all' | RegistryStatus)} options={[{ value: 'all', label: 'All statuses' }, ...Object.entries(statusLabels).map(([value, label]) => ({ value, label }))]} />
-          {selectedView === 'classes' ? <Select label="Lifecycle" value={lifecycleFilter} onChange={(value) => setLifecycleFilter(value as 'all' | ClassLifecycle)} options={[{ value: 'all', label: 'All lifecycles' }, { value: 'upcoming', label: 'Upcoming' }, { value: 'in_progress', label: 'In progress' }, { value: 'expired', label: 'Expired' }]} /> : <div className="hidden md:block" />}
+          <Select label="Status" value={statusFilter} onChange={(value) => setStatusFilter(value as 'all' | RegistryStatus)} placeholder={null} options={[{ value: 'all', label: 'All statuses' }, ...Object.entries(statusLabels).map(([value, label]) => ({ value, label }))]} />
+          {selectedView === 'classes' ? <Select label="Lifecycle" value={lifecycleFilter} onChange={(value) => setLifecycleFilter(value as 'all' | ClassLifecycle)} placeholder={null} options={[{ value: 'all', label: 'All lifecycles' }, { value: 'upcoming', label: 'Upcoming' }, { value: 'in_progress', label: 'In progress' }, { value: 'expired', label: 'Expired' }]} /> : <div className="hidden md:block" />}
         </div>
+
+        {showPinned && <PendingPinned table={currentTable} rows={pinnedRows} saving={saving} onEdit={(row) => openEditor(currentTable, row)} onStatus={statusAction} />}
 
         {loading ? <div className="mt-4"><LoadingState label="Loading registry records..." /></div> : selectedView === 'classes' ? <ClassesView rows={filteredClasses} studentsForClass={studentsForClass} saving={saving} onEdit={(row) => openEditor('training_classes', row)} onDetail={setDetailClass} onStatus={statusAction} /> : selectedView === 'instructors' ? <InstructorsView rows={filteredInstructors} saving={saving} onEdit={(row) => openEditor('instructors', row)} onStatus={statusAction} /> : <SitesView rows={filteredSites} instructors={instructors} classes={classes} saving={saving} onEdit={(row) => openEditor('training_sites', row)} onStatus={statusAction} />}
       </SectionCard>
@@ -315,6 +345,16 @@ function RecordActions({ table, row, saving, onEdit, onStatus }: { table: Regist
   return <div className="flex flex-wrap gap-2"><Button size="sm" variant="secondary" onClick={() => onEdit(row)}>Edit</Button>{actionsFor(row.status).map((action) => <Button key={action.status} size="sm" variant={action.status === 'rejected' || action.status === 'archived' ? 'danger' : action.status === 'active' ? 'sage' : 'secondary'} loading={saving === `${table}-${row.id}-${action.status}`} onClick={() => onStatus(table, row, action)}>{action.label}</Button>)}</div>;
 }
 
+function pinnedDetail(row: Site | Instructor | TrainingClass, table: RegistryTable) {
+  if (table === 'training_classes') { const trainingClass = row as TrainingClass; return `${trainingClass.training_sites?.name ?? 'No site'} · ${trainingClass.class_start_date} to ${trainingClass.ride_time_end_date}`; }
+  if (table === 'instructors') { const instructor = row as Instructor; return `${instructor.email} · ${instructor.training_sites?.name ?? 'No site'}`; }
+  const site = row as Site; return `${site.organization_name} · ${site.city}, ${site.state}`;
+}
+
+function PendingPinned({ table, rows, saving, onEdit, onStatus }: { table: RegistryTable; rows: (Site | Instructor | TrainingClass)[]; saving: string | null; onEdit: (row: any) => void; onStatus: (table: RegistryTable, row: any, action: { status: RegistryStatus; label: string; confirm: boolean }) => void }) {
+  return <div className="mt-4 rounded-lg border-l-4 border-wfd-gold bg-wfd-gold/10 p-3"><p className="text-xs font-bold uppercase tracking-wide text-wfd-gold">Needs approval ({rows.length})</p><ul className="mt-2 space-y-2">{rows.map((row) => <li key={row.id} className="flex flex-col gap-2 rounded-lg bg-white p-2 sm:flex-row sm:items-center sm:justify-between"><div className="min-w-0"><p className="truncate font-medium text-wfd-charcoal">{titleFor(row, table)}</p><p className="text-xs text-gray-500">{pinnedDetail(row, table)}</p></div><RecordActions table={table} row={row} saving={saving} onEdit={onEdit} onStatus={onStatus} /></li>)}</ul></div>;
+}
+
 function ClassDetail({ trainingClass, students }: { trainingClass: TrainingClass; students: Student[] }) {
   return <div className="space-y-4"><div className="grid gap-3 sm:grid-cols-2"><Detail label="Training site">{trainingClass.training_sites?.name ?? 'No site'}</Detail><Detail label="Instructor">{trainingClass.instructors ? `${trainingClass.instructors.first_name} ${trainingClass.instructors.last_name}` : 'No instructor'}</Detail>{trainingClass.level && <Detail label="Level">{trainingClass.level}</Detail>}<Detail label="Class start">{trainingClass.class_start_date}</Detail><Detail label="Ride-time end">{trainingClass.ride_time_end_date}</Detail></div>{trainingClass.notes && <Detail label="Notes">{trainingClass.notes}</Detail>}<div><h4 className="font-semibold text-wfd-charcoal">Enrolled students ({students.length})</h4>{students.length === 0 ? <p className="mt-1 text-sm text-gray-600">No students are linked to this class.</p> : <ul className="mt-2 space-y-2">{students.map((student) => <li key={student.id} className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2"><div><p className="font-medium">{student.full_name}</p><p className="text-xs text-gray-500">{student.email}</p></div><Link className="text-sm font-semibold text-wfd-crimson underline" href={`/admin/students/${student.id}`}>View profile</Link></li>)}</ul>}</div></div>;
 }
@@ -327,6 +367,6 @@ function InstructorFields({ form, onChange, sites }: { form: InstructorForm; onC
 
 function ClassFields({ form, onChange, sites, instructors }: { form: ClassForm; onChange: (form: ClassForm) => void; sites: Site[]; instructors: Instructor[] }) { return <div className="grid gap-3 sm:grid-cols-2"><Select label="Training site" required value={form.trainingSiteId} onChange={(trainingSiteId) => onChange({ ...form, trainingSiteId, instructorId: trainingSiteId === form.trainingSiteId ? form.instructorId : '' })} options={sites.map((site) => ({ value: site.id, label: site.name }))} /><Select label="Instructor" required value={form.instructorId} onChange={(instructorId) => onChange({ ...form, instructorId })} options={instructors.map((instructor) => ({ value: instructor.id, label: `${instructor.first_name} ${instructor.last_name}` }))} /><Input label="Class name" required value={form.name} onChange={(event) => onChange({ ...form, name: event.target.value })} /><Select label="Level" value={form.level} onChange={(level) => onChange({ ...form, level })} options={[{ value: '', label: 'Select...' }, { value: 'First Responder', label: 'First Responder' }, { value: 'EMT', label: 'EMT' }, { value: 'AEMT', label: 'AEMT' }, { value: 'Paramedic', label: 'Paramedic' }, { value: 'Critical Care', label: 'Critical Care' }, { value: 'Community Paramedic', label: 'Community Paramedic' }, { value: 'Wilderness Paramedic', label: 'Wilderness Paramedic' }]} /><Input label="Class start" type="date" required value={form.classStartDate} onChange={(event) => onChange({ ...form, classStartDate: event.target.value })} /><Input label="Ride-time end" type="date" required value={form.rideTimeEndDate} onChange={(event) => onChange({ ...form, rideTimeEndDate: event.target.value })} /><TextArea label="Notes" value={form.notes} onChange={(value) => onChange({ ...form, notes: value })} /></div>; }
 
-function Select({ label, value, options, onChange, required }: { label: string; value: string; options: { value: string; label: string }[]; onChange: (value: string) => void; required?: boolean }) { return <FormField label={label}><select required={required} value={value} onChange={(event) => onChange(event.target.value)} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 outline-none focus:ring-2 focus:ring-wfd-crimson"><option value="">Select...</option>{options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></FormField>; }
+function Select({ label, value, options, onChange, required, placeholder = 'Select...' }: { label: string; value: string; options: { value: string; label: string }[]; onChange: (value: string) => void; required?: boolean; placeholder?: string | null }) { return <FormField label={label}><select required={required} value={value} onChange={(event) => onChange(event.target.value)} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 outline-none focus:ring-2 focus:ring-wfd-crimson">{placeholder !== null && <option value="">{placeholder}</option>}{options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></FormField>; }
 
 function TextArea({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) { return <FormField label={label}><textarea value={value} onChange={(event) => onChange(event.target.value)} rows={3} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 outline-none focus:ring-2 focus:ring-wfd-crimson" /></FormField>; }
