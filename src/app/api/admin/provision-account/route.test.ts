@@ -23,6 +23,7 @@ function createMockAdminClient() {
     listUsers: vi.fn(async () => ({ data: { users: mockState.existingUsers }, error: null })),
     createUser: vi.fn(async () => mockState.createUserResult),
     deleteUser: vi.fn(async () => ({ error: null })),
+    updateUserById: vi.fn(async () => ({ data: { user: { id: 'updated' } }, error: null })),
   };
   return { auth: { admin: adminMocks }, from: (table: string) => createBuilder(table) };
 }
@@ -39,9 +40,13 @@ function createBuilder(table: string) {
   b.neq = vi.fn(() => b);
   b.in = vi.fn(() => b);
   b.maybeSingle = vi.fn(async () => {
-    const row = mockState.rows?.[table] ?? {};
-    if ('email' in b._eq) return { data: row.byEmail ?? null, error: null };
-    if ('auth_user_id' in b._eq) return { data: row.byAuthId ?? null, error: null };
+    if ('email' in b._eq) {
+      if (table === 'students') return { data: mockState.studentsByEmail ?? null, error: null };
+      return { data: mockState.targetRow ?? null, error: null };
+    }
+    if ('auth_user_id' in b._eq) {
+      return { data: mockState.ownerRows?.[table] ?? null, error: null };
+    }
     return { data: null, error: null };
   });
   b.single = vi.fn(async () => {
@@ -67,6 +72,16 @@ function adminBody(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function preceptorBody(overrides: Record<string, unknown> = {}) {
+  return {
+    accountType: 'preceptor',
+    email: 'new.preceptor@example.com',
+    password: 'secret1',
+    fullName: 'New Preceptor',
+    ...overrides,
+  };
+}
+
 async function post(body: unknown) {
   const { POST } = await import('./route');
   return POST(new Request('https://example.test/api/admin/provision-account', {
@@ -78,8 +93,10 @@ async function post(body: unknown) {
 beforeEach(() => {
   vi.resetModules();
   mockState = {
+    studentsByEmail: null,
+    targetRow: null,
+    ownerRows: {},
     existingUsers: [],
-    rows: {},
     deletes: [],
     createUserResult: { data: { user: { id: 'created-1' } }, error: null },
     insertResults: {},
@@ -88,72 +105,71 @@ beforeEach(() => {
 });
 
 describe('POST /api/admin/provision-account', () => {
-  it('adopts an unlinked existing auth user whose role matches', async () => {
+  it('replaces an unlinked staff login instead of adopting it', async () => {
     mockState.existingUsers = [
       { id: 'u1', email: 'orphan@example.com', app_metadata: { role: 'preceptor' }, last_sign_in_at: null },
     ];
 
-    const res = await post({
-      accountType: 'preceptor',
-      email: 'orphan@example.com',
-      password: 'secret1',
-      fullName: 'Orphan Preceptor',
-    });
+    const res = await post(preceptorBody({ email: 'orphan@example.com' }));
     const data = await res.json();
 
     expect(res.status).toBe(200);
     expect(data.success).toBe(true);
-    expect(data.adopted).toBe(true);
-    expect(data.userId).toBe('u1');
-    expect(adminMocks.createUser).not.toHaveBeenCalled();
-    expect(adminMocks.deleteUser).not.toHaveBeenCalled();
+    expect(data.replaced).toBe(true);
+    expect(adminMocks.deleteUser).toHaveBeenCalledWith('u1');
+    expect(adminMocks.createUser).toHaveBeenCalledTimes(1);
+    expect(adminMocks.updateUserById).not.toHaveBeenCalled();
   });
 
-  it('rejects a role mismatch without silently changing the existing role', async () => {
+  it('requires confirmation before escalating a preceptor login to admin', async () => {
     mockState.existingUsers = [
-      { id: 'u2', email: 'student@example.com', app_metadata: { role: 'student' }, last_sign_in_at: null },
+      { id: 'u2', email: 'orphan@example.com', app_metadata: { role: 'preceptor' }, last_sign_in_at: null },
     ];
-    mockState.rows = { students: { byAuthId: { id: 's1' } } };
+
+    const first = await post(adminBody({ email: 'orphan@example.com' }));
+    const firstData = await first.json();
+    expect(first.status).toBe(409);
+    expect(firstData.code).toBe('confirmation_required');
+    expect(firstData.existingRole).toBe('preceptor');
+    expect(adminMocks.deleteUser).not.toHaveBeenCalled();
+    expect(adminMocks.createUser).not.toHaveBeenCalled();
+
+    const second = await post(adminBody({ email: 'orphan@example.com', confirmRoleChange: true }));
+    const secondData = await second.json();
+    expect(second.status).toBe(200);
+    expect(secondData.replaced).toBe(true);
+    expect(adminMocks.deleteUser).toHaveBeenCalledWith('u2');
+    expect(adminMocks.createUser).toHaveBeenCalledTimes(1);
+  });
+
+  it('refuses a staff account for an email used by a student record', async () => {
+    mockState.studentsByEmail = { id: 's1' };
 
     const res = await post(adminBody({ email: 'student@example.com' }));
     const data = await res.json();
 
     expect(res.status).toBe(409);
-    expect(data.code).toBe('role_mismatch');
-    expect(data.ownerType).toBe('student');
+    expect(data.code).toBe('cross_family');
     expect(adminMocks.createUser).not.toHaveBeenCalled();
   });
 
-  it('rejects an email that already backs a linked account', async () => {
+  it('changes a linked staff login role in place without deleting it', async () => {
     mockState.existingUsers = [
-      { id: 'u3', email: 'dupe@example.com', app_metadata: { role: 'admin' }, last_sign_in_at: null },
+      { id: 'u3', email: 'prec@example.com', app_metadata: { role: 'preceptor' }, last_sign_in_at: '2026-01-01T00:00:00Z' },
     ];
-    mockState.rows = { admin_accounts: { byEmail: { id: 'a1', auth_user_id: 'u3' } } };
+    mockState.ownerRows = { preceptors: { id: 'p1' } };
 
-    const res = await post(adminBody({ email: 'dupe@example.com' }));
+    const res = await post(adminBody({ email: 'prec@example.com', confirmRoleChange: true }));
     const data = await res.json();
 
-    expect(res.status).toBe(409);
-    expect(data.code).toBe('email_exists');
+    expect(res.status).toBe(200);
+    expect(data.roleChanged).toBe(true);
+    expect(adminMocks.updateUserById).toHaveBeenCalledWith('u3', expect.objectContaining({ app_metadata: { role: 'admin' } }));
+    expect(adminMocks.deleteUser).not.toHaveBeenCalled();
     expect(adminMocks.createUser).not.toHaveBeenCalled();
   });
 
-  it('deletes only the auth user it created when linking fails', async () => {
-    mockState.existingUsers = [];
-    mockState.linkResult = { data: null, error: { message: 'link failed' } };
-
-    const res = await post(adminBody());
-    const data = await res.json();
-
-    expect(res.status).toBe(500);
-    expect(data.code).toBe('link_failed');
-    expect(adminMocks.createUser).toHaveBeenCalledTimes(1);
-    expect(adminMocks.deleteUser).toHaveBeenCalledWith('created-1');
-    expect(mockState.deletes).toContain('admin_accounts');
-  });
-
-  it('fails on the profile insert before creating any auth user', async () => {
-    mockState.existingUsers = [];
+  it('fails on the profile insert before creating any auth login', async () => {
     mockState.insertResults = {
       admin_accounts: {
         data: null,
@@ -165,5 +181,18 @@ describe('POST /api/admin/provision-account', () => {
 
     expect(res.status).toBe(400);
     expect(adminMocks.createUser).not.toHaveBeenCalled();
+  });
+
+  it('deletes only the login it created when linking fails', async () => {
+    mockState.linkResult = { data: null, error: { message: 'link failed' } };
+
+    const res = await post(adminBody());
+    const data = await res.json();
+
+    expect(res.status).toBe(500);
+    expect(data.code).toBe('link_failed');
+    expect(adminMocks.createUser).toHaveBeenCalledTimes(1);
+    expect(adminMocks.deleteUser).toHaveBeenCalledWith('created-1');
+    expect(mockState.deletes).toContain('admin_accounts');
   });
 });

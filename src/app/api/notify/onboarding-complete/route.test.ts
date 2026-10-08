@@ -181,4 +181,19 @@ describe('POST /api/notify/onboarding-complete', () => {
     expect(data.success).toBe(false);
     expect(data.password).toBeUndefined();
   });
+
+  it('refuses onboarding when a staff login already uses the email', async () => {
+    mockState.users = [{ id: 'staff-1', email: mockState.student.email, app_metadata: { role: 'admin' } }];
+
+    const res = await post({
+      studentId: mockState.student.id,
+      onboardingToken: 'abcdefghijklmnopqrstuvwxyz123456',
+    });
+    const data = await res.json();
+
+    expect(res.status).toBe(409);
+    expect(data.success).toBe(false);
+    expect(data.password).toBeUndefined();
+    expect(mockState.studentUpdates ?? []).toEqual([]);
+  });
 });

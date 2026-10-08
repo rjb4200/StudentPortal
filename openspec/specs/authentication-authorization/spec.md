@@ -3,15 +3,19 @@
 Define authentication, authorization, role-based access control, and student access enforcement for the portal.
 ## Requirements
 ### Requirement: Admin-gated account creation with temp passwords
-Students SHALL only receive login access after completing onboarding through a verified onboarding session and after the Training Major approves their onboarding submission. The system SHALL create a Supabase Auth user with the student's email, a cryptographically secure random 6-digit temporary PIN/password, and protected `app_metadata.role = 'student'` upon verified onboarding quiz completion, or reuse an existing auth user for the same email if one already exists. The temp PIN SHALL be displayed on the completion screen and emailed to the student only for the verified completing onboarding session.
+Students SHALL only receive login access after completing onboarding through a verified onboarding session and after the Training Major approves their onboarding submission. The system SHALL create a Supabase Auth user with the student's email, a cryptographically secure random 6-digit temporary PIN/password, and protected `app_metadata.role = 'student'` upon verified onboarding quiz completion, or reuse an existing auth user for the same email only when that user has role `student`. If an auth user with a staff role already exists for the email, the system SHALL refuse and instruct the student to use a different email, keeping student and staff accounts separate. The temp PIN SHALL be displayed on the completion screen and emailed to the student only for the verified completing onboarding session.
 
 #### Scenario: Auth user created on verified onboarding completion
 - **WHEN** a student completes the onboarding quiz and submits matching onboarding session proof for their student record
 - **THEN** a Supabase Auth user is created with a cryptographically secure random 6-digit PIN/password, `app_metadata.role = 'student'`, `students.auth_user_id` is set, and credentials are returned to the verified frontend session
 
-#### Scenario: Existing auth user reused on verified onboarding completion
-- **WHEN** a student completes onboarding with valid onboarding session proof and an auth user already exists for their email
+#### Scenario: Existing student auth user reused on verified onboarding completion
+- **WHEN** a student completes onboarding with valid onboarding session proof and an auth user already exists for their email with role `student`
 - **THEN** creation is skipped, the current enrollment row is linked through `students.auth_user_id`, and no new password is generated
+
+#### Scenario: Staff email refused for student onboarding
+- **WHEN** a student completes onboarding with an email that already has a staff login
+- **THEN** the system refuses, instructs the student to use a different email, and does not link the enrollment to the staff login
 
 #### Scenario: Admin approves pending student
 - **WHEN** an admin approves a submitted onboarding as part of daily ops
@@ -205,26 +209,22 @@ The system middleware SHALL evaluate the active student row resolved by `student
 - **WHEN** an authenticated user with no matching `students` row by `auth_user_id` makes a request to `/dashboard`
 - **THEN** the session is blocked and the user is redirected to `/login?reason=not-registered`
 
-### Requirement: Orthogonal student enrollment and staff role
-The system SHALL treat student status and staff role as independent dimensions of a single auth user. `app_metadata.role` SHALL remain a single capability value that acts as a ceiling, where `admin` includes all `preceptor` capabilities and `preceptor` accounts MAY also hold a student enrollment. Student access SHALL be resolved by the `students` table row whose `auth_user_id` matches the authenticated user, independent of `app_metadata.role`. Provisioning a staff account for an email that also has, or later gains, a student enrollment SHALL NOT be blocked solely because the person is a student.
+### Requirement: Separate student and staff accounts
+The system SHALL treat student accounts and staff accounts as separate account families. A single email SHALL back exactly one family; a person who is both a student and staff SHALL use distinct emails for each account. The system SHALL NOT link a student record to a staff login or a staff record to a student login. Student access SHALL continue to be resolved by the `students` row whose `auth_user_id` matches the authenticated user.
 
-#### Scenario: Admin who is also a student reaches both areas
-- **WHEN** an auth user has `app_metadata.role = 'admin'` and a `students` row whose `auth_user_id` matches their user id
-- **THEN** the user is authorized for `/admin` by role and for `/dashboard` by the student enrollment, and both are reachable
+#### Scenario: Both accounts under different emails
+- **WHEN** a person holds a student account under one email and a staff account under another email
+- **THEN** both accounts function independently and neither blocks creation or use of the other
 
-#### Scenario: Preceptor who is also a student reaches both areas
-- **WHEN** an auth user has `app_metadata.role = 'preceptor'` and a `students` row whose `auth_user_id` matches their user id
-- **THEN** the user is authorized for `/preceptor` by role and for `/dashboard` by the student enrollment
+#### Scenario: Staff email cannot create a student account
+- **WHEN** onboarding completes for an email that already has a staff login
+- **THEN** the enrollment is not linked to the staff login and the student is told to use a different email
 
-#### Scenario: Student enrollment does not grant staff access
-- **WHEN** an auth user has only a `students` row and a non-staff `app_metadata.role`
-- **THEN** the user is denied access to `/admin` and `/preceptor`
+#### Scenario: Student email cannot create a staff account
+- **WHEN** an admin creates a staff account for an email used by a student record
+- **THEN** the operation is refused and the admin is told to use a different email
 
-#### Scenario: Staff role ceiling covers preceptor capabilities
+#### Scenario: Staff role ceiling unchanged
 - **WHEN** an auth user has `app_metadata.role = 'admin'`
 - **THEN** the user is authorized for the Preceptor area in addition to the Admin area
-
-#### Scenario: Existing enrollment is not overwritten by provisioning
-- **WHEN** a staff account is provisioned for an email that already has a linked student enrollment
-- **THEN** the student enrollment and its `auth_user_id` link are preserved and the staff role does not remove student access
 

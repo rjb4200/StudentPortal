@@ -41,29 +41,30 @@ See `proposal.md` for motivation. Current state that shapes this design:
 
 **Alternative considered:** Client-side insert with a `delete-auth-user` call on failure. Rejected: unreliable, and the browser may be gone before cleanup runs.
 
-### D3: Create-or-adopt with explicit ownership resolution
-**Decision:** Before creating, look up an existing auth user by email.
+### D3: Replace unlinked staff logins (delete + recreate)
+**Decision:** When an email already has an unlinked staff login, delete it and create a fresh login with the requested role and password, then link the new profile row. Do not adopt it.
 - none → create
-- exists, unlinked, role matches account type → adopt (link)
-- exists, linked, or role differs → return a structured conflict naming the owner; do not modify the existing user
+- exists, unlinked staff → replace (delete + recreate)
+- exists, linked staff of a different role → change role in place, with confirmation
+- exists, linked student, or a student record for the email → refuse (separate families)
 
-**Why:** Turns the failure from "permanently blocked email" into "self-heals or asks a clear question." Mirrors the existing onboarding reuse pattern.
+**Why:** Recreating makes the requested role and password apply cleanly and avoids carrying an unknown password or stale metadata. The previous adopt path could not set a password, which silently broke login for the newly created account.
 
-**Alternative considered:** Always fail on existing email and require manual DB cleanup. Rejected: that is exactly the current bug.
+**Alternative considered:** Adopt + `updateUserById(role, password)` (no delete/create gap). Rejected in favor of delete + recreate per the "orphan cleanup" decision; the gap only exists for an already-abandoned, never-signed-in login, and the sweep/health surface it if recreation fails.
 
-### D4: Never silently change an adopted user's role
-**Decision:** Adoption links but does not overwrite an existing role; mismatched or owned emails produce a conflict requiring an explicit admin choice.
+### D4: Staff role changes require explicit confirmation
+**Decision:** A role change within the staff family (preceptor ↔ admin) is permitted only when the request carries an explicit confirmation. A cross-family change (student ↔ staff) is always refused.
 
-**Why:** Prevents a benign "add preceptor" from silently escalating a live student account to admin, and prevents clobbering an existing owner.
+**Why:** Keeps the "no silent escalation" guarantee while allowing the deliberate preceptor → admin escalation the user asked for.
 
-**Consequence:** An admin who genuinely wants to change a role uses an explicit promote/convert path (out of scope here; the conflict message tells them to use a different email or perform an explicit change).
+**Consequence:** The UI shows a confirmation dialog when the server reports an existing staff login whose role differs from the requested one; the request is not applied until confirmed.
 
-### D5: Role as capability ceiling; student status as orthogonal enrollment
-**Decision:** Keep `app_metadata.role` scalar, treat it as a ceiling (`student` < `preceptor` < `admin`, admin already supersets preceptor in `canAccessPreceptor`), and rely on the `students.auth_user_id` link for student access, which middleware and RLS already resolve independently of role.
+### D5: Student and staff accounts are separate families
+**Decision:** A single email backs exactly one account family. A person who is both a student and staff uses distinct emails. Student access stays resolved by the `students` row whose `auth_user_id` matches; onboarding auth reuse is restricted to `role = 'student'` logins; staff provisioning refuses emails used by a student record.
 
-**Why:** Every realistic combination (student+admin, student+preceptor, student+admin+preceptor) is already expressible. A roles array would require rewriting role reads in `roles.ts`, middleware, login routing, and ~20 RLS policies for no behavioral gain.
+**Why:** Matches the product rule that students and staff are kept separate, and avoids a single login holding both a student enrollment and a staff role.
 
-**Alternative considered:** `app_metadata.roles: string[]` with set membership checks. Rejected as high-churn, low-value.
+**Alternative considered:** One auth user holding both (orthogonal enrollment). Rejected: contradicts the separation rule.
 
 ### D6: Reconciliation sweep plus health metric
 **Decision:** Extend the daily sweep to detect orphans (no matching profile by `auth_user_id` or email) and, when configured to clean, delete only never-signed-in orphans, recording counts to the run summary. Surface an orphan count on System Health.
@@ -84,12 +85,12 @@ See `proposal.md` for motivation. Current state that shapes this design:
 
 ## Risks / Trade-offs
 
-- [Profile row left unlinked when auth step fails] → Treat unlinked profile rows as retryable in the conflict path; surface a clear error; the row is inert without `auth_user_id`.
-- [Email lookup via `listUsers` is paginated and could miss a user at scale] → Use the admin API's email lookup or a paged scan; keep the sweep as backstop. Confirm the SDK's current email-lookup capability during implementation.
-- [Compensation delete itself fails, leaving an orphan] → Orphan then self-heals on the next create (D3) and is caught by the sweep (D6). Never a permanent block.
-- [Adoption could be abused to attach an unlinked user to the wrong profile] → Only unlinked, role-matching users are adoptable; mismatch returns a conflict.
-- [Partial unique index on `auth_user_id` fails to create if duplicate links already exist] → Pre-check and de-duplicate existing data in the migration before adding the index.
-- [Role-ceiling model means an admin always has preceptor access] → Accepted; this matches existing `canAccessPreceptor` semantics. Preceptor gallery membership remains data-driven from the `preceptors` table, not the role.
+- [Profile row left unlinked when the auth step fails] → Treat unlinked profile rows as retryable; surface a clear error; the row is inert without `auth_user_id`.
+- [Email lookup via `listUsers` is paginated and could miss a user at scale] → Page through `listUsers`; keep the sweep as backstop.
+- [Delete-then-recreate leaves a gap if recreation fails] → The deleted login is an abandoned, never-signed-in orphan; on failure, report it and let the sweep/health surface it. Linked logins are never deleted — their role is changed in place.
+- [Cross-family misclassification] → Determine family from both the profile tables (by email) and the login's role; refuse whenever a student record or student login is involved.
+- [Partial unique index on `auth_user_id` fails if duplicate links already exist] → Pre-check and de-duplicate in the migration.
+- [Staff role change applied without confirmation] → The route refuses a staff role change unless the request carries an explicit confirmation flag.
 
 ## Migration Plan
 
@@ -97,8 +98,9 @@ See `proposal.md` for motivation. Current state that shapes this design:
 2. Ship the consolidated provisioning route and point `accounts/page.tsx` at it; keep `create-auth-user` behavior reachable only through the new route.
 3. Run a one-time orphan audit query to enumerate and review existing orphans before enabling the sweep's clean mode.
 4. Enable sweep reconciliation (detect first, then clean never-signed-in orphans), and add the System Health orphan metric.
-5. Verify: create admin for an unlinked orphan email (adopt path), attempt duplicate role conflict, simulate mid-provision failure and confirm no orphan remains.
+5. Verify: create an admin for an unlinked preceptor orphan (replace + escalation confirm), attempt a cross-family refusal, simulate a mid-provision failure and confirm no orphan remains.
 
 ## Open Questions
 
-- Whether the conflict response should offer a one-click "promote existing user" action now, or only direct the admin to a different email. Safe to defer; the specs require a conflict and do not require the one-click path.
+- Whether a **linked** staff account of a different role should be converted in place or require a separate email. Current design: in-place role change with confirmation; revisit if it causes confusion.
+- Whether the onboarding-completion refusal for a staff email should offer a "use a different email" retry inline or just instruct the student.

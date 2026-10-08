@@ -55,6 +55,7 @@ export const provisionAccountBody = z.discriminatedUnion('accountType', [
     notifyDailyReport: z.boolean().optional().default(false),
     notifyScheduleRequested: z.boolean().optional().default(true),
     notifyClassMou: z.boolean().optional().default(false),
+    confirmRoleChange: z.boolean().optional(),
   }),
   z.object({
     accountType: z.literal('preceptor'),
@@ -68,13 +69,16 @@ export const provisionAccountBody = z.discriminatedUnion('accountType', [
     notifyEvaluation: z.boolean().optional().default(false),
     notifyScheduleApproved: z.boolean().optional().default(false),
     isActive: z.boolean().optional().default(true),
+    confirmRoleChange: z.boolean().optional(),
   }),
 ]);
 
 export const accountProvisionConflictSchema = z.object({
   error: z.string(),
-  code: z.enum(['email_exists', 'role_mismatch', 'link_failed', 'validation']),
+  code: z.enum(['email_exists', 'confirmation_required', 'cross_family', 'link_failed', 'validation']),
   ownerType: z.enum(['student', 'admin', 'preceptor', 'auth']).nullable().optional(),
+  existingRole: z.string().nullable().optional(),
+  requestedRole: z.enum(['admin', 'preceptor']).optional(),
 });
 
 export type AccountProvisionConflict = z.infer<typeof accountProvisionConflictSchema>;

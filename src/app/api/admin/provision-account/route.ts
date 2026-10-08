@@ -6,8 +6,15 @@ import { publicEnv } from '@/lib/env';
 import { provisionAccountBody } from '@/lib/validation';
 import { authUserRole, findAccountOwnerByAuthUserId, findAuthUserByEmail, type AccountOwner } from '@/lib/auth-provisioning';
 
-function conflict(error: string, code: 'email_exists' | 'role_mismatch', ownerType: AccountOwner | 'auth' | null) {
-  return NextResponse.json({ error, code, ownerType }, { status: 409 });
+type ConflictCode = 'email_exists' | 'confirmation_required' | 'cross_family';
+
+function conflict(
+  error: string,
+  code: ConflictCode,
+  ownerType: AccountOwner | 'auth' | null,
+  extra?: Record<string, unknown>,
+) {
+  return NextResponse.json({ error, code, ownerType, ...extra }, { status: 409 });
 }
 
 function buildProfilePayload(input: ReturnType<typeof provisionAccountBody.parse>) {
@@ -60,45 +67,58 @@ export async function POST(request: NextRequest) {
 
   const admin = createAdminClient() as any;
   const table: 'admin_accounts' | 'preceptors' = input.accountType === 'admin' ? 'admin_accounts' : 'preceptors';
-  const otherTable: 'admin_accounts' | 'preceptors' = input.accountType === 'admin' ? 'preceptors' : 'admin_accounts';
-  const otherOwnerLabel: AccountOwner = input.accountType === 'admin' ? 'preceptor' : 'admin';
   const role = input.accountType;
   const email = input.email;
+  const crossFamilyMessage = 'This email is used by a student account. Student and staff accounts are separate — use a different email.';
 
-  // Email ownership: the same email may not back two staff accounts.
-  const { data: otherRow } = await admin.from(otherTable).select('id').eq('email', email).maybeSingle();
-  if (otherRow) {
-    return conflict(`This email already belongs to a ${otherOwnerLabel} account. Use a different email.`, 'email_exists', otherOwnerLabel);
+  // Student and staff are separate families: a student email cannot back a staff account.
+  const { data: studentRow } = await admin.from('students').select('id').eq('email', email).maybeSingle();
+  if (studentRow) {
+    return conflict(crossFamilyMessage, 'cross_family', 'student');
   }
 
-  // Reuse an unlinked leftover profile row for the same email, otherwise insert a fresh one.
+  // Duplicate: a linked account already exists in the target table.
   const { data: targetRow } = await admin.from(table).select('id, auth_user_id').eq('email', email).maybeSingle();
   if (targetRow?.auth_user_id) {
     return conflict(`A ${input.accountType} account already exists for this email.`, 'email_exists', input.accountType);
   }
 
-  // Create-or-adopt the auth user.
   const existingUser = await findAuthUserByEmail(admin, email);
   let authUserId: string | null = null;
   let createdAuthUser = false;
+  let deleteExistingUser = false;
+  let updateExistingUser = false;
 
   if (existingUser) {
     const existingRole = authUserRole(existingUser);
     const linkedOwner = await findAccountOwnerByAuthUserId(admin, existingUser.id);
 
-    if (existingRole !== role) {
+    if (linkedOwner === 'student' || existingRole === 'student') {
+      return conflict(crossFamilyMessage, 'cross_family', 'student');
+    }
+
+    if (linkedOwner === role) {
+      return conflict(`A ${input.accountType} account already exists for this email.`, 'email_exists', input.accountType);
+    }
+
+    const roleChange = existingRole !== null && existingRole !== role;
+    if (roleChange && !input.confirmRoleChange) {
       return conflict(
-        `This email already has an account with the "${existingRole ?? 'unknown'}" role. Use a different email or change that account's role explicitly.`,
-        'role_mismatch',
+        `This email already has a "${existingRole}" login. Creating this account will change its role to "${role}" and replace its password. Confirm to continue.`,
+        'confirmation_required',
         linkedOwner ?? 'auth',
+        { existingRole, requestedRole: role },
       );
     }
 
-    if (linkedOwner && linkedOwner !== role) {
-      return conflict(`This email already belongs to a ${linkedOwner} account. Use a different email.`, 'email_exists', linkedOwner);
-    }
-
     authUserId = existingUser.id;
+    if (linkedOwner) {
+      // Linked staff login in the other table: change role in place (never delete a linked login).
+      updateExistingUser = true;
+    } else {
+      // Unlinked orphan: replace (delete + recreate) so role and password apply.
+      deleteExistingUser = true;
+    }
   }
 
   // Profile row first so a mid-flight failure never reserves the email.
@@ -107,6 +127,7 @@ export async function POST(request: NextRequest) {
 
   if (targetRow) {
     profileRowId = targetRow.id;
+    await admin.from(table).update(buildProfilePayload(input)).eq('id', profileRowId);
   } else {
     const { data: inserted, error: insertError } = await admin
       .from(table)
@@ -135,6 +156,35 @@ export async function POST(request: NextRequest) {
     }
     authUserId = created.user.id;
     createdAuthUser = true;
+  } else if (deleteExistingUser) {
+    const { error: deleteError } = await admin.auth.admin.deleteUser(authUserId);
+    if (deleteError) {
+      if (insertedProfile) await admin.from(table).delete().eq('id', profileRowId);
+      return NextResponse.json({ error: deleteError.message ?? 'Failed to replace existing login', code: 'link_failed' }, { status: 500 });
+    }
+
+    const { data: recreated, error: recreateError } = await admin.auth.admin.createUser({
+      email,
+      password: input.password,
+      email_confirm: true,
+      app_metadata: { role },
+    });
+
+    if (recreateError || !recreated?.user) {
+      if (insertedProfile) await admin.from(table).delete().eq('id', profileRowId);
+      return NextResponse.json({ error: recreateError?.message ?? 'Failed to recreate login', code: 'link_failed' }, { status: 500 });
+    }
+    authUserId = recreated.user.id;
+    createdAuthUser = true;
+  } else if (updateExistingUser) {
+    const { error: updateError } = await admin.auth.admin.updateUserById(authUserId, {
+      password: input.password,
+      app_metadata: { role },
+    });
+    if (updateError) {
+      if (insertedProfile) await admin.from(table).delete().eq('id', profileRowId);
+      return NextResponse.json({ error: updateError.message ?? 'Failed to update existing login', code: 'link_failed' }, { status: 500 });
+    }
   }
 
   const { error: linkError } = await admin
@@ -146,7 +196,7 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (linkError) {
-    // Compensation: only remove the auth user this request created.
+    // Compensation: only remove the auth login this request created.
     if (createdAuthUser && authUserId) {
       await admin.auth.admin.deleteUser(authUserId).catch(() => {});
     }
@@ -154,5 +204,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to link account to auth user', code: 'link_failed' }, { status: 500 });
   }
 
-  return NextResponse.json({ success: true, userId: authUserId, profileId: profileRowId, adopted: !createdAuthUser });
+  return NextResponse.json({
+    success: true,
+    userId: authUserId,
+    profileId: profileRowId,
+    replaced: deleteExistingUser,
+    roleChanged: updateExistingUser,
+  });
 }

@@ -10,7 +10,8 @@ type Tab = 'admins' | 'preceptors' | 'students';
 type Confirmation =
   | { action: 'disable'; type: 'admin' | 'preceptor'; id: string }
   | { action: 'delete'; type: 'admin' | 'preceptor'; row: any; finalWarning?: boolean }
-  | { action: 'reset'; row: any };
+  | { action: 'reset'; row: any }
+  | { action: 'provision'; message: string; payload: any };
 
 const STATIONS = ['Station 1 - Downtown HQ', 'Station 2 - West Side', 'Station 3 - Industrial'];
 
@@ -95,6 +96,31 @@ function AccountsPageInner() {
     setMessage(null);
   }
 
+  async function submitProvision(payload: any, confirmed: boolean, successMessage: string) {
+    const res = await fetch('/api/admin/provision-account', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(confirmed ? { ...payload, confirmRoleChange: true } : payload),
+    });
+    const json = await res.json().catch(() => ({}));
+
+    if (json.code === 'confirmation_required') {
+      setSaving(false);
+      setConfirmation({ action: 'provision', message: json.error, payload });
+      return;
+    }
+
+    if (!res.ok || json.error) {
+      setMessage('Error: ' + (json.error || 'Unable to create account.'));
+      setSaving(false);
+      return;
+    }
+
+    setMessage(successMessage);
+    setSaving(false);
+    cancelEdit();
+    await loadAll();
+  }
+
   async function saveEdit() {
     setSaving(true); setMessage(null);
 
@@ -120,25 +146,19 @@ function AccountsPageInner() {
 
       if (!editing) {
         if (!formPassword) { setMessage('Password is required for new accounts.'); setSaving(false); return; }
-        const res = await fetch('/api/admin/provision-account', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            accountType: 'admin',
-            email: form.email.trim(), password: formPassword,
-            fullName: form.full_name.trim(), rank: form.rank.trim(),
-            isActive: form.is_active,
-            notifyOnboardingComplete: form.notify_onboarding_complete,
-            notifyEvaluationFlagged: form.notify_evaluation_flagged,
-            notifyStudentMessages: form.notify_student_messages,
-            notifyDailyReport: form.notify_daily_report,
-            notifyScheduleRequested: form.notify_schedule_requested,
-            notifyClassMou: form.notify_class_mou,
-          }),
-        });
-        const json = await res.json().catch(() => ({}));
-        if (!res.ok || json.error) { setMessage('Error: ' + (json.error || 'Unable to create admin account.')); setSaving(false); return; }
-        setMessage('Admin account saved.');
-        setSaving(false); cancelEdit(); await loadAll(); return;
+        await submitProvision({
+          accountType: 'admin',
+          email: form.email.trim(), password: formPassword,
+          fullName: form.full_name.trim(), rank: form.rank.trim(),
+          isActive: form.is_active,
+          notifyOnboardingComplete: form.notify_onboarding_complete,
+          notifyEvaluationFlagged: form.notify_evaluation_flagged,
+          notifyStudentMessages: form.notify_student_messages,
+          notifyDailyReport: form.notify_daily_report,
+          notifyScheduleRequested: form.notify_schedule_requested,
+          notifyClassMou: form.notify_class_mou,
+        }, false, 'Admin account saved.');
+        return;
       }
 
       if (formPassword) {
@@ -170,25 +190,19 @@ function AccountsPageInner() {
 
       if (!editing) {
         if (!formPassword) { setMessage('Password is required for new accounts.'); setSaving(false); return; }
-        const res = await fetch('/api/admin/provision-account', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            accountType: 'preceptor',
-            email: form.email.trim(), password: formPassword,
-            fullName: form.full_name.trim(),
-            stationUnit: form.station_unit || undefined,
-            bio: form.bio || undefined,
-            imageUrl: form.image_url || undefined,
-            specialtyTags: form.specialty_tags ? form.specialty_tags.split(',').map((t: string) => t.trim()).filter(Boolean) : undefined,
-            notifyEvaluation: form.notify_evaluation,
-            notifyScheduleApproved: form.notify_schedule_approved,
-            isActive: form.is_active,
-          }),
-        });
-        const json = await res.json().catch(() => ({}));
-        if (!res.ok || json.error) { setMessage('Error: ' + (json.error || 'Unable to create preceptor account.')); setSaving(false); return; }
-        setMessage('Preceptor account saved.');
-        setSaving(false); cancelEdit(); await loadAll(); return;
+        await submitProvision({
+          accountType: 'preceptor',
+          email: form.email.trim(), password: formPassword,
+          fullName: form.full_name.trim(),
+          stationUnit: form.station_unit || undefined,
+          bio: form.bio || undefined,
+          imageUrl: form.image_url || undefined,
+          specialtyTags: form.specialty_tags ? form.specialty_tags.split(',').map((t: string) => t.trim()).filter(Boolean) : undefined,
+          notifyEvaluation: form.notify_evaluation,
+          notifyScheduleApproved: form.notify_schedule_approved,
+          isActive: form.is_active,
+        }, false, 'Preceptor account saved.');
+        return;
       }
 
       if (formPassword) {
@@ -287,6 +301,14 @@ function AccountsPageInner() {
     if (!confirmation) return;
     if (confirmation.action === 'delete' && !confirmation.finalWarning) {
       setConfirmation({ ...confirmation, finalWarning: true });
+      return;
+    }
+
+    if (confirmation.action === 'provision') {
+      const { payload } = confirmation;
+      setConfirmation(null);
+      setSaving(true);
+      await submitProvision(payload, true, payload.accountType === 'admin' ? 'Admin account saved.' : 'Preceptor account saved.');
       return;
     }
 
@@ -467,9 +489,9 @@ function AccountsPageInner() {
       )}
       <ConfirmDialog
         open={confirmation !== null}
-        title={confirmation?.action === 'delete' ? (confirmation.finalWarning ? 'Final deletion warning' : 'Delete account') : confirmation?.action === 'disable' ? 'Disable account' : 'Reset test student'}
-        description={confirmation?.action === 'delete' ? (confirmation.finalWarning ? 'This cannot be undone. Proceed with permanent deletion?' : `Delete ${confirmation.row.full_name} (${confirmation.row.email}) permanently?`) : confirmation?.action === 'disable' ? 'Disable this account?' : `Reset all test student records for ${confirmation?.row.email}? This deletes test-only student data and linked auth users.`}
-        confirmLabel={confirmation?.action === 'delete' ? 'Delete account' : confirmation?.action === 'disable' ? 'Disable account' : 'Reset test student'}
+        title={confirmation?.action === 'delete' ? (confirmation.finalWarning ? 'Final deletion warning' : 'Delete account') : confirmation?.action === 'disable' ? 'Disable account' : confirmation?.action === 'provision' ? 'Confirm account change' : 'Reset test student'}
+        description={confirmation?.action === 'delete' ? (confirmation.finalWarning ? 'This cannot be undone. Proceed with permanent deletion?' : `Delete ${confirmation.row.full_name} (${confirmation.row.email}) permanently?`) : confirmation?.action === 'disable' ? 'Disable this account?' : confirmation?.action === 'provision' ? confirmation.message : `Reset all test student records for ${confirmation?.row.email}? This deletes test-only student data and linked auth users.`}
+        confirmLabel={confirmation?.action === 'delete' ? 'Delete account' : confirmation?.action === 'disable' ? 'Disable account' : confirmation?.action === 'provision' ? 'Confirm' : 'Reset test student'}
         onConfirm={confirmDestructiveAction}
         onClose={() => setConfirmation(null)}
         loading={saving || deleting !== null}

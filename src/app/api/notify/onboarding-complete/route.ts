@@ -5,6 +5,7 @@ import { buildOnboardingCompleteStudentEmail, buildOnboardingCompleteAdminEmail 
 import { publicEnv } from '@/lib/env';
 import { generateTemporaryPin, hashOnboardingToken } from '@/lib/onboarding-session';
 import { onboardingCompleteBody } from '@/lib/validation';
+import { authUserRole } from '@/lib/auth-provisioning';
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -65,6 +66,13 @@ export async function POST(request: NextRequest) {
   try {
     const { data: existing } = await supabase.auth.admin.listUsers();
     let authMatch = existing?.users?.find((u: { email?: string | null }) => u.email?.toLowerCase() === student.email.toLowerCase());
+
+    if (authMatch && ['admin', 'preceptor'].includes(authUserRole(authMatch) ?? '')) {
+      return NextResponse.json(
+        { success: false, error: 'This email is already used by a staff account. Student and staff accounts are separate — please use a different email.' },
+        { status: 409 },
+      );
+    }
 
     if (!authMatch) {
       tempPassword = generateTemporaryPin();

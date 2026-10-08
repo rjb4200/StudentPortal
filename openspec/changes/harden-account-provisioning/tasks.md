@@ -41,6 +41,29 @@
 ## 7. Verification
 
 - [x] 7.1 Run `npm run test` and `npm run build`
-- [ ] 7.2 Manual: create an admin for a known unlinked orphan email and confirm it adopts instead of erroring
+- [ ] 7.2 Manual: create an admin for a known unlinked staff login and confirm it is replaced (with a confirm prompt) instead of erroring
 - [ ] 7.3 Manual: attempt a duplicate role conflict and confirm the message names the owner and creates nothing
 - [ ] 7.4 Manual: simulate a mid-provision failure and confirm no orphaned auth user remains
+
+## 8. Replace-on-collision (Reading B) and role safety
+
+- [x] 8.1 Update the provisioning route: when an unlinked staff login exists, delete it and recreate with the requested role and password instead of adopting
+- [x] 8.2 Require an explicit confirmation flag for any staff role change (preceptor ↔ admin); return a confirm-required response otherwise
+- [x] 8.3 For a linked staff login of a different role, change the role in place with confirmation (do not delete a linked login)
+- [x] 8.4 Refuse staff provisioning when a student record uses the email (cross-family)
+
+## 9. Account Management UI confirmation
+
+- [x] 9.1 Handle the confirm-required response with a ConfirmDialog describing the login replacement and/or role change
+- [x] 9.2 Resubmit with the confirmation flag on confirm; surface cross-family refusals as clear guidance
+
+## 10. Student/staff separation on onboarding
+
+- [x] 10.1 Restrict onboarding auth reuse to `role = 'student'` logins
+- [x] 10.2 Refuse onboarding completion when a staff login already uses the email, instructing the student to use a different email
+
+## 11. Tests and verification (extension)
+
+- [x] 11.1 Provision tests: unlinked staff login replaced; staff role change requires confirmation; cross-family refusal; linked staff in-place role change
+- [x] 11.2 Onboarding test: staff email refused for student onboarding
+- [x] 11.3 Run `npm run test` and `npm run build`
