@@ -36,6 +36,8 @@ type HealthData = {
     pendingApprovals: number;
     activeInstructors: number;
     activeTrainingSites: number;
+    orphanedAuthUsers: number;
+    orphanedAuthUsersNeverSignedIn: number;
   };
   alerts: { level: 'info' | 'warning' | 'attention'; title: string; message: string }[];
   recent: {
@@ -150,7 +152,7 @@ export default function SystemHealthPage() {
             </div>
           </StatusBanner>
 
-          <FactGrid className="lg:grid-cols-4"><FactItem label="Active Students">{data.metrics.activeStudents}</FactItem><FactItem label="Pending Approvals">{data.metrics.pendingApprovals}</FactItem><FactItem label="Active Instructors">{data.metrics.activeInstructors}</FactItem><FactItem label="Active Training Sites">{data.metrics.activeTrainingSites}</FactItem></FactGrid>
+          <FactGrid className="lg:grid-cols-3"><FactItem label="Active Students">{data.metrics.activeStudents}</FactItem><FactItem label="Pending Approvals">{data.metrics.pendingApprovals}</FactItem><FactItem label="Active Instructors">{data.metrics.activeInstructors}</FactItem><FactItem label="Active Training Sites">{data.metrics.activeTrainingSites}</FactItem><FactItem label="Orphaned Auth Users">{data.metrics.orphanedAuthUsers}</FactItem><FactItem label="Never Signed In">{data.metrics.orphanedAuthUsersNeverSignedIn}</FactItem></FactGrid>
 
           <SectionCard className="p-4">
             <h2 className="font-bold text-wfd-charcoal">Operational Alerts</h2>

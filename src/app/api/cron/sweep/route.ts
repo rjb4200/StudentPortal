@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { Json } from '@/lib/supabase/database.types';
+import { findOrphanedAuthUsers } from '@/lib/auth-provisioning';
 
 export const dynamic = 'force-dynamic';
 
@@ -72,17 +73,71 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Orphan reconciliation: auth users with no matching profile by id or email.
+    let orphansFound = 0;
+    let orphansNeverSignedIn = 0;
+    let orphansCleaned = 0;
+    let orphanError: string | null = null;
+    const cleanOrphans = process.env.CRON_SWEEP_CLEAN_ORPHANS === 'true';
+
+    try {
+      const report = await findOrphanedAuthUsers(supabase);
+      orphansFound = report.total;
+      orphansNeverSignedIn = report.neverSignedIn;
+
+      if (orphansFound > 0) {
+        const { error: auditError } = await supabase.from('audit_log').insert({
+          action: `Cron sweep: detected ${orphansFound} orphaned auth user(s) (${orphansNeverSignedIn} never signed in)`,
+          performed_by: 'system',
+        });
+        if (auditError) {
+          console.error('Cron sweep orphan audit log failed:', auditError.message);
+        }
+      }
+
+      if (cleanOrphans) {
+        for (const orphan of report.orphans) {
+          if (orphan.lastSignInAt) continue;
+          const { error } = await supabase.auth.admin.deleteUser(orphan.id);
+          if (!error) orphansCleaned += 1;
+        }
+
+        if (orphansCleaned > 0) {
+          const { error: auditError } = await supabase.from('audit_log').insert({
+            action: `Cron sweep: removed ${orphansCleaned} never-signed-in orphaned auth user(s)`,
+            performed_by: 'system',
+          });
+          if (auditError) {
+            console.error('Cron sweep orphan cleanup audit log failed:', auditError.message);
+          }
+        }
+      }
+    } catch (error) {
+      orphanError = error instanceof Error ? error.message : 'Orphan reconciliation failed';
+      console.error('Cron sweep orphan reconciliation failed:', orphanError);
+    }
+
     const finishedAt = new Date();
     const expiredCount = expired?.length ?? 0;
     await recordJobRun(supabase, {
       status: 'success',
       startedAt,
       finishedAt,
-      summary: { expired: expiredCount },
+      summary: {
+        expired: expiredCount,
+        orphans: orphansFound,
+        orphansNeverSignedIn,
+        orphansCleaned,
+        ...(orphanError ? { orphanError } : {}),
+      },
     });
 
     return NextResponse.json({
       expired: expiredCount,
+      orphans: orphansFound,
+      orphansNeverSignedIn,
+      orphansCleaned,
+      orphanError,
       timestamp: finishedAt.toISOString(),
     });
   } catch (error) {

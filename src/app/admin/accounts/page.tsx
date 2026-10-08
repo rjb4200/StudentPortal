@@ -118,20 +118,33 @@ function AccountsPageInner() {
       if (!form.full_name.trim() || !form.email.trim()) { setMessage('Name and email required.'); setSaving(false); return; }
       if (!form.rank?.trim()) { setMessage('Rank is required.'); setSaving(false); return; }
 
-      let authUserId = editing?.auth_user_id;
-      if (!authUserId && !editing) {
+      if (!editing) {
         if (!formPassword) { setMessage('Password is required for new accounts.'); setSaving(false); return; }
-        const res = await fetch('/api/admin/create-auth-user', {
+        const res = await fetch('/api/admin/provision-account', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: form.email.trim(), password: formPassword, role: 'admin' }),
+          body: JSON.stringify({
+            accountType: 'admin',
+            email: form.email.trim(), password: formPassword,
+            fullName: form.full_name.trim(), rank: form.rank.trim(),
+            isActive: form.is_active,
+            notifyOnboardingComplete: form.notify_onboarding_complete,
+            notifyEvaluationFlagged: form.notify_evaluation_flagged,
+            notifyStudentMessages: form.notify_student_messages,
+            notifyDailyReport: form.notify_daily_report,
+            notifyScheduleRequested: form.notify_schedule_requested,
+            notifyClassMou: form.notify_class_mou,
+          }),
         });
-        const json = await res.json();
-        if (json.error) { setMessage('Error: ' + json.error); setSaving(false); return; }
-        authUserId = json.userId;
-      } else if (formPassword && editing) {
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok || json.error) { setMessage('Error: ' + (json.error || 'Unable to create admin account.')); setSaving(false); return; }
+        setMessage('Admin account saved.');
+        setSaving(false); cancelEdit(); await loadAll(); return;
+      }
+
+      if (formPassword) {
         await fetch('/api/admin/update-auth-user', {
           method: 'PUT', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: authUserId, password: formPassword }),
+          body: JSON.stringify({ userId: editing.auth_user_id, password: formPassword }),
         });
       }
 
@@ -145,11 +158,8 @@ function AccountsPageInner() {
         notify_class_mou: form.notify_class_mou,
         updated_at: new Date().toISOString(),
       };
-      if (authUserId) payload.auth_user_id = authUserId;
 
-      const result = editing
-        ? await supabase.from('admin_accounts').update(payload).eq('id', editing.id)
-        : await supabase.from('admin_accounts').insert({ ...payload, auth_user_id: authUserId });
+      const result = await supabase.from('admin_accounts').update(payload).eq('id', editing.id);
 
       if (result.error) { setMessage('Error: ' + result.error.message); setSaving(false); return; }
       setMessage('Admin account saved.');
@@ -158,20 +168,33 @@ function AccountsPageInner() {
     if (editType === 'preceptor') {
       if (!form.full_name.trim() || !form.email.trim()) { setMessage('Name and email required.'); setSaving(false); return; }
 
-      let authUserId = editing?.auth_user_id;
-      if (!authUserId && !editing) {
+      if (!editing) {
         if (!formPassword) { setMessage('Password is required for new accounts.'); setSaving(false); return; }
-        const res = await fetch('/api/admin/create-auth-user', {
+        const res = await fetch('/api/admin/provision-account', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: form.email.trim(), password: formPassword, role: 'preceptor' }),
+          body: JSON.stringify({
+            accountType: 'preceptor',
+            email: form.email.trim(), password: formPassword,
+            fullName: form.full_name.trim(),
+            stationUnit: form.station_unit || undefined,
+            bio: form.bio || undefined,
+            imageUrl: form.image_url || undefined,
+            specialtyTags: form.specialty_tags ? form.specialty_tags.split(',').map((t: string) => t.trim()).filter(Boolean) : undefined,
+            notifyEvaluation: form.notify_evaluation,
+            notifyScheduleApproved: form.notify_schedule_approved,
+            isActive: form.is_active,
+          }),
         });
-        const json = await res.json();
-        if (json.error) { setMessage('Error: ' + json.error); setSaving(false); return; }
-        authUserId = json.userId;
-      } else if (formPassword && editing) {
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok || json.error) { setMessage('Error: ' + (json.error || 'Unable to create preceptor account.')); setSaving(false); return; }
+        setMessage('Preceptor account saved.');
+        setSaving(false); cancelEdit(); await loadAll(); return;
+      }
+
+      if (formPassword) {
         await fetch('/api/admin/update-auth-user', {
           method: 'PUT', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: authUserId, password: formPassword }),
+          body: JSON.stringify({ userId: editing.auth_user_id, password: formPassword }),
         });
       }
 
@@ -184,11 +207,8 @@ function AccountsPageInner() {
         notify_schedule_approved: form.notify_schedule_approved,
         updated_at: new Date().toISOString(),
       };
-      if (authUserId) payload.auth_user_id = authUserId;
 
-      const result = editing
-        ? await supabase.from('preceptors').update(payload).eq('id', editing.id)
-        : await supabase.from('preceptors').insert({ ...payload, auth_user_id: authUserId });
+      const result = await supabase.from('preceptors').update(payload).eq('id', editing.id);
 
       if (result.error) { setMessage('Error: ' + result.error.message); setSaving(false); return; }
       setMessage('Preceptor account saved.');

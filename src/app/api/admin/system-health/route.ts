@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { publicEnv } from '@/lib/env';
 import { canAccessAdmin } from '@/lib/roles';
+import { findOrphanedAuthUsers } from '@/lib/auth-provisioning';
 import packageInfo from '../../../../../package.json';
 
 export const dynamic = 'force-dynamic';
@@ -108,6 +109,8 @@ export async function GET(request: NextRequest) {
     pendingApprovals: 0,
     activeInstructors: 0,
     activeTrainingSites: 0,
+    orphanedAuthUsers: 0,
+    orphanedAuthUsersNeverSignedIn: 0,
   };
 
   try {
@@ -117,10 +120,27 @@ export async function GET(request: NextRequest) {
       countRows(supabase, 'instructors', (query) => query.eq('status', 'active')),
       countRows(supabase, 'training_sites', (query) => query.eq('status', 'active')),
     ]);
-    metrics = { activeStudents, pendingApprovals, activeInstructors, activeTrainingSites };
+    metrics = { ...metrics, activeStudents, pendingApprovals, activeInstructors, activeTrainingSites };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unable to load summary metrics';
     alerts.push({ level: 'warning', title: 'Summary metrics unavailable', message });
+  }
+
+  try {
+    const orphanReport = await findOrphanedAuthUsers(supabase);
+    metrics.orphanedAuthUsers = orphanReport.total;
+    metrics.orphanedAuthUsersNeverSignedIn = orphanReport.neverSignedIn;
+
+    if (orphanReport.total > 0) {
+      alerts.push({
+        level: 'warning',
+        title: 'Orphaned auth users detected',
+        message: `${orphanReport.total} auth user(s) are not linked to any account (${orphanReport.neverSignedIn} never signed in).`,
+      });
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unable to evaluate orphaned auth users';
+    alerts.push({ level: 'warning', title: 'Orphaned auth user check unavailable', message });
   }
 
   let storage: { status: CheckStatus; buckets: { bucketId: string; objectCount: number; bytes: number }[]; objectCount: number; bytes: number; error?: string };

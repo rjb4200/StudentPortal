@@ -35,6 +35,50 @@ export const createAuthUserBody = z.object({
   role: z.enum(['admin', 'preceptor']),
 });
 
+const stationUnitSchema = z.enum([
+  'Station 1 - Downtown HQ',
+  'Station 2 - West Side',
+  'Station 3 - Industrial',
+]);
+
+export const provisionAccountBody = z.discriminatedUnion('accountType', [
+  z.object({
+    accountType: z.literal('admin'),
+    email: emailSchema,
+    password: z.string().min(6).max(128),
+    fullName: nameSchema,
+    rank: textSchema(120).min(1, 'Rank is required'),
+    isActive: z.boolean().optional().default(true),
+    notifyOnboardingComplete: z.boolean().optional().default(true),
+    notifyEvaluationFlagged: z.boolean().optional().default(true),
+    notifyStudentMessages: z.boolean().optional().default(true),
+    notifyDailyReport: z.boolean().optional().default(false),
+    notifyScheduleRequested: z.boolean().optional().default(true),
+    notifyClassMou: z.boolean().optional().default(false),
+  }),
+  z.object({
+    accountType: z.literal('preceptor'),
+    email: emailSchema,
+    password: z.string().min(6).max(128),
+    fullName: nameSchema,
+    stationUnit: stationUnitSchema.optional(),
+    bio: optionalTextSchema(2000),
+    imageUrl: optionalTextSchema(1000),
+    specialtyTags: z.array(textSchema(60)).max(20).optional(),
+    notifyEvaluation: z.boolean().optional().default(false),
+    notifyScheduleApproved: z.boolean().optional().default(false),
+    isActive: z.boolean().optional().default(true),
+  }),
+]);
+
+export const accountProvisionConflictSchema = z.object({
+  error: z.string(),
+  code: z.enum(['email_exists', 'role_mismatch', 'link_failed', 'validation']),
+  ownerType: z.enum(['student', 'admin', 'preceptor', 'auth']).nullable().optional(),
+});
+
+export type AccountProvisionConflict = z.infer<typeof accountProvisionConflictSchema>;
+
 const adminReasonSchema = textSchema(500).min(3, 'Reason must be at least 3 characters');
 
 export const deleteStudentBody = z.object({
