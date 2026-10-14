@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     .select('email')
     .eq('is_active', true)
     .eq('notify_student_messages', true);
-  const conversationUrl = `${publicEnv.SITE_URL}/admin?tab=daily&student=${encodeURIComponent(student.id)}`;
+  const conversationUrl = `${publicEnv.SITE_URL}/admin?tab=messages&student=${encodeURIComponent(student.id)}`;
   const email = buildStudentMessageAdminEmail({
     student_name: student.full_name,
     student_email: student.email,

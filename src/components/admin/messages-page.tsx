@@ -9,6 +9,12 @@ import { Input } from '@/components/ui/input';
 import { Alert, EmptyState } from '@/components/ui';
 import { orderMessageThreads, type MessageThread } from '@/lib/message-inbox';
 
+type StudentOption = { id: string; full_name: string; email: string; status: string };
+
+interface MessagesPageProps {
+  selectedStudentId?: string | null;
+}
+
 function formatMessageTime(dateStr: string): string {
   const date = new Date(dateStr);
   const now = new Date();
@@ -30,8 +36,9 @@ function formatMessageTime(dateStr: string): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + `, ${time}`;
 }
 
-export function MessagesPage() {
+export function MessagesPage({ selectedStudentId }: MessagesPageProps) {
   const [activeStudentId, setActiveStudentId] = useState<string | null>(null);
+  const [selectedIdentity, setSelectedIdentity] = useState<StudentOption | null>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [messageThreads, setMessageThreads] = useState<MessageThread[]>([]);
   const [messageInboxError, setMessageInboxError] = useState<string | null>(null);
@@ -42,9 +49,15 @@ export function MessagesPage() {
   const [broadcastSendEmail, setBroadcastSendEmail] = useState(false);
   const [broadcasting, setBroadcasting] = useState(false);
   const [showBroadcast, setShowBroadcast] = useState(false);
+  const [showPicker, setShowPicker] = useState(false);
+  const [pickerQuery, setPickerQuery] = useState('');
+  const [pickerResults, setPickerResults] = useState<StudentOption[]>([]);
+  const [pickerLoading, setPickerLoading] = useState(false);
+  const [pickerError, setPickerError] = useState<string | null>(null);
   const [subscriptionStatus, setSubscriptionStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
   const unsubConversationRef = useRef<(() => void) | null>(null);
   const messageListRef = useRef<HTMLDivElement>(null);
+  const replyInputRef = useRef<HTMLInputElement>(null);
 
   const { isTyping, typingSender, notifyTyping } = useTypingIndicator(
     activeStudentId ?? undefined,
@@ -54,6 +67,24 @@ export function MessagesPage() {
   const supabase = createClient() as any;
   const unreadCount = messageThreads.filter((t) => t.is_unread).length;
   const orderedThreads = orderMessageThreads(messageThreads);
+  const activeThread = orderedThreads.find((t) => t.student_id === activeStudentId);
+  const syntheticThread: MessageThread | null = activeStudentId && !activeThread
+    ? {
+        student_id: activeStudentId,
+        student_name: selectedIdentity?.full_name ?? 'New conversation',
+        latest_message_text: 'No messages yet',
+        latest_message_sender: 'admin',
+        latest_message_at: new Date().toISOString(),
+        latest_student_message_at: null,
+        unread_count: 0,
+        is_unread: false,
+        needs_reply: false,
+      }
+    : null;
+  const railThreads = syntheticThread ? [syntheticThread, ...orderedThreads] : orderedThreads;
+  const activeStudentName = activeThread?.student_name
+    ?? selectedIdentity?.full_name
+    ?? 'Student';
 
   useEffect(() => {
     loadInbox();
@@ -115,6 +146,29 @@ export function MessagesPage() {
     return () => cancelAnimationFrame(frame);
   }, [messages.length, activeStudentId]);
 
+  // Focus the composer whenever a conversation becomes active.
+  useEffect(() => {
+    if (!activeStudentId) return;
+    const frame = requestAnimationFrame(() => replyInputRef.current?.focus());
+    return () => cancelAnimationFrame(frame);
+  }, [activeStudentId]);
+
+  // Open a conversation requested from outside (roster action or deep link).
+  useEffect(() => {
+    if (selectedStudentId && selectedStudentId !== activeStudentId) {
+      void openConversation(selectedStudentId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedStudentId]);
+
+  // Load the student picker results as the admin types.
+  useEffect(() => {
+    if (!showPicker) return;
+    const handle = setTimeout(() => { void loadPicker(pickerQuery); }, 250);
+    return () => clearTimeout(handle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pickerQuery, showPicker]);
+
   const loadInbox = async () => {
     const response = await fetch('/api/admin/message-inbox');
     const inbox = await response.json().catch(() => null);
@@ -124,6 +178,15 @@ export function MessagesPage() {
     }
     setMessageThreads(inbox?.threads ?? []);
     setMessageInboxError(null);
+  };
+
+  const loadIdentity = async (studentId: string) => {
+    const { data } = await supabase
+      .from('students')
+      .select('id, full_name, email, status')
+      .eq('id', studentId)
+      .single();
+    if (data) setSelectedIdentity(data as StudentOption);
   };
 
   const loadMessages = async (studentId: string) => {
@@ -152,6 +215,42 @@ export function MessagesPage() {
     await loadInbox();
   };
 
+  const openConversation = async (studentId: string) => {
+    if (!messageThreads.some((thread) => thread.student_id === studentId)) {
+      await loadIdentity(studentId);
+    }
+    await loadMessages(studentId);
+  };
+
+  const loadPicker = async (query: string) => {
+    setPickerLoading(true);
+    setPickerError(null);
+    const response = await fetch(`/api/admin/students?query=${encodeURIComponent(query)}`);
+    const result = await response.json().catch(() => null);
+    if (!response.ok) {
+      setPickerError(result?.error || 'Unable to load students.');
+      setPickerResults([]);
+      setPickerLoading(false);
+      return;
+    }
+    setPickerResults(result?.students ?? []);
+    setPickerLoading(false);
+  };
+
+  const openPicker = () => {
+    setPickerQuery('');
+    setPickerResults([]);
+    setPickerError(null);
+    setShowPicker(true);
+  };
+
+  const handlePickStudent = async (student: StudentOption) => {
+    setShowPicker(false);
+    setPickerQuery('');
+    setSelectedIdentity(student);
+    await loadMessages(student.id);
+  };
+
   const handleSendReply = async () => {
     if (!replyText.trim() || !activeStudentId) return;
     setReplyError(null);
@@ -167,6 +266,8 @@ export function MessagesPage() {
     }
     setMessages((prev) => [...prev, result.message]);
     setReplyText('');
+    // Realtime only announces student messages, so refresh to surface a newly started thread.
+    await loadInbox();
   };
 
   const handleSendBroadcast = async () => {
@@ -220,9 +321,14 @@ export function MessagesPage() {
                 {subscriptionStatus === 'error' && ' · Live updates disconnected'}
               </p>
             </div>
-            <Button variant="secondary" size="sm" onClick={() => setShowBroadcast(true)}>
-              Broadcast
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="secondary" size="sm" onClick={openPicker}>
+                New message
+              </Button>
+              <Button variant="secondary" size="sm" onClick={() => setShowBroadcast(true)}>
+                Broadcast
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -232,12 +338,12 @@ export function MessagesPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
               <div className="md:col-span-1 border-r border-gray-200 pr-3 max-h-[60vh] overflow-y-auto">
-                {orderedThreads.length === 0 ? (
+                {railThreads.length === 0 ? (
                   <EmptyState title="No student messages yet" description="Student conversations will appear here when a message is received." />
-                ) : orderedThreads.map((thread) => (
+                ) : railThreads.map((thread) => (
                   <button
                     key={thread.student_id}
-                    onClick={() => loadMessages(thread.student_id)}
+                    onClick={() => openConversation(thread.student_id)}
                     aria-label={`${thread.student_name}${thread.is_unread ? ', unread message' : ''}${thread.needs_reply ? ', needs reply' : ''}`}
                     className={`mb-1 w-full rounded-lg px-3 py-2.5 text-left text-sm transition-colors ${
                       activeStudentId === thread.student_id
@@ -249,9 +355,18 @@ export function MessagesPage() {
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="truncate">{thread.student_name}</span>
-                      <time className="shrink-0 text-[10px] font-normal opacity-70" dateTime={thread.latest_message_at}>
-                        {formatMessageTime(thread.latest_message_at)}
-                      </time>
+                      {thread.unread_count > 0 ? (
+                        <span
+                          className="shrink-0 rounded-full bg-wfd-crimson px-2 py-0.5 text-[10px] font-bold text-white"
+                          aria-label={`${thread.unread_count} unread`}
+                        >
+                          {thread.unread_count}
+                        </span>
+                      ) : (
+                        <time className="shrink-0 text-[10px] font-normal opacity-70" dateTime={thread.latest_message_at}>
+                          {formatMessageTime(thread.latest_message_at)}
+                        </time>
+                      )}
                     </div>
                     <p className="mt-0.5 truncate text-xs font-normal opacity-75">{thread.latest_message_text}</p>
                     <div className="mt-1 flex flex-wrap gap-1">
@@ -266,12 +381,21 @@ export function MessagesPage() {
                 {!activeStudentId ? (
                   <div className="flex flex-col items-center justify-center h-64 text-gray-400">
                     <p className="text-sm">Select a conversation to view messages</p>
+                    <Button variant="secondary" size="sm" className="mt-3" onClick={openPicker}>
+                      New message
+                    </Button>
                   </div>
                 ) : (
                   <div className="flex min-h-0 flex-col h-[60vh]">
+                    <div className="mb-2 flex items-center justify-between">
+                      <p className="text-sm font-semibold text-wfd-charcoal">{activeStudentName}</p>
+                      {selectedIdentity && !activeThread && (
+                        <p className="text-xs text-gray-400">No messages yet</p>
+                      )}
+                    </div>
                     <div ref={messageListRef} className="min-h-0 flex-1 overflow-y-auto space-y-2 mb-3">
                       {messages.length === 0 ? (
-                        <EmptyState title="No messages" description="This conversation has no messages yet." />
+                        <EmptyState title="No messages" description="This conversation has no messages yet. Send the first message below." />
                       ) : messages.map((m) => (
                         <div
                           key={m.id}
@@ -290,12 +414,13 @@ export function MessagesPage() {
                     </div>
                     {isTyping && typingSender === 'student' && (
                       <p className="text-xs italic text-gray-400 mb-1">
-                        {messageThreads.find((t) => t.student_id === activeStudentId)?.student_name ?? 'Student'} is typing...
+                        {activeStudentName} is typing...
                       </p>
                     )}
                     {replyError && <div className="mb-2"><Alert tone="danger">{replyError}</Alert></div>}
                     <div className="flex gap-2">
                       <input
+                        ref={replyInputRef}
                         value={replyText}
                         onChange={(e) => { setReplyText(e.target.value); notifyTyping(); }}
                         onKeyDown={(e) => e.key === 'Enter' && handleSendReply()}
@@ -313,6 +438,44 @@ export function MessagesPage() {
           )}
         </div>
       </section>
+
+      {showPicker && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowPicker(false)}>
+          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-lg mx-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-wfd-charcoal mb-4">New message</h3>
+            <Input label="Search students" placeholder="Name or email" value={pickerQuery} onChange={(e) => setPickerQuery(e.target.value)} />
+            <div className="mt-3 max-h-72 overflow-y-auto">
+              {pickerError ? (
+                <Alert tone="danger">{pickerError}</Alert>
+              ) : pickerLoading ? (
+                <p className="py-6 text-center text-sm text-gray-400">Loading students...</p>
+              ) : pickerResults.length === 0 ? (
+                <p className="py-6 text-center text-sm text-gray-400">No matching students.</p>
+              ) : (
+                <ul className="divide-y divide-gray-100">
+                  {pickerResults.map((student) => (
+                    <li key={student.id}>
+                      <button
+                        onClick={() => handlePickStudent(student)}
+                        className="flex w-full items-center justify-between gap-3 px-2 py-2.5 text-left hover:bg-gray-50"
+                      >
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-medium text-wfd-charcoal">{student.full_name}</span>
+                          <span className="block truncate text-xs text-gray-500">{student.email}</span>
+                        </span>
+                        <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-gray-600">{student.status}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div className="mt-4 flex justify-end">
+              <Button variant="secondary" onClick={() => setShowPicker(false)}>Close</Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showBroadcast && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowBroadcast(false)}>

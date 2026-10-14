@@ -9,7 +9,7 @@ let isAdmin = true;
 let activeAdminId = 'admin-account-one';
 let latestStudentMessageAt: string | null = '2026-07-18T16:00:00.000Z';
 let upsertPayload: unknown;
-const rpc = vi.fn(async () => ({ data: [{ student_id: 'student-one', is_unread: true }], error: null }));
+const rpc = vi.fn(async () => ({ data: [{ student_id: 'student-one', is_unread: true, unread_count: 2 }], error: null }));
 
 vi.mock('@supabase/ssr', () => ({
   createServerClient: () => ({ auth: { getUser: vi.fn(async () => ({ data: { user: { id: 'admin-user-id' } } })) } }),
@@ -65,6 +65,8 @@ describe('admin message inbox', () => {
     const response = await GET(new Request('https://example.test/api/admin/message-inbox') as any);
     expect(response.status).toBe(200);
     expect(rpc).toHaveBeenCalledWith('get_admin_message_inbox', { p_admin_account_id: 'admin-account-one' });
+    const body = await response.json();
+    expect(body.threads[0]).toMatchObject({ unread_count: 2 });
   });
 
   it('acknowledges the latest server-side student message for the active admin', async () => {

@@ -1422,6 +1422,7 @@ export type Database = {
           needs_reply: boolean
           student_id: string
           student_name: string
+          unread_count: number
         }[]
       }
       refresh_pgrst_schema: { Args: never; Returns: undefined }

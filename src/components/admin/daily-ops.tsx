@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { subscribeToAdminInbox, subscribeToAdminConversation } from '@/lib/realtime';
+import { subscribeToAdminInbox } from '@/lib/realtime';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +12,7 @@ import { getShiftRotation } from '@/lib/shift-rotation';
 import { ShiftManagement } from '@/components/admin/shift-management';
 import { Alert, ConfirmDialog, DataTable, DataTableCell, DataTableHead, DataTableRow, EmptyState, SectionCard } from '@/components/ui';
 import { Modal } from '@/components/ui/modal';
-import { orderMessageThreads, type MessageThread } from '@/lib/message-inbox';
+import { type MessageThread } from '@/lib/message-inbox';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const ROTATION_TAG_STYLES = {
@@ -57,15 +57,12 @@ function getStudentClassLabel(student: any) {
   return [site?.name, trainingClass.name + levelSuffix, instructorName].filter(Boolean).join(' -- ');
 }
 
-export function DailyOps({ onNavigateMessages }: { onNavigateMessages?: () => void }) {
+export function DailyOps({ onNavigateMessages }: { onNavigateMessages?: (studentId?: string) => void }) {
   const [pendingStudents, setPendingStudents] = useState<any[]>([]);
   const [schedules, setSchedules] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
-  const [activeStudentId, setActiveStudentId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<any[]>([]);
   const [messageThreads, setMessageThreads] = useState<MessageThread[]>([]);
   const [messageInboxError, setMessageInboxError] = useState<string | null>(null);
-  const [replyText, setReplyText] = useState('');
   const [approving, setApproving] = useState<string | null>(null);
   const [approvalError, setApprovalError] = useState<string | null>(null);
   const [rejecting, setRejecting] = useState<string | null>(null);
@@ -91,19 +88,12 @@ export function DailyOps({ onNavigateMessages }: { onNavigateMessages?: () => vo
   const [mouSkipError, setMouSkipError] = useState<string | null>(null);
   const [confirmationAction, setConfirmationAction] = useState<ConfirmationAction | null>(null);
   const [subscriptionStatus, setSubscriptionStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
-  const unsubConversationRef = useRef<(() => void) | null>(null);
 
   const supabase = createClient() as any;
 
   useEffect(() => {
     loadAll();
   }, []);
-
-  useEffect(() => {
-    if (!students.length) return;
-    const studentId = new URLSearchParams(window.location.search).get('student');
-    if (studentId && messageThreads.some((thread) => thread.student_id === studentId)) void loadMessages(studentId);
-  }, [students, messageThreads]);
 
   useEffect(() => {
     setSubscriptionStatus('connecting');
@@ -118,34 +108,6 @@ export function DailyOps({ onNavigateMessages }: { onNavigateMessages?: () => vo
       unsub();
     };
   }, []);
-
-  useEffect(() => {
-    if (unsubConversationRef.current) {
-      unsubConversationRef.current();
-      unsubConversationRef.current = null;
-    }
-    if (activeStudentId) {
-      setSubscriptionStatus('connecting');
-      const unsub = subscribeToAdminConversation(
-        activeStudentId,
-        (msg) => {
-          setMessages((prev) => {
-            if (prev.some((m) => m.id === msg.id)) return prev;
-            return [...prev, msg];
-          });
-        },
-        () => setSubscriptionStatus('error')
-      );
-      setSubscriptionStatus('connected');
-      unsubConversationRef.current = () => { unsub(); };
-    }
-    return () => {
-      if (unsubConversationRef.current) {
-        unsubConversationRef.current();
-        unsubConversationRef.current = null;
-      }
-    };
-  }, [activeStudentId]);
 
   const loadAll = async () => {
     const [
@@ -324,23 +286,6 @@ export function DailyOps({ onNavigateMessages }: { onNavigateMessages?: () => vo
     }
   };
 
-  const handleSendReply = async () => {
-    if (!replyText.trim() || !activeStudentId) return;
-    setScheduleActionError(null);
-    const response = await fetch('/api/admin/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ studentId: activeStudentId, message: replyText.trim() }),
-    });
-    const result = await response.json().catch(() => null);
-    if (!response.ok || !result?.message) {
-      setScheduleActionError(result?.error || 'Unable to send the reply.');
-      return;
-    }
-    setMessages((prev) => [...prev, result.message]);
-    setReplyText('');
-  };
-
   const handleKillSwitch = async (student: any) => {
     const newState = !student.is_blacklisted;
     await supabase
@@ -431,30 +376,6 @@ export function DailyOps({ onNavigateMessages }: { onNavigateMessages?: () => vo
     await loadAll();
   };
 
-  const loadMessages = async (studentId: string) => {
-    setActiveStudentId(studentId);
-    const { data } = await supabase
-      .from('messages')
-      .select('*')
-      .eq('student_id', studentId)
-      .order('created_at', { ascending: true });
-    setMessages(data ?? []);
-    const thread = messageThreads.find((item) => item.student_id === studentId);
-    if (!thread?.is_unread) return;
-
-    const response = await fetch('/api/admin/message-inbox', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ studentId }),
-    });
-    const result = await response.json().catch(() => null);
-    if (!response.ok) {
-      setMessageInboxError(result?.error || 'Unable to mark this conversation as read.');
-      return;
-    }
-    await loadMessageInbox();
-  };
-
   const handleAcknowledgeFlag = async (flagId: string) => {
     setAcknowledgingFlag(flagId);
     try {
@@ -494,7 +415,6 @@ export function DailyOps({ onNavigateMessages }: { onNavigateMessages?: () => vo
   const rosterStudents = students.filter((s: any) => s.status === 'certified');
   const unreadMessageCount = messageThreads.filter((thread) => thread.is_unread).length;
   const totalActions = pendingStudents.length + pendingSchedules.length + cancelRequests.length + quizFlags.length + registryItems.length + pendingMous.length + mouSkips.length + (unreadMessageCount > 0 ? 1 : 0);
-  const orderedMessageThreads = orderMessageThreads(messageThreads);
 
   const handleWfemsSign = async (mouId: string) => {
     setSigningMou(mouId);
@@ -758,6 +678,7 @@ export function DailyOps({ onNavigateMessages }: { onNavigateMessages?: () => vo
               {rosterStudents.map((s) => {
                 const expirationCountdown = getExpirationCountdown(s.access_until);
                 const trainingClass = getStudentClass(s);
+                const unreadCount = messageThreads.find((thread) => thread.student_id === s.id)?.unread_count ?? 0;
                 const expirationTitle = trainingClass && expirationCountdown
                   ? `${expirationCountdown.title}; class ${trainingClass.name} ride-time ends ${trainingClass.ride_time_end_date}`
                   : expirationCountdown?.title;
@@ -766,6 +687,15 @@ export function DailyOps({ onNavigateMessages }: { onNavigateMessages?: () => vo
                   <DataTableRow key={s.id}>
                     <DataTableCell>
                       <a href={`/admin/students/${s.id}`} className="font-medium text-wfd-crimson hover:underline">{s.full_name}</a>
+                      {unreadCount > 0 && (
+                        <span
+                          className="ml-1 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-wfd-crimson px-1.5 text-[10px] font-bold text-white align-middle"
+                          aria-label={`${unreadCount} unread messages`}
+                          title={`${unreadCount} unread message${unreadCount === 1 ? '' : 's'}`}
+                        >
+                          {unreadCount}
+                        </span>
+                      )}
                       <p className="text-xs text-gray-400">{s.email}</p>
                       {trainingClass && <p className="text-xs text-gray-400">{getStudentClassLabel(s)}</p>}
                     </DataTableCell>
@@ -792,10 +722,16 @@ export function DailyOps({ onNavigateMessages }: { onNavigateMessages?: () => vo
                     </DataTableCell>
                     <DataTableCell>
                       <button
+                        onClick={() => onNavigateMessages?.(s.id)}
+                        className="px-3 py-1 rounded text-xs font-medium bg-wfd-charcoal/10 text-wfd-charcoal hover:bg-wfd-charcoal/20"
+                      >
+                        Message
+                      </button>
+                      <button
                         onClick={() => s.is_blacklisted
                           ? handleKillSwitch(s)
                           : setConfirmationAction({ type: 'blacklist', student: s })}
-                        className={`px-3 py-1 rounded text-xs font-medium ${
+                        className={`ml-1 px-3 py-1 rounded text-xs font-medium ${
                           s.is_blacklisted
                             ? 'bg-wfd-sage/15 text-wfd-sage hover:bg-wfd-sage/25'
                             : 'bg-wfd-crimson/15 text-wfd-crimson hover:bg-wfd-crimson/25'

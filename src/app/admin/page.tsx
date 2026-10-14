@@ -16,14 +16,20 @@ type Tab = AdminSection;
 
 const tabs: Tab[] = ['daily', 'calendar', 'messages', 'registry', 'analytics', 'maintenance'];
 
-function getTabFromLocation() {
-  if (typeof window === 'undefined') return 'daily';
-  const tab = new URLSearchParams(window.location.search).get('tab');
-  return tabs.includes(tab as Tab) ? (tab as Tab) : 'daily';
+function getStateFromLocation(): { tab: Tab; student: string | null } {
+  if (typeof window === 'undefined') return { tab: 'daily', student: null };
+  const params = new URLSearchParams(window.location.search);
+  const tab = params.get('tab');
+  const student = params.get('student');
+  return {
+    tab: tabs.includes(tab as Tab) ? (tab as Tab) : 'daily',
+    student: student || null,
+  };
 }
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<Tab>('daily');
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
 
@@ -36,10 +42,16 @@ export default function AdminPage() {
       setLoading(false);
     });
 
-    setActiveTab(getTabFromLocation());
+    const applyLocation = () => {
+      const state = getStateFromLocation();
+      setActiveTab(state.tab);
+      setSelectedStudentId(state.student);
+    };
+
+    applyLocation();
 
     function handlePopState() {
-      setActiveTab(getTabFromLocation());
+      applyLocation();
     }
 
     window.addEventListener('popstate', handlePopState);
@@ -67,6 +79,22 @@ export default function AdminPage() {
     return () => { unsub(); };
   }, []);
 
+  const navigateToMessages = (studentId?: string) => {
+    setActiveTab('messages');
+    setSelectedStudentId(studentId ?? null);
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    params.set('tab', 'messages');
+    if (studentId) params.set('student', studentId);
+    else params.delete('student');
+    window.history.pushState({}, '', `/admin?${params.toString()}`);
+  };
+
+  const handleSelectTab = (tab: Tab) => {
+    setActiveTab(tab);
+    setSelectedStudentId(null);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -77,11 +105,11 @@ export default function AdminPage() {
 
   return (
     <div>
-      <AdminNavigation activeSection={activeTab} onSectionSelect={setActiveTab} unreadMessageCount={unreadMessageCount} />
+      <AdminNavigation activeSection={activeTab} onSectionSelect={handleSelectTab} unreadMessageCount={unreadMessageCount} />
 
-      {activeTab === 'daily' && <DailyOps onNavigateMessages={() => setActiveTab('messages')} />}
+      {activeTab === 'daily' && <DailyOps onNavigateMessages={navigateToMessages} />}
       {activeTab === 'calendar' && <ScheduleCalendar />}
-      {activeTab === 'messages' && <MessagesPage />}
+      {activeTab === 'messages' && <MessagesPage selectedStudentId={selectedStudentId} />}
       {activeTab === 'registry' && <RegistryManagement />}
       {activeTab === 'analytics' && <PreceptorAnalytics />}
       {activeTab === 'maintenance' && <MaintenanceArchive />}

@@ -157,6 +157,10 @@ export const adminMessageThreadReadBody = z.object({
   studentId: uuidSchema,
 });
 
+export const adminStudentSearchQuery = z.object({
+  query: z.string().trim().max(100).optional(),
+});
+
 export const classDateRangeSchema = z.object({
   classStartDate: dateOnlySchema,
   rideTimeEndDate: dateOnlySchema,

@@ -5,6 +5,7 @@ export type MessageThread = {
   latest_message_sender: 'student' | 'admin';
   latest_message_at: string;
   latest_student_message_at: string | null;
+  unread_count: number;
   is_unread: boolean;
   needs_reply: boolean;
 };

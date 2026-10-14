@@ -8,6 +8,7 @@ const baseThread: MessageThread = {
   latest_message_sender: 'student',
   latest_message_at: '2026-07-18T10:00:00.000Z',
   latest_student_message_at: '2026-07-18T10:00:00.000Z',
+  unread_count: 0,
   is_unread: false,
   needs_reply: true,
 };
@@ -33,5 +34,17 @@ describe('message inbox state', () => {
       is_unread: false,
       needs_reply: true,
     }));
+  });
+
+  it('preserves per-thread unread counts while ordering', () => {
+    const ordered = orderMessageThreads([
+      { ...baseThread, student_id: 'read-newest', unread_count: 0, latest_message_at: '2026-07-18T12:00:00.000Z' },
+      { ...baseThread, student_id: 'unread-with-count', unread_count: 3, is_unread: true, latest_message_at: '2026-07-18T09:00:00.000Z' },
+    ]);
+
+    expect(ordered.map((thread) => [thread.student_id, thread.unread_count])).toEqual([
+      ['unread-with-count', 3],
+      ['read-newest', 0],
+    ]);
   });
 });
