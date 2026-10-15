@@ -186,13 +186,14 @@ function AccountsPageInner() {
     }
 
     if (editType === 'preceptor') {
-      if (!form.full_name.trim() || !form.email.trim()) { setMessage('Name and email required.'); setSaving(false); return; }
+      if (!form.full_name.trim()) { setMessage('Name is required.'); setSaving(false); return; }
+      const email = form.email.trim();
+      if (email && !formPassword && !editing) { setMessage('A password is required when an email is provided.'); setSaving(false); return; }
 
       if (!editing) {
-        if (!formPassword) { setMessage('Password is required for new accounts.'); setSaving(false); return; }
         await submitProvision({
           accountType: 'preceptor',
-          email: form.email.trim(), password: formPassword,
+          ...(email ? { email, password: formPassword } : {}),
           fullName: form.full_name.trim(),
           stationUnit: form.station_unit || undefined,
           bio: form.bio || undefined,
@@ -205,7 +206,7 @@ function AccountsPageInner() {
         return;
       }
 
-      if (formPassword) {
+      if (formPassword && editing.auth_user_id) {
         await fetch('/api/admin/update-auth-user', {
           method: 'PUT', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId: editing.auth_user_id, password: formPassword }),
@@ -213,7 +214,7 @@ function AccountsPageInner() {
       }
 
       const payload: any = {
-        full_name: form.full_name.trim(), email: form.email.trim(), is_active: form.is_active,
+        full_name: form.full_name.trim(), email: email || null, is_active: form.is_active,
         bio: form.bio || null, image_url: form.image_url || null,
         station_unit: form.station_unit || null,
         specialty_tags: form.specialty_tags ? form.specialty_tags.split(',').map((t: string) => t.trim()).filter(Boolean) : null,
@@ -339,9 +340,9 @@ function AccountsPageInner() {
           {message && <Alert tone={message.startsWith('Error:') ? 'danger' : 'info'}>{message}</Alert>}
           <div className="grid gap-3 sm:grid-cols-2">
             <Input label="Full Name" value={form.full_name || ''} onChange={e => setForm({...form, full_name: e.target.value})} />
-            <Input label="Email" type="email" value={form.email || ''} onChange={e => setForm({...form, email: e.target.value})} />
+            <Input label={editType === 'preceptor' ? 'Email (optional — leave blank for no login)' : 'Email'} type="email" value={form.email || ''} onChange={e => setForm({...form, email: e.target.value})} />
             {(editType === 'admin' || editType === 'preceptor') && (
-              <Input label={`Password ${editing ? '(leave blank to keep)' : ''}`} type="password" value={formPassword} onChange={e => setFormPassword(e.target.value)} />
+              <Input label={`Password${editing ? ' (leave blank to keep)' : editType === 'preceptor' ? ' (optional)' : ''}`} type="password" value={formPassword} onChange={e => setFormPassword(e.target.value)} />
             )}
 
             {editType === 'student' && (

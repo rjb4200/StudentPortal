@@ -18,7 +18,7 @@ function conflict(
 }
 
 function buildProfilePayload(input: ReturnType<typeof provisionAccountBody.parse>) {
-  const base = { email: input.email, full_name: input.fullName, is_active: input.isActive, updated_at: new Date().toISOString() };
+  const base = { email: input.email || null, full_name: input.fullName, is_active: input.isActive, updated_at: new Date().toISOString() };
 
   if (input.accountType === 'admin') {
     return {
@@ -68,8 +68,30 @@ export async function POST(request: NextRequest) {
   const admin = createAdminClient() as any;
   const table: 'admin_accounts' | 'preceptors' = input.accountType === 'admin' ? 'admin_accounts' : 'preceptors';
   const role = input.accountType;
-  const email = input.email;
+  const email = typeof input.email === 'string' ? input.email.trim() : '';
+  const password = typeof input.password === 'string' ? input.password : '';
   const crossFamilyMessage = 'This email is used by a student account. Student and staff accounts are separate — use a different email.';
+
+  // Roster-only preceptor: no login requested (email and password both blank).
+  if (input.accountType === 'preceptor') {
+    if (email && !password) {
+      return NextResponse.json({ error: 'Provide both an email and a password for a login, or leave both blank for a preceptor without a login.', code: 'validation' }, { status: 400 });
+    }
+    if (!email && password) {
+      return NextResponse.json({ error: 'Provide both an email and a password for a login, or leave both blank for a preceptor without a login.', code: 'validation' }, { status: 400 });
+    }
+    if (!email) {
+      const { data: inserted, error: insertError } = await admin
+        .from('preceptors')
+        .insert({ ...buildProfilePayload(input), email: null, auth_user_id: null })
+        .select('id')
+        .single();
+      if (insertError || !inserted) {
+        return NextResponse.json({ error: insertError?.message ?? 'Failed to create preceptor account', code: 'validation' }, { status: 400 });
+      }
+      return NextResponse.json({ success: true, userId: null, profileId: inserted.id });
+    }
+  }
 
   // Student and staff are separate families: a student email cannot back a staff account.
   const { data: studentRow } = await admin.from('students').select('id').eq('email', email).maybeSingle();
@@ -145,7 +167,7 @@ export async function POST(request: NextRequest) {
   if (!authUserId) {
     const { data: created, error: createError } = await admin.auth.admin.createUser({
       email,
-      password: input.password,
+      password,
       email_confirm: true,
       app_metadata: { role },
     });
@@ -165,7 +187,7 @@ export async function POST(request: NextRequest) {
 
     const { data: recreated, error: recreateError } = await admin.auth.admin.createUser({
       email,
-      password: input.password,
+      password,
       email_confirm: true,
       app_metadata: { role },
     });

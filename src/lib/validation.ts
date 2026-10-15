@@ -59,8 +59,8 @@ export const provisionAccountBody = z.discriminatedUnion('accountType', [
   }),
   z.object({
     accountType: z.literal('preceptor'),
-    email: emailSchema,
-    password: z.string().min(6).max(128),
+    email: emailSchema.optional().or(z.literal('')),
+    password: z.string().min(6).max(128).optional().or(z.literal('')),
     fullName: nameSchema,
     stationUnit: stationUnitSchema.optional(),
     bio: optionalTextSchema(2000),

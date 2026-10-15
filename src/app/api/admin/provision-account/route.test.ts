@@ -31,7 +31,7 @@ function createMockAdminClient() {
 function createBuilder(table: string) {
   const b: any = { _eq: {}, _insert: null, _update: null, _delete: false };
   b.select = vi.fn(() => b);
-  b.insert = vi.fn((payload: unknown) => { b._insert = payload; return b; });
+  b.insert = vi.fn((payload: unknown) => { b._insert = payload; mockState.inserts.push({ table, payload }); return b; });
   b.update = vi.fn((payload: unknown) => { b._update = payload; return b; });
   b.delete = vi.fn(() => { b._delete = true; return b; });
   b.eq = vi.fn((field: string, value: unknown) => { b._eq[field] = value; return b; });
@@ -98,6 +98,7 @@ beforeEach(() => {
     ownerRows: {},
     existingUsers: [],
     deletes: [],
+    inserts: [],
     createUserResult: { data: { user: { id: 'created-1' } }, error: null },
     insertResults: {},
     linkResult: { data: { id: 'linked' }, error: null },
@@ -166,6 +167,30 @@ describe('POST /api/admin/provision-account', () => {
     expect(data.roleChanged).toBe(true);
     expect(adminMocks.updateUserById).toHaveBeenCalledWith('u3', expect.objectContaining({ app_metadata: { role: 'admin' } }));
     expect(adminMocks.deleteUser).not.toHaveBeenCalled();
+    expect(adminMocks.createUser).not.toHaveBeenCalled();
+  });
+
+  it('creates a login-less preceptor without an auth user', async () => {
+    const res = await post(preceptorBody({ email: '', password: '' }));
+    const data = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(data.success).toBe(true);
+    expect(data.userId).toBeNull();
+    expect(adminMocks.createUser).not.toHaveBeenCalled();
+    const inserted = mockState.inserts.find((i: any) => i.table === 'preceptors');
+    expect(inserted?.payload).toMatchObject({ email: null, auth_user_id: null });
+  });
+
+  it('rejects an email without a password', async () => {
+    const res = await post(preceptorBody({ email: 'no.pass@example.com', password: '' }));
+    expect(res.status).toBe(400);
+    expect(adminMocks.createUser).not.toHaveBeenCalled();
+  });
+
+  it('rejects a password without an email', async () => {
+    const res = await post(preceptorBody({ email: '', password: 'secret1' }));
+    expect(res.status).toBe(400);
     expect(adminMocks.createUser).not.toHaveBeenCalled();
   });
 
