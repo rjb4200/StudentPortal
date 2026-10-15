@@ -276,24 +276,6 @@ export function DailyOps({ onNavigateMessages }: { onNavigateMessages?: (student
     }
   };
 
-  const savePreceptorShift = async (preceptorId: string, shift: 'first' | 'second' | 'third' | null) => {
-    setScheduleActionError(null);
-    try {
-      const response = await fetch('/api/admin/preceptors/shift', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ preceptorId, shift }),
-      });
-      const data = await response.json().catch(() => null);
-      if (!response.ok || data?.success !== true) {
-        throw new Error(data?.error || 'Unable to update the preceptor shift.');
-      }
-      await loadAll();
-    } catch (e) {
-      setScheduleActionError(e instanceof Error ? e.message : 'Unable to update the preceptor shift.');
-    }
-  };
-
   const handleRegistryAction = async (item: any, status: 'active' | 'rejected') => {
     setRegistryActioning(item.id);
     try {
@@ -809,8 +791,6 @@ export function DailyOps({ onNavigateMessages }: { onNavigateMessages?: (student
           </DataTable>
       </SectionCard>
 
-      <PreceptorRotation preceptors={preceptors} onAssign={savePreceptorShift} />
-
       {/* Shift Management */}
       <ShiftManagement schedules={schedules} students={students} onCancel={handleScheduleAction} />
 
@@ -937,55 +917,3 @@ function ScheduleCancelButton({ scheduleId, onCancel }: { scheduleId: string; on
   );
 }
 
-const PRECEPTOR_SHIFT_COLUMNS: { key: 'first' | 'second' | 'third' | ''; label: string }[] = [
-  { key: 'first', label: 'First Shift' },
-  { key: 'second', label: 'Second Shift' },
-  { key: 'third', label: 'Third Shift' },
-  { key: '', label: 'Unassigned' },
-];
-
-function PreceptorRotation({ preceptors, onAssign }: { preceptors: any[]; onAssign: (preceptorId: string, shift: 'first' | 'second' | 'third' | null) => void }) {
-  return (
-    <SectionCard className="p-4 lg:col-span-2">
-      <h3 className="font-bold text-wfd-charcoal mb-1">Preceptor Rotation</h3>
-      <p className="text-xs text-gray-500 mb-3">
-        Assign each preceptor to the shift they work. The day&apos;s preceptor pool is derived from the 24/48 rotation; inactive preceptors are excluded.
-      </p>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {PRECEPTOR_SHIFT_COLUMNS.map((column) => {
-          const members = preceptors.filter((p) => (p.shift ?? '') === column.key);
-          return (
-            <div key={column.key || 'unassigned'} className="rounded-lg border border-gray-200 p-2">
-              <p className="text-xs font-bold uppercase tracking-wide text-gray-500">{column.label}</p>
-              <p className="mb-2 text-[11px] text-gray-400">{members.length} preceptor{members.length === 1 ? '' : 's'}</p>
-              {members.length === 0 ? (
-                <p className="text-xs text-gray-400">None</p>
-              ) : (
-                <ul className="space-y-2">
-                  {members.map((p) => (
-                    <li key={p.id}>
-                      <p className={`truncate text-sm ${p.is_active ? 'text-wfd-charcoal' : 'text-gray-400 line-through'}`}>
-                        {p.full_name}{p.is_active ? '' : ' (inactive)'}
-                      </p>
-                      <select
-                        value={p.shift ?? ''}
-                        onChange={(e) => onAssign(p.id, (e.target.value || null) as 'first' | 'second' | 'third' | null)}
-                        aria-label={`Shift for ${p.full_name}`}
-                        className="mt-0.5 w-full rounded border border-gray-200 px-2 py-0.5 text-xs text-gray-900 focus:border-wfd-crimson focus:ring-1 focus:ring-wfd-crimson"
-                      >
-                        <option value="">Unassigned</option>
-                        <option value="first">First Shift</option>
-                        <option value="second">Second Shift</option>
-                        <option value="third">Third Shift</option>
-                      </select>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </SectionCard>
-  );
-}

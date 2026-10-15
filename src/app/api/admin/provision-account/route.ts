@@ -36,6 +36,7 @@ function buildProfilePayload(input: ReturnType<typeof provisionAccountBody.parse
   return {
     ...base,
     station_unit: input.stationUnit ?? null,
+    shift: input.shift ?? null,
     bio: input.bio || null,
     image_url: input.imageUrl || null,
     specialty_tags: input.specialtyTags ?? null,

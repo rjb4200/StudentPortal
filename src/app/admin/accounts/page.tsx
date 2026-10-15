@@ -90,7 +90,7 @@ function AccountsPageInner() {
       setFormPassword('');
     } else {
       setEditing(null); setEditType('preceptor');
-      setForm({ full_name: '', email: '', station_unit: STATIONS[0], bio: '', image_url: '', specialty_tags: '', notify_evaluation: false, notify_schedule_approved: false, is_active: true });
+      setForm({ full_name: '', email: '', station_unit: STATIONS[0], shift: '', bio: '', image_url: '', specialty_tags: '', notify_evaluation: false, notify_schedule_approved: false, is_active: true });
       setFormPassword('');
     }
     setMessage(null);
@@ -196,6 +196,7 @@ function AccountsPageInner() {
           ...(email ? { email, password: formPassword } : {}),
           fullName: form.full_name.trim(),
           stationUnit: form.station_unit || undefined,
+          shift: form.shift || null,
           bio: form.bio || undefined,
           imageUrl: form.image_url || undefined,
           specialtyTags: form.specialty_tags ? form.specialty_tags.split(',').map((t: string) => t.trim()).filter(Boolean) : undefined,
@@ -217,6 +218,7 @@ function AccountsPageInner() {
         full_name: form.full_name.trim(), email: email || null, is_active: form.is_active,
         bio: form.bio || null, image_url: form.image_url || null,
         station_unit: form.station_unit || null,
+        shift: form.shift || null,
         specialty_tags: form.specialty_tags ? form.specialty_tags.split(',').map((t: string) => t.trim()).filter(Boolean) : null,
         notify_evaluation: form.notify_evaluation,
         notify_schedule_approved: form.notify_schedule_approved,
@@ -376,6 +378,14 @@ function AccountsPageInner() {
                     {STATIONS.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </FormField>
+                <FormField label="Shift">
+                  <select value={form.shift || ''} onChange={e => setForm({...form, shift: e.target.value})} className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900">
+                    <option value="">Unassigned</option>
+                    <option value="first">First Shift</option>
+                    <option value="second">Second Shift</option>
+                    <option value="third">Third Shift</option>
+                  </select>
+                </FormField>
                 <Input label="Image URL" value={form.image_url || ''} onChange={e => setForm({...form, image_url: e.target.value})} />
                 <Input label="Specialty Tags (comma-separated)" value={form.specialty_tags || ''} onChange={e => setForm({...form, specialty_tags: e.target.value})} />
                 <div className="col-span-2">
@@ -457,7 +467,7 @@ function AccountsPageInner() {
                 <div key={p.id} className="flex flex-col gap-3 rounded-lg border border-gray-200 p-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
                     <p className="font-medium truncate">{p.full_name}</p>
-                    <p className="text-xs text-gray-500">{p.email || 'No email'} — {p.station_unit || 'Unassigned'}</p>
+                    <p className="text-xs text-gray-500">{p.email || 'No email'} — {p.station_unit || 'Unassigned'} — {p.shift ? `${p.shift[0].toUpperCase()}${p.shift.slice(1)} Shift` : 'No shift'}</p>
                   </div>
                   <div className="flex flex-wrap gap-1 shrink-0">
                     <Button size="sm" variant="secondary" onClick={() => startEdit(p, 'preceptor')}>Edit</Button>

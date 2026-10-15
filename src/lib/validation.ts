@@ -63,6 +63,7 @@ export const provisionAccountBody = z.discriminatedUnion('accountType', [
     password: z.string().min(6).max(128).optional().or(z.literal('')),
     fullName: nameSchema,
     stationUnit: stationUnitSchema.optional(),
+    shift: z.enum(['first', 'second', 'third']).nullable().optional(),
     bio: optionalTextSchema(2000),
     imageUrl: optionalTextSchema(1000),
     specialtyTags: z.array(textSchema(60)).max(20).optional(),
