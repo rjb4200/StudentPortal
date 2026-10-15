@@ -18,6 +18,7 @@ interface DayDetailModalProps {
   onClose: () => void;
   onCancel: () => void;
   schedule: Schedule | null;
+  preceptorName?: string | null;
 }
 
 const STATUS_CONFIG: Record<string, { icon: string; label: string; className: string }> = {
@@ -27,7 +28,7 @@ const STATUS_CONFIG: Record<string, { icon: string; label: string; className: st
   rejected: { icon: '\u2715', label: 'Rejected', className: 'bg-gray-100 text-gray-500 border-gray-200' },
 };
 
-export function DayDetailModal({ open, onClose, onCancel, schedule }: DayDetailModalProps) {
+export function DayDetailModal({ open, onClose, onCancel, schedule, preceptorName }: DayDetailModalProps) {
   if (!schedule) return null;
 
   const isTerminal = schedule.status === 'cancelled' || schedule.status === 'rejected';
@@ -58,6 +59,13 @@ export function DayDetailModal({ open, onClose, onCancel, schedule }: DayDetailM
             <p className="text-sm font-medium text-wfd-charcoal">{timeDisplay}</p>
           </div>
         </div>
+
+        {preceptorName && (
+          <div className="bg-gray-50 rounded-lg p-3">
+            <p className="text-xs text-gray-400 mb-0.5">Likely Preceptor</p>
+            <p className="text-sm font-medium text-wfd-charcoal">{preceptorName}</p>
+          </div>
+        )}
 
         <div>
           <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${statusCfg.className}`}>

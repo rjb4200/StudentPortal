@@ -107,6 +107,12 @@ export const scheduleActionBody = z.object({
   scheduleId: uuidSchema,
   action: z.enum(['approved', 'rejected', 'cancelled', 'approved_and_blocked', 'rejected_and_blocked']),
   note: textSchema(500).optional(),
+  preceptorId: uuidSchema.optional(),
+});
+
+export const preceptorShiftBody = z.object({
+  preceptorId: uuidSchema,
+  shift: z.enum(['first', 'second', 'third']).nullable(),
 });
 
 const dateOnlySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD date format');

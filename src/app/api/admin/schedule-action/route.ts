@@ -7,6 +7,7 @@ import { sendEmail } from '@/lib/email';
 import { buildShiftApprovedEmail, buildShiftCancelledByAdminEmail, buildShiftRejectedEmail } from '@/lib/email-templates';
 import { scheduleActionBody } from '@/lib/validation';
 import { resolveCalendarFeedUrl } from '@/lib/calendar-feed-server';
+import { getShiftKey } from '@/lib/shift-rotation';
 
 export async function POST(request: NextRequest) {
   const cookieHeader = request.headers.get('cookie') || '';
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
   }
-  const { scheduleId, action, note } = parsed.data;
+  const { scheduleId, action, note, preceptorId } = parsed.data;
   const isCombinedAction = action === 'approved_and_blocked' || action === 'rejected_and_blocked';
   const resolvedAction = action === 'approved_and_blocked'
     ? 'approved'
@@ -57,6 +58,36 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, message: 'Already cancelled' });
   }
 
+  // Optional preceptor pairing on approval.
+  const assigningPreceptor = resolvedAction === 'approved' && !!preceptorId;
+  let preceptorName: string | null = null;
+
+  if (assigningPreceptor) {
+    const { data: preceptor } = await adminClient
+      .from('preceptors')
+      .select('id, full_name, shift, is_active')
+      .eq('id', preceptorId)
+      .single();
+
+    if (!preceptor || !preceptor.is_active || preceptor.shift !== getShiftKey(schedule.date)) {
+      return NextResponse.json({ error: 'That preceptor is not available on this date.' }, { status: 400 });
+    }
+
+    const { data: alreadyPaired } = await adminClient
+      .from('schedules')
+      .select('id')
+      .eq('date', schedule.date)
+      .eq('preceptor_id', preceptorId)
+      .neq('id', scheduleId)
+      .maybeSingle();
+
+    if (alreadyPaired) {
+      return NextResponse.json({ error: 'That preceptor is already assigned to another student on this date.' }, { status: 400 });
+    }
+
+    preceptorName = preceptor.full_name;
+  }
+
   let updateError: { message: string } | null = null;
   if (isCombinedAction) {
     const { error } = await adminClient.rpc('resolve_schedule_and_block_day', {
@@ -66,13 +97,19 @@ export async function POST(request: NextRequest) {
       p_admin_id: user.id,
     });
     updateError = error;
+    if (!updateError && assigningPreceptor) {
+      await adminClient.from('schedules').update({ preceptor_id: preceptorId }).eq('id', scheduleId);
+    }
   } else {
-    const updatePayload = isProcessingStudentCancellation
-      ? { cancelled_by: 'admin' as const }
-      : { status: resolvedAction, ...(resolvedAction === 'cancelled' ? { cancelled_by: 'admin' as const } : {}) };
+    const updatePayload: Record<string, unknown> = isProcessingStudentCancellation
+      ? { cancelled_by: 'admin' }
+      : { status: resolvedAction, ...(resolvedAction === 'cancelled' ? { cancelled_by: 'admin' } : {}) };
 
     if (resolvedAction === 'cancelled' && note) {
-      (updatePayload as any).cancel_note = note;
+      updatePayload.cancel_note = note;
+    }
+    if (assigningPreceptor) {
+      updatePayload.preceptor_id = preceptorId;
     }
 
     const { error } = await adminClient
@@ -84,6 +121,18 @@ export async function POST(request: NextRequest) {
 
   if (updateError) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
+  }
+
+  // Soft capacity warning: more approved students than preceptors on duty.
+  let warning: string | null = null;
+  if (resolvedAction === 'approved') {
+    const [{ count: approvedCount }, { count: poolCount }] = await Promise.all([
+      adminClient.from('schedules').select('id', { count: 'exact', head: true }).eq('date', schedule.date).eq('status', 'approved'),
+      adminClient.from('preceptors').select('id', { count: 'exact', head: true }).eq('shift', getShiftKey(schedule.date)).eq('is_active', true),
+    ]);
+    if ((approvedCount ?? 0) > (poolCount ?? 0)) {
+      warning = `${approvedCount} students are approved on ${schedule.date}, but only ${poolCount ?? 0} preceptor${(poolCount ?? 0) === 1 ? ' is' : 's are'} on duty that day.`;
+    }
   }
 
   if (!isProcessingStudentCancellation) {
@@ -107,7 +156,7 @@ export async function POST(request: NextRequest) {
       let result;
 
       if (resolvedAction === 'approved') {
-        result = buildShiftApprovedEmail({ ...templateParams, login_url: loginUrl });
+        result = buildShiftApprovedEmail({ ...templateParams, login_url: loginUrl, preceptor_name: preceptorName });
       } else if (resolvedAction === 'cancelled') {
         result = buildShiftCancelledByAdminEmail({ ...templateParams, note: note || null, login_url: loginUrl });
       } else {
@@ -124,5 +173,5 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true, warning });
 }

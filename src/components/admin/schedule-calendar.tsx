@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { addMonths, eachDayOfInterval, endOfMonth, endOfWeek, format, isSameMonth, startOfMonth, startOfWeek, subMonths } from 'date-fns';
 import { Alert, Button, Card, EmptyState, LoadingState } from '@/components/ui';
 import { getScheduleBlockRangeSummary } from '@/lib/schedule-blocks';
+import { poolForDate } from '@/lib/preceptor-rotation';
 import { to24Hour } from '@/lib/time-formats';
 import { CalendarLinkPanel } from '@/components/admin/calendar-link-panel';
 
@@ -21,6 +22,8 @@ type Schedule = {
 
 type ScheduleBlock = { date: string; reason: string | null };
 
+type Preceptor = { id: string; full_name: string; shift: 'first' | 'second' | 'third' | null; is_active: boolean };
+
 const statusStyles: Record<ScheduleStatus, string> = {
   pending: 'bg-wfd-gold/15 text-wfd-gold border-wfd-gold/30',
   approved: 'bg-wfd-crimson/10 text-wfd-crimson border-wfd-crimson/30',
@@ -33,6 +36,7 @@ export function ScheduleCalendar() {
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [blocks, setBlocks] = useState<ScheduleBlock[]>([]);
+  const [preceptors, setPreceptors] = useState<Preceptor[]>([]);
   const [reason, setReason] = useState('');
   const [periodReason, setPeriodReason] = useState('');
   const [rangeStart, setRangeStart] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -50,6 +54,7 @@ export function ScheduleCalendar() {
       if (!response.ok) throw new Error(data.error || 'Unable to load the scheduling calendar.');
       setSchedules(data.schedules ?? []);
       setBlocks(data.blocks ?? []);
+      setPreceptors(data.preceptors ?? []);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Unable to load the scheduling calendar.');
     } finally {
@@ -140,6 +145,9 @@ export function ScheduleCalendar() {
             <h2 className="text-lg font-black text-wfd-charcoal">{format(month, 'MMMM yyyy')}</h2>
             <Button variant="secondary" size="sm" onClick={() => setMonth((value) => addMonths(value, 1))}>Next</Button>
           </div>
+          <p className="mb-3 rounded-lg bg-gray-50 p-2 text-xs leading-5 text-gray-500">
+            Preceptor coverage is based on the 24/48 shift rotation, not the schedule, and does not reflect comp time, vacation, sick days, or traded shifts.
+          </p>
           <div className="grid grid-cols-7 gap-1">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
               <div key={day} className="py-2 text-center text-xs font-bold text-gray-400">{day}</div>
@@ -148,6 +156,7 @@ export function ScheduleCalendar() {
               const date = format(day, 'yyyy-MM-dd');
               const daySchedules = schedules.filter((schedule) => schedule.date === date);
               const block = blocks.find((item) => item.date === date);
+              const preceptorCount = poolForDate(date, preceptors).length;
               const counts = daySchedules.reduce<Record<ScheduleStatus, number>>((total, schedule) => {
                 total[schedule.status]++;
                 return total;
@@ -165,6 +174,7 @@ export function ScheduleCalendar() {
                     {block && <span className="rounded bg-gray-700 px-1.5 py-0.5 text-[9px] font-bold uppercase text-white">Blocked</span>}
                   </div>
                   <div className="mt-2 space-y-0.5 text-[10px] font-semibold">
+                    <p className="text-wfd-charcoal">Preceptors: {preceptorCount}</p>
                     {counts.pending > 0 && <p className={block ? 'text-wfd-crimson' : 'text-wfd-gold'}>Pending: {counts.pending}{block ? ' !' : ''}</p>}
                     {counts.approved > 0 && <p className="text-wfd-crimson">Approved: {counts.approved}</p>}
                     {counts.rejected > 0 && <p className="text-gray-500">Rejected: {counts.rejected}</p>}

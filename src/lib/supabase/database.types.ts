@@ -622,6 +622,7 @@ export type Database = {
           is_active: boolean
           notify_evaluation: boolean
           notify_schedule_approved: boolean
+          shift: Database["public"]["Enums"]["preceptor_shift"] | null
           specialty_tags: string[] | null
           station_unit: Database["public"]["Enums"]["station_unit"] | null
         }
@@ -635,6 +636,7 @@ export type Database = {
           is_active?: boolean
           notify_evaluation?: boolean
           notify_schedule_approved?: boolean
+          shift?: Database["public"]["Enums"]["preceptor_shift"] | null
           specialty_tags?: string[] | null
           station_unit?: Database["public"]["Enums"]["station_unit"] | null
         }
@@ -648,6 +650,7 @@ export type Database = {
           is_active?: boolean
           notify_evaluation?: boolean
           notify_schedule_approved?: boolean
+          shift?: Database["public"]["Enums"]["preceptor_shift"] | null
           specialty_tags?: string[] | null
           station_unit?: Database["public"]["Enums"]["station_unit"] | null
         }
@@ -995,6 +998,7 @@ export type Database = {
           date: string
           end_time: string | null
           id: string
+          preceptor_id: string | null
           shift_type: Database["public"]["Enums"]["shift_type"]
           start_time: string | null
           status: Database["public"]["Enums"]["schedule_status"]
@@ -1007,6 +1011,7 @@ export type Database = {
           date: string
           end_time?: string | null
           id?: string
+          preceptor_id?: string | null
           shift_type: Database["public"]["Enums"]["shift_type"]
           start_time?: string | null
           status?: Database["public"]["Enums"]["schedule_status"]
@@ -1019,6 +1024,7 @@ export type Database = {
           date?: string
           end_time?: string | null
           id?: string
+          preceptor_id?: string | null
           shift_type?: Database["public"]["Enums"]["shift_type"]
           start_time?: string | null
           status?: Database["public"]["Enums"]["schedule_status"]
@@ -1030,6 +1036,13 @@ export type Database = {
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedules_preceptor_id_fkey"
+            columns: ["preceptor_id"]
+            isOneToOne: false
+            referencedRelation: "preceptors"
             referencedColumns: ["id"]
           },
         ]
@@ -1468,6 +1481,7 @@ export type Database = {
       calendar_feed_type: "student" | "training_site" | "aggregate"
       message_sender: "student" | "admin"
       note_priority: "normal" | "high_accessibility"
+      preceptor_shift: "first" | "second" | "third"
       registry_status:
         | "pending"
         | "active"
@@ -1611,6 +1625,7 @@ export const Constants = {
       calendar_feed_type: ["student", "training_site", "aggregate"],
       message_sender: ["student", "admin"],
       note_priority: ["normal", "high_accessibility"],
+      preceptor_shift: ["first", "second", "third"],
       registry_status: [
         "pending",
         "active",

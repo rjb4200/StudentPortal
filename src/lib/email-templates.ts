@@ -198,8 +198,9 @@ export function buildShiftApprovedEmail(params: {
   time_display: string;
   login_url: string;
   feedUrl?: string | null;
+  preceptor_name?: string | null;
 }): EmailContent {
-  const { full_name, date_str, time_display, login_url, feedUrl } = params;
+  const { full_name, date_str, time_display, login_url, feedUrl, preceptor_name } = params;
   const feedLinkSection = feedUrl
     ? `<div style="margin:20px auto 0 auto;max-width:480px;text-align:center;">
         <p style="margin:0;color:#4b5563;font-size:13px;line-height:1.5;">Subscribe to your personal calendar feed to automatically see approved shifts:</p>
@@ -210,6 +211,7 @@ export function buildShiftApprovedEmail(params: {
            <div style="margin:20px auto;padding:16px 18px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;max-width:400px;">
              <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Date:</strong> ${escHtml(date_str)}</p>
              <p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Time:</strong> ${escHtml(time_display)}</p>
+             ${preceptor_name ? `<p style="margin:0;color:#4b5563;font-size:14px;line-height:1.8;"><strong>Likely Preceptor:</strong> ${escHtml(preceptor_name)}</p>` : ''}
            </div>
            ${feedLinkSection}`;
   return {

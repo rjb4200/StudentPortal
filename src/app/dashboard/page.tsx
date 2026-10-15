@@ -27,6 +27,14 @@ interface Schedule {
   status: 'pending' | 'approved' | 'rejected' | 'cancelled';
   start_time?: string | null;
   end_time?: string | null;
+  preceptor_id?: string | null;
+}
+
+interface Preceptor {
+  id: string;
+  full_name: string;
+  shift: 'first' | 'second' | 'third' | null;
+  is_active: boolean;
 }
 
 function formatDate(date: string) {
@@ -52,6 +60,7 @@ export default function DashboardPage() {
   const [calendarFeedToken, setCalendarFeedToken] = useState<string | null>(null);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [blocks, setBlocks] = useState<ScheduleBlock[]>([]);
+  const [preceptors, setPreceptors] = useState<Preceptor[]>([]);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showShiftModal, setShowShiftModal] = useState(false);
@@ -110,14 +119,16 @@ export default function DashboardPage() {
         .maybeSingle()
         .then(({ data: feed }: { data: { token: string } | null }) => { if (feed?.token) setCalendarFeedToken(feed.token); });
 
-      const [{ data: schedules }, { data: welcome }, { data: readState }, availabilityResponse] = await Promise.all([
+      const [{ data: schedules }, { data: welcome }, { data: readState }, { data: preceptorRows }, availabilityResponse] = await Promise.all([
         supabase.from('schedules').select('*').eq('student_id', student.id).order('date', { ascending: true }),
         supabase.from('message_templates').select('title, body').eq('template_type', 'welcome').eq('is_active', true).limit(1),
         supabase.from('student_message_read_state').select('last_read_admin_message_at').eq('student_id', student.id).maybeSingle(),
+        supabase.from('preceptors').select('id, full_name, shift, is_active').eq('is_active', true).order('full_name'),
         fetch('/api/schedule/availability'),
       ]);
 
       setSchedules((schedules ?? []) as Schedule[]);
+      setPreceptors((preceptorRows ?? []) as Preceptor[]);
       if (availabilityResponse.ok) {
         const availability = await availabilityResponse.json();
         setBlocks((availability.blocks ?? []) as ScheduleBlock[]);
@@ -557,6 +568,7 @@ export default function DashboardPage() {
         onClose={() => { setShowDetailModal(false); setDetailTarget(null); }}
         onCancel={handleDetailCancel}
         schedule={detailTarget}
+        preceptorName={detailTarget?.preceptor_id ? preceptors.find((p) => p.id === detailTarget.preceptor_id)?.full_name ?? null : null}
       />
 
       <ShiftModal
@@ -572,6 +584,7 @@ export default function DashboardPage() {
         blocks={blocks}
         onDateChange={setSelectedDate}
         onSubmit={handleShiftSubmit}
+        preceptors={preceptors}
       />
 
       {cancelTarget && (

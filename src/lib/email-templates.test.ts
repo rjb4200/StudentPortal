@@ -222,6 +222,28 @@ describe('buildShiftApprovedEmail', () => {
     expect(result.html).toContain('O&#39;Brien');
     expect(result.subject).toBe('Shift Approved — WFD EMS Student Portal');
   });
+
+  it('names the assigned preceptor when present', () => {
+    const result = buildShiftApprovedEmail({
+      full_name: 'John Smith',
+      date_str: 'Monday, June 19, 2026',
+      time_display: '08:00 – 17:00',
+      login_url: 'https://example.com/dashboard',
+      preceptor_name: 'S Bellot',
+    });
+    expect(result.html).toContain('Likely Preceptor');
+    expect(result.html).toContain('S Bellot');
+  });
+
+  it('omits any preceptor when none is assigned', () => {
+    const result = buildShiftApprovedEmail({
+      full_name: 'John Smith',
+      date_str: 'Monday, June 19, 2026',
+      time_display: '08:00 – 17:00',
+      login_url: 'https://example.com/dashboard',
+    });
+    expect(result.html).not.toContain('Preceptor');
+  });
 });
 
 describe('buildShiftReminderEmail', () => {

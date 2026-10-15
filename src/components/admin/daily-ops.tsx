@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { to24Hour } from '@/lib/time-formats';
 import { getShiftRotation } from '@/lib/shift-rotation';
+import { availablePreceptorsForDate, poolForDate } from '@/lib/preceptor-rotation';
 import { ShiftManagement } from '@/components/admin/shift-management';
 import { Alert, ConfirmDialog, DataTable, DataTableCell, DataTableHead, DataTableRow, EmptyState, SectionCard } from '@/components/ui';
 import { Modal } from '@/components/ui/modal';
@@ -60,6 +61,7 @@ function getStudentClassLabel(student: any) {
 export function DailyOps({ onNavigateMessages }: { onNavigateMessages?: (studentId?: string) => void }) {
   const [pendingStudents, setPendingStudents] = useState<any[]>([]);
   const [schedules, setSchedules] = useState<any[]>([]);
+  const [preceptors, setPreceptors] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
   const [messageThreads, setMessageThreads] = useState<MessageThread[]>([]);
   const [messageInboxError, setMessageInboxError] = useState<string | null>(null);
@@ -81,6 +83,8 @@ export function DailyOps({ onNavigateMessages }: { onNavigateMessages?: (student
   const [deleting, setDeleting] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [scheduleActionError, setScheduleActionError] = useState<string | null>(null);
+  const [preceptorSelections, setPreceptorSelections] = useState<Record<string, string>>({});
+  const [scheduleWarning, setScheduleWarning] = useState<string | null>(null);
   const [pendingMous, setPendingMous] = useState<any[]>([]);
   const [signingMou, setSigningMou] = useState<string | null>(null);
   const [mouSkips, setMouSkips] = useState<any[]>([]);
@@ -120,6 +124,7 @@ export function DailyOps({ onNavigateMessages }: { onNavigateMessages?: (student
       { data: pendingClasses },
       { data: pendingMousData },
       { data: mouSkipsData, error: mouSkipsError },
+      { data: preceptorsData },
       inboxResponse,
     ] = await Promise.all([
       supabase.from('students').select('*, training_classes(name, level, class_start_date, ride_time_end_date, training_sites(name), instructors(first_name, last_name))').eq('status', 'pending').not('onboarding_completed_at', 'is', null).order('created_at', { ascending: false }),
@@ -131,12 +136,14 @@ export function DailyOps({ onNavigateMessages }: { onNavigateMessages?: (student
       supabase.from('training_classes').select('*, training_sites(name), instructors(first_name, last_name)').eq('status', 'pending').order('created_at', { ascending: false }),
       supabase.from('class_mous').select('*, training_classes!inner(name, training_sites!inner(name), instructors!inner(first_name, last_name, email))').is('wfems_signed_at', null).not('representative_signature', 'eq', '').order('created_at', { ascending: false }),
       supabase.from('class_mou_skips').select('id, reason, created_at, training_classes!inner(name, training_sites!inner(name), instructors!inner(first_name, last_name))').is('dismissed_at', null).order('created_at', { ascending: false }),
+      supabase.from('preceptors').select('id, full_name, shift, is_active').order('full_name'),
       fetch('/api/admin/message-inbox'),
     ]);
 
     setPendingStudents(pending ?? []);
     setStudents(allStudents ?? []);
     setSchedules(allSchedules ?? []);
+    setPreceptors(preceptorsData ?? []);
     setQuizFlags(quizFlagsData ?? []);
     setRegistryItems([
       ...(pendingSites ?? []).map((item: any) => ({ ...item, registryTable: 'training_sites', registryLabel: 'Site' })),
@@ -248,21 +255,42 @@ export function DailyOps({ onNavigateMessages }: { onNavigateMessages?: (student
     }
   };
 
-  const handleScheduleAction = async (scheduleId: string, action: 'approved' | 'rejected' | 'cancelled' | 'approved_and_blocked' | 'rejected_and_blocked', note?: string) => {
+  const handleScheduleAction = async (scheduleId: string, action: 'approved' | 'rejected' | 'cancelled' | 'approved_and_blocked' | 'rejected_and_blocked', note?: string, preceptorId?: string) => {
     setScheduleActionError(null);
+    setScheduleWarning(null);
     try {
       const response = await fetch('/api/admin/schedule-action', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scheduleId, action, note: note || undefined }),
+        body: JSON.stringify({ scheduleId, action, note: note || undefined, preceptorId: preceptorId || undefined }),
       });
       const data = await response.json();
       if (!response.ok || data?.success !== true) {
         throw new Error(data?.error || `Schedule action failed with status ${response.status}.`);
       }
+      if (data?.warning) setScheduleWarning(data.warning);
+      setPreceptorSelections((prev) => { const next = { ...prev }; delete next[scheduleId]; return next; });
       await loadAll();
     } catch (e) {
       setScheduleActionError(e instanceof Error ? e.message : 'Schedule action failed. Please try again.');
+    }
+  };
+
+  const savePreceptorShift = async (preceptorId: string, shift: 'first' | 'second' | 'third' | null) => {
+    setScheduleActionError(null);
+    try {
+      const response = await fetch('/api/admin/preceptors/shift', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ preceptorId, shift }),
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok || data?.success !== true) {
+        throw new Error(data?.error || 'Unable to update the preceptor shift.');
+      }
+      await loadAll();
+    } catch (e) {
+      setScheduleActionError(e instanceof Error ? e.message : 'Unable to update the preceptor shift.');
     }
   };
 
@@ -520,6 +548,9 @@ export function DailyOps({ onNavigateMessages }: { onNavigateMessages?: (student
             {scheduleActionError && (
               <p className="text-xs text-red-600 bg-red-50 rounded-lg px-2 py-1">{scheduleActionError}</p>
             )}
+            {scheduleWarning && (
+              <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-2 py-1">{scheduleWarning}</p>
+            )}
             {pendingSchedules.map((s: any) => (
               <div key={`schedule-${s.id}`} className="flex flex-col gap-2 rounded-lg bg-gray-50 p-2 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -548,11 +579,35 @@ export function DailyOps({ onNavigateMessages }: { onNavigateMessages?: (student
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <Button size="sm" onClick={() => handleScheduleAction(s.id, 'approved')}>Approve</Button>
-                  <Button size="sm" variant="secondary" onClick={() => handleScheduleAction(s.id, 'approved_and_blocked')}>Approve + Block</Button>
-                  <Button variant="danger" size="sm" onClick={() => handleScheduleAction(s.id, 'rejected')}>Reject</Button>
-                  <Button variant="danger" size="sm" onClick={() => handleScheduleAction(s.id, 'rejected_and_blocked')}>Reject + Block</Button>
-                  <ScheduleCancelButton scheduleId={s.id} onCancel={handleScheduleAction} />
+                  {(() => {
+                    const pairedIds = schedules
+                      .filter((x: any) => x.date === s.date && x.preceptor_id && x.id !== s.id)
+                      .map((x: any) => x.preceptor_id);
+                    const available = availablePreceptorsForDate(s.date, preceptors, pairedIds);
+                    const poolSize = poolForDate(s.date, preceptors).length;
+                    const approvedForDate = schedules.filter((x: any) => x.date === s.date && x.status === 'approved').length;
+                    const wouldExceed = poolSize > 0 && approvedForDate >= poolSize;
+                    const selected = preceptorSelections[s.id] ?? '';
+                    return (
+                      <>
+                        <select
+                          value={selected}
+                          onChange={(e) => setPreceptorSelections((prev) => ({ ...prev, [s.id]: e.target.value }))}
+                          aria-label={`Preceptor for ${s.students?.full_name ?? 'student'}`}
+                          className="rounded border border-gray-200 px-2 py-1 text-xs text-gray-900 focus:border-wfd-crimson focus:ring-1 focus:ring-wfd-crimson"
+                        >
+                          <option value="">No preceptor</option>
+                          {available.map((p: any) => <option key={p.id} value={p.id}>{p.full_name}</option>)}
+                        </select>
+                        {wouldExceed && <span className="text-[11px] font-medium text-amber-600">More students than preceptors</span>}
+                        <Button size="sm" onClick={() => handleScheduleAction(s.id, 'approved', undefined, selected || undefined)}>Approve</Button>
+                        <Button size="sm" variant="secondary" onClick={() => handleScheduleAction(s.id, 'approved_and_blocked', undefined, selected || undefined)}>Approve + Block</Button>
+                        <Button variant="danger" size="sm" onClick={() => handleScheduleAction(s.id, 'rejected')}>Reject</Button>
+                        <Button variant="danger" size="sm" onClick={() => handleScheduleAction(s.id, 'rejected_and_blocked')}>Reject + Block</Button>
+                        <ScheduleCancelButton scheduleId={s.id} onCancel={handleScheduleAction} />
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             ))}
@@ -754,6 +809,8 @@ export function DailyOps({ onNavigateMessages }: { onNavigateMessages?: (student
           </DataTable>
       </SectionCard>
 
+      <PreceptorRotation preceptors={preceptors} onAssign={savePreceptorShift} />
+
       {/* Shift Management */}
       <ShiftManagement schedules={schedules} students={students} onCancel={handleScheduleAction} />
 
@@ -877,5 +934,58 @@ function ScheduleCancelButton({ scheduleId, onCancel }: { scheduleId: string; on
       <button onClick={handleConfirm} className="text-xs px-2 py-0.5 rounded bg-wfd-crimson text-white hover:brightness-90">Cancel</button>
       <button onClick={() => { setOpen(false); setNote(''); }} className="text-xs text-gray-400 hover:text-gray-600">✕</button>
     </div>
+  );
+}
+
+const PRECEPTOR_SHIFT_COLUMNS: { key: 'first' | 'second' | 'third' | ''; label: string }[] = [
+  { key: 'first', label: 'First Shift' },
+  { key: 'second', label: 'Second Shift' },
+  { key: 'third', label: 'Third Shift' },
+  { key: '', label: 'Unassigned' },
+];
+
+function PreceptorRotation({ preceptors, onAssign }: { preceptors: any[]; onAssign: (preceptorId: string, shift: 'first' | 'second' | 'third' | null) => void }) {
+  return (
+    <SectionCard className="p-4 lg:col-span-2">
+      <h3 className="font-bold text-wfd-charcoal mb-1">Preceptor Rotation</h3>
+      <p className="text-xs text-gray-500 mb-3">
+        Assign each preceptor to the shift they work. The day&apos;s preceptor pool is derived from the 24/48 rotation; inactive preceptors are excluded.
+      </p>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {PRECEPTOR_SHIFT_COLUMNS.map((column) => {
+          const members = preceptors.filter((p) => (p.shift ?? '') === column.key);
+          return (
+            <div key={column.key || 'unassigned'} className="rounded-lg border border-gray-200 p-2">
+              <p className="text-xs font-bold uppercase tracking-wide text-gray-500">{column.label}</p>
+              <p className="mb-2 text-[11px] text-gray-400">{members.length} preceptor{members.length === 1 ? '' : 's'}</p>
+              {members.length === 0 ? (
+                <p className="text-xs text-gray-400">None</p>
+              ) : (
+                <ul className="space-y-2">
+                  {members.map((p) => (
+                    <li key={p.id}>
+                      <p className={`truncate text-sm ${p.is_active ? 'text-wfd-charcoal' : 'text-gray-400 line-through'}`}>
+                        {p.full_name}{p.is_active ? '' : ' (inactive)'}
+                      </p>
+                      <select
+                        value={p.shift ?? ''}
+                        onChange={(e) => onAssign(p.id, (e.target.value || null) as 'first' | 'second' | 'third' | null)}
+                        aria-label={`Shift for ${p.full_name}`}
+                        className="mt-0.5 w-full rounded border border-gray-200 px-2 py-0.5 text-xs text-gray-900 focus:border-wfd-crimson focus:ring-1 focus:ring-wfd-crimson"
+                      >
+                        <option value="">Unassigned</option>
+                        <option value="first">First Shift</option>
+                        <option value="second">Second Shift</option>
+                        <option value="third">Third Shift</option>
+                      </select>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </SectionCard>
   );
 }

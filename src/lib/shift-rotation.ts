@@ -1,4 +1,7 @@
+export type ShiftKey = 'first' | 'second' | 'third';
+
 export type ShiftRotation = {
+  key: ShiftKey;
   label: 'First Shift' | 'Second Shift' | 'Third Shift';
   chief: string;
   color: 'orange' | 'yellow' | 'gray';
@@ -8,9 +11,9 @@ const ANCHOR_DATE = '2026-07-16';
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 const ROTATION: ShiftRotation[] = [
-  { label: 'First Shift', chief: 'R Brown', color: 'orange' },
-  { label: 'Second Shift', chief: 'S Bellot', color: 'yellow' },
-  { label: 'Third Shift', chief: 'M Martin', color: 'gray' },
+  { key: 'first', label: 'First Shift', chief: 'R Brown', color: 'orange' },
+  { key: 'second', label: 'Second Shift', chief: 'S Bellot', color: 'yellow' },
+  { key: 'third', label: 'Third Shift', chief: 'M Martin', color: 'gray' },
 ];
 
 function dateAtUtcMidnight(date: string) {
@@ -27,4 +30,8 @@ function dateAtUtcMidnight(date: string) {
 export function getShiftRotation(date: string): ShiftRotation {
   const daysSinceAnchor = Math.round((dateAtUtcMidnight(date) - dateAtUtcMidnight(ANCHOR_DATE)) / DAY_MS);
   return ROTATION[((daysSinceAnchor % ROTATION.length) + ROTATION.length) % ROTATION.length];
+}
+
+export function getShiftKey(date: string): ShiftKey {
+  return getShiftRotation(date).key;
 }

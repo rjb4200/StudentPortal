@@ -5,6 +5,15 @@ import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { START_TIME_OPTIONS, END_TIME_OPTIONS } from '@/lib/time-formats';
 import { getScheduleBlock, type ScheduleBlock } from '@/lib/schedule-blocks';
+import { getShiftRotation } from '@/lib/shift-rotation';
+import { poolForDate } from '@/lib/preceptor-rotation';
+
+interface PreceptorOption {
+  id: string;
+  full_name: string;
+  shift: 'first' | 'second' | 'third' | null;
+  is_active: boolean;
+}
 
 interface Schedule {
   id: string;
@@ -25,11 +34,12 @@ interface ShiftModalProps {
   blocks?: ScheduleBlock[];
   onDateChange?: (date: string) => void;
   onSubmit: (shiftType: 'full' | 'day' | 'custom', startTime: string, endTime: string) => void;
+  preceptors?: PreceptorOption[];
 }
 
 const CUSTOM_DEFAULT_START = '7:00 AM';
 
-export function ShiftModal({ open, onClose, date, schedules, classStartDate, rideTimeEndDate, blocks = [], onDateChange, onSubmit }: ShiftModalProps) {
+export function ShiftModal({ open, onClose, date, schedules, classStartDate, rideTimeEndDate, blocks = [], onDateChange, onSubmit, preceptors = [] }: ShiftModalProps) {
   const [selected, setSelected] = useState<'full' | 'day' | 'custom'>('full');
   const [customStart, setCustomStart] = useState(CUSTOM_DEFAULT_START);
   const [customEnd, setCustomEnd] = useState('7:00 PM');
@@ -59,6 +69,8 @@ export function ShiftModal({ open, onClose, date, schedules, classStartDate, rid
 
   const showNag = selected === 'custom' && customStart !== CUSTOM_DEFAULT_START;
   const selectedBlock = getScheduleBlock(blocks, selectedDate);
+  const workingPreceptors = selectedDate ? poolForDate(selectedDate, preceptors) : [];
+  const rotation = selectedDate ? getShiftRotation(selectedDate) : null;
 
   return (
     <Modal open={open} onClose={onClose} title="Request Shift">
@@ -73,6 +85,19 @@ export function ShiftModal({ open, onClose, date, schedules, classStartDate, rid
           className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 outline-none focus:ring-2 focus:ring-wfd-crimson focus:border-transparent"
         />
       </div>
+
+      {selectedDate && (
+        <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+            Working this day{rotation ? ` — ${rotation.label}` : ''}
+          </p>
+          <p className="mt-1 text-sm text-gray-700">
+            {workingPreceptors.length > 0
+              ? workingPreceptors.map((p) => p.full_name).join(', ')
+              : 'No preceptors listed for this day.'}
+          </p>
+        </div>
+      )}
 
       <div className="space-y-3 mb-6">
         {selectedBlock && (

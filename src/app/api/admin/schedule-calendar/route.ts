@@ -15,11 +15,12 @@ export async function GET(request: NextRequest) {
   if (!canAccessAdmin(user)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const adminClient = createAdminClient();
-  const [{ data: blocks, error: blockError }, { data: schedules, error: scheduleError }] = await Promise.all([
+  const [{ data: blocks, error: blockError }, { data: schedules, error: scheduleError }, { data: preceptors, error: preceptorError }] = await Promise.all([
     adminClient.from('schedule_blocks').select('date, reason').order('date'),
     adminClient.from('schedules').select('*, students(full_name, email)').order('date', { ascending: true }),
+    adminClient.from('preceptors').select('id, full_name, shift, is_active').eq('is_active', true).order('full_name'),
   ]);
-  const error = blockError || scheduleError;
+  const error = blockError || scheduleError || preceptorError;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ blocks: blocks ?? [], schedules: schedules ?? [] });
+  return NextResponse.json({ blocks: blocks ?? [], schedules: schedules ?? [], preceptors: preceptors ?? [] });
 }
