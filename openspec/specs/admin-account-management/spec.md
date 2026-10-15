@@ -36,11 +36,24 @@ The system SHALL allow admin users to create, edit, disable, and delete admin ac
 - **THEN** the auth user is deleted and the `admin_accounts` row is removed
 
 ### Requirement: Preceptor account management
-The system SHALL allow admin users to create, edit, disable, and delete preceptor accounts with password-based auth, profile info (name, station, bio, image, tags), and notification preferences. Creating a preceptor account SHALL be a single server-side operation that provisions or replaces the Supabase Auth login and inserts the `preceptors` row, and SHALL NOT leave an orphaned auth user when the profile insert fails. Student and staff accounts SHALL remain separate: an email used by a student record SHALL NOT be used for a preceptor account.
+The system SHALL allow admin users to create, edit, disable, and delete preceptor accounts with profile info (name, station, bio, image, tags) and notification preferences. A preceptor account MAY be created with a password-based login by providing an email and password, or without a login by leaving both blank; a login-less preceptor SHALL be stored as a `preceptors` row with no linked auth user and no email. When a login is requested, creating the account SHALL be a single server-side operation that provisions or replaces the Supabase Auth login and inserts the `preceptors` row, and SHALL NOT leave an orphaned auth user when the profile insert fails. Providing an email without a password, or a password without an email, SHALL be rejected. Student and staff accounts SHALL remain separate: an email used by a student record SHALL NOT be used for a preceptor account.
 
-#### Scenario: Create preceptor account
+#### Scenario: Create preceptor account with a login
 - **WHEN** an admin creates a preceptor with name, email, password, and station
 - **THEN** a preceptor login is created with role `preceptor`, linked to a `preceptors` row, and no orphaned auth user remains if either step fails
+
+#### Scenario: Create a login-less preceptor
+- **WHEN** an admin creates a preceptor with a name and no email or password
+- **THEN** a `preceptors` row is created with no linked auth user and no email
+- **AND** no Supabase Auth user is created
+
+#### Scenario: Email without password is rejected
+- **WHEN** an admin creates a preceptor with an email but no password
+- **THEN** the operation is rejected with a message to provide both or leave both blank
+
+#### Scenario: Password without email is rejected
+- **WHEN** an admin creates a preceptor with a password but no email
+- **THEN** the operation is rejected with a message to provide both or leave both blank
 
 #### Scenario: Replace an unlinked existing staff login
 - **WHEN** an admin creates a preceptor account whose email has an unlinked auth login in the staff family
