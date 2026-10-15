@@ -625,6 +625,7 @@ export type Database = {
           shift: Database["public"]["Enums"]["preceptor_shift"] | null
           specialty_tags: string[] | null
           station_unit: Database["public"]["Enums"]["station_unit"] | null
+          updated_at: string
         }
         Insert: {
           auth_user_id?: string | null
@@ -639,6 +640,7 @@ export type Database = {
           shift?: Database["public"]["Enums"]["preceptor_shift"] | null
           specialty_tags?: string[] | null
           station_unit?: Database["public"]["Enums"]["station_unit"] | null
+          updated_at?: string
         }
         Update: {
           auth_user_id?: string | null
@@ -653,6 +655,7 @@ export type Database = {
           shift?: Database["public"]["Enums"]["preceptor_shift"] | null
           specialty_tags?: string[] | null
           station_unit?: Database["public"]["Enums"]["station_unit"] | null
+          updated_at?: string
         }
         Relationships: []
       }
