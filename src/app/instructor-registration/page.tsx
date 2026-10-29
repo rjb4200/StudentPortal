@@ -345,6 +345,34 @@ export default function InstructorRegistrationPage() {
 
   const activeArea = step === 1 ? 'site.' : step === 2 ? 'instructor.' : step === 3 ? 'class.' : 'mou.';
   const activeFieldErrors = Object.entries(fieldErrors).filter(([path, message]) => path.startsWith(activeArea) && message);
+  const validationFieldLabel = (path: string) => ({
+    'site.name': 'Training site name',
+    'site.organizationName': 'Organization/school name',
+    'site.address': 'Address',
+    'site.city': 'City',
+    'site.state': 'State',
+    'site.zipCode': 'ZIP code',
+    'site.mainPhone': 'Main site phone',
+    'site.trainingSiteId': 'Existing TEI',
+    'instructor.firstName': 'First name',
+    'instructor.lastName': 'Last name',
+    'instructor.email': 'Email',
+    'instructor.mobilePhone': 'Mobile phone',
+    'instructor.businessPhone': 'Business phone',
+    'instructor.credentials': 'Credentials/certifications',
+    'instructor.title': 'Position/title',
+    'instructor.preferredContactMethod': 'Preferred contact method',
+    'instructor.preferredContactHours': 'Preferred contact hours',
+    'instructor.contactInstructions': 'Additional contact instructions',
+    'instructor.instructorId': 'Existing instructor',
+    'class.name': 'Class name',
+    'class.classStartDate': 'Beginning-of-class date',
+    'class.rideTimeEndDate': 'End-of-ride-time date',
+    'class.notes': 'Class notes/instructions',
+    'mou.representativeName': 'Representative name',
+    'mou.representativeTitle': 'Representative title',
+    'mou.representativeSignature': 'Electronic signature',
+  }[path] ?? path.split('.').at(-1)?.replace(/([A-Z])/g, ' $1') ?? 'Registration detail');
 
   if (submitted) {
     return (
@@ -383,7 +411,9 @@ export default function InstructorRegistrationPage() {
           <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">
             <p className="font-semibold">Please correct the following before continuing:</p>
             <ul className="mt-1 list-disc pl-5">
-              {activeFieldErrors.map(([path, message]) => <li key={path}>{message}</li>)}
+              {activeFieldErrors.map(([path, message]) => (
+                <li key={path}><span className="font-semibold">{validationFieldLabel(path)}:</span> {message}</li>
+              ))}
             </ul>
           </div>
         )}
