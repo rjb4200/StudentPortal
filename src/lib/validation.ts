@@ -8,6 +8,14 @@ export const phoneSchema = z.string().trim().max(30).regex(/^[\d\s\-\(\)\+\.]{7,
 export const textSchema = (maxLen: number) => z.string().trim().max(maxLen);
 const optionalTextSchema = (maxLen: number) => z.string().trim().max(maxLen).optional().or(z.literal(''));
 
+export const US_STATE_CODES = [
+  'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD',
+  'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC',
+  'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY', 'DC',
+] as const;
+export const usStateSchema = z.enum(US_STATE_CODES, { error: 'Select a valid US state' });
+export const usZipCodeSchema = z.string().trim().regex(/^\d{5}(?:-\d{4})?$/, 'Enter a valid ZIP code');
+
 export const legalSignatureBody = z.object({
   studentId: uuidSchema,
   fullName: nameSchema,
@@ -202,8 +210,8 @@ export const trainingSiteDetailsSchema = z.object({
   organizationName: textSchema(160).min(1),
   address: textSchema(200).min(1),
   city: textSchema(100).min(1),
-  state: textSchema(40).min(1),
-  zipCode: textSchema(20).min(1),
+  state: usStateSchema,
+  zipCode: usZipCodeSchema,
   mainPhone: optionalTextSchema(30),
 });
 

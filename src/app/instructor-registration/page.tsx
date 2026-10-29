@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { instructorDetailsSchema, trainingClassDetailsSchema, trainingSiteDetailsSchema } from '@/lib/validation';
+import { instructorDetailsSchema, trainingClassDetailsSchema, trainingSiteDetailsSchema, US_STATE_CODES, usZipCodeSchema } from '@/lib/validation';
 
 type RegistrySite = {
   id: string;
@@ -82,6 +82,8 @@ export default function InstructorRegistrationPage() {
   const [skipConfirmed, setSkipConfirmed] = useState(false);
   const [submittedWithoutMou, setSubmittedWithoutMou] = useState(false);
   const [mouLoadError, setMouLoadError] = useState('');
+  const [postalSuggestion, setPostalSuggestion] = useState<{ city: string; state: string } | null>(null);
+  const [postalLookupError, setPostalLookupError] = useState('');
 
   useEffect(() => {
     async function loadSites() {
@@ -142,7 +144,41 @@ export default function InstructorRegistrationPage() {
 
   const updateSite = (key: keyof typeof initialSiteForm, value: string) => {
     setFieldErrors((prev) => ({ ...prev, [`site.${key}`]: '' }));
+    if (key === 'zipCode') {
+      setPostalSuggestion(null);
+      setPostalLookupError('');
+    }
     setSiteForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const lookupPostalCode = async () => {
+    const parsed = usZipCodeSchema.safeParse(siteForm.zipCode);
+    if (!parsed.success) return;
+
+    setPostalLookupError('');
+    const response = await fetch(`/api/postal-code?zip=${encodeURIComponent(parsed.data)}`);
+    const payload = await response.json().catch(() => null);
+    if (!response.ok || !payload?.success) {
+      setPostalSuggestion(null);
+      setPostalLookupError(payload?.error ?? 'ZIP lookup is temporarily unavailable');
+      return;
+    }
+
+    const match = { city: payload.city as string, state: payload.state as string };
+    setSiteForm((previous) => ({
+      ...previous,
+      city: previous.city.trim() ? previous.city : match.city,
+      state: match.state,
+    }));
+    setFieldErrors((previous) => ({ ...previous, 'site.city': '', 'site.state': '' }));
+    setPostalSuggestion(siteForm.city.trim() ? match : null);
+  };
+
+  const applyPostalSuggestion = () => {
+    if (!postalSuggestion) return;
+    setSiteForm((previous) => ({ ...previous, city: postalSuggestion.city, state: postalSuggestion.state }));
+    setFieldErrors((previous) => ({ ...previous, 'site.city': '', 'site.state': '' }));
+    setPostalSuggestion(null);
   };
 
   const updateInstructor = (key: keyof typeof initialInstructorForm, value: string) => {
@@ -464,10 +500,40 @@ export default function InstructorRegistrationPage() {
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 <Input label="Training site name" required value={siteForm.name} onChange={(e) => updateSite('name', e.target.value)} />
                 <Input label="Organization/school name" required value={siteForm.organizationName} onChange={(e) => updateSite('organizationName', e.target.value)} />
-                <Input label="Address" required value={siteForm.address} onChange={(e) => updateSite('address', e.target.value)} />
-                <Input label="City" required value={siteForm.city} onChange={(e) => updateSite('city', e.target.value)} />
-                <Input label="State" required value={siteForm.state} onChange={(e) => updateSite('state', e.target.value)} />
-                <Input label="ZIP code" required value={siteForm.zipCode} onChange={(e) => updateSite('zipCode', e.target.value)} />
+                <Input label="Address" required value={siteForm.address} onChange={(e) => updateSite('address', e.target.value)} error={fieldErrors['site.address']} />
+                <Input label="City" required value={siteForm.city} onChange={(e) => updateSite('city', e.target.value)} error={fieldErrors['site.city']} />
+                <label className="block text-sm font-medium text-gray-700">
+                  State
+                  <select
+                    required
+                    value={siteForm.state}
+                    onChange={(event) => updateSite('state', event.target.value)}
+                    aria-invalid={fieldErrors['site.state'] ? true : undefined}
+                    aria-describedby={fieldErrors['site.state'] ? 'site-state-error' : undefined}
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 outline-none focus:ring-2 focus:ring-wfd-crimson"
+                  >
+                    <option value="">Select state...</option>
+                    {US_STATE_CODES.map((state) => <option key={state} value={state}>{state}</option>)}
+                  </select>
+                  {fieldErrors['site.state'] && <span id="site-state-error" className="mt-1 block text-sm text-wfd-crimson">{fieldErrors['site.state']}</span>}
+                </label>
+                <div>
+                  <Input
+                    label="ZIP code"
+                    required
+                    inputMode="numeric"
+                    autoComplete="postal-code"
+                    value={siteForm.zipCode}
+                    onChange={(event) => updateSite('zipCode', event.target.value)}
+                    onBlur={lookupPostalCode}
+                    error={fieldErrors['site.zipCode'] || postalLookupError}
+                  />
+                  {postalSuggestion && (
+                    <button type="button" onClick={applyPostalSuggestion} className="mt-1 text-sm font-medium text-wfd-crimson underline">
+                      Use {postalSuggestion.city}, {postalSuggestion.state}
+                    </button>
+                  )}
+                </div>
                 <Input label="Main site phone (optional)" type="tel" value={siteForm.mainPhone} onChange={(e) => updateSite('mainPhone', e.target.value)} />
               </div>
             )}

@@ -11,6 +11,7 @@ import {
   scheduleBlockRangeBody,
   scheduleCreateBody,
   trainingClassDetailsSchema,
+  trainingSiteDetailsSchema,
 } from '@/lib/validation';
 
 const uuid = '11111111-1111-4111-8111-111111111111';
@@ -114,6 +115,21 @@ describe('instructorRegistrationBody', () => {
       ...valid,
       class: { ...valid.class, rideTimeEndDate: '2026-06-30' },
     }).success).toBe(false);
+  });
+});
+
+describe('trainingSiteDetailsSchema postal fields', () => {
+  const valid = {
+    name: 'Site A', organizationName: 'School A', address: '1 Main St', city: 'Owingsville', state: 'KY', zipCode: '40360', mainPhone: '',
+  };
+
+  it.each(['40360', '40360-1234'])('accepts ZIP format %s', (zipCode) => {
+    expect(trainingSiteDetailsSchema.safeParse({ ...valid, zipCode }).success).toBe(true);
+  });
+
+  it('rejects invalid ZIP formats and state codes', () => {
+    expect(trainingSiteDetailsSchema.safeParse({ ...valid, zipCode: '4036' }).success).toBe(false);
+    expect(trainingSiteDetailsSchema.safeParse({ ...valid, state: 'Kentucky' }).success).toBe(false);
   });
 });
 
