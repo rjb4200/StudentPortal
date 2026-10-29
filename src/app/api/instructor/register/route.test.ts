@@ -84,4 +84,20 @@ describe('POST /api/instructor/register MOU choice', () => {
     expect(inserts.some((item) => item.table === 'class_mous')).toBe(false);
     expect(sendEmail).not.toHaveBeenCalled();
   });
+
+  it('returns structured field paths for invalid registrations', async () => {
+    const response = await post({
+      site: { mode: 'new' },
+      instructor: { mode: 'new' },
+      class: { name: 'Class', classStartDate: '2026-07-02', rideTimeEndDate: '2026-07-01', notes: '' },
+      mou: { mode: 'signed' },
+    });
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data.success).toBe(false);
+    expect(data.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({ path: expect.arrayContaining(['site']) }),
+    ]));
+  });
 });

@@ -58,7 +58,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const parsed = instructorRegistrationBody.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ success: false, error: parsed.error.issues[0].message }, { status: 400 });
+      const issues = parsed.error.issues.map((issue) => ({
+        path: issue.path.map(String),
+        message: issue.message,
+      }));
+      return NextResponse.json(
+        { success: false, error: issues[0]?.message || 'Invalid registration input.', issues },
+        { status: 400 }
+      );
     }
 
     const payload = parsed.data;

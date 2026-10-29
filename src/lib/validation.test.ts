@@ -10,6 +10,7 @@ import {
   scheduleBlockBody,
   scheduleBlockRangeBody,
   scheduleCreateBody,
+  trainingClassDetailsSchema,
 } from '@/lib/validation';
 
 const uuid = '11111111-1111-4111-8111-111111111111';
@@ -151,6 +152,22 @@ describe('adminRegistryUpsertBody', () => {
         notes: '',
       },
     }).success).toBe(false);
+  });
+});
+
+describe('trainingClassDetailsSchema', () => {
+  it('rejects an end-of-ride-time date before the class begins', () => {
+    const result = trainingClassDetailsSchema.safeParse({
+      name: 'Summer Cohort',
+      classStartDate: '2026-07-02',
+      rideTimeEndDate: '2026-07-01',
+      notes: '',
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0].path).toEqual(['rideTimeEndDate']);
+    }
   });
 });
 

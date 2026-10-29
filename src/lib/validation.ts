@@ -184,7 +184,7 @@ export const onboardingRegistrationWithClassBody = onboardingRegistrationBody.ex
   trainingClassId: uuidSchema,
 });
 
-const instructorDetailsSchema = z.object({
+export const instructorDetailsSchema = z.object({
   firstName: nameSchema,
   lastName: nameSchema,
   email: emailSchema,
@@ -197,7 +197,7 @@ const instructorDetailsSchema = z.object({
   contactInstructions: optionalTextSchema(1000),
 });
 
-const trainingSiteDetailsSchema = z.object({
+export const trainingSiteDetailsSchema = z.object({
   name: textSchema(160).min(1),
   organizationName: textSchema(160).min(1),
   address: textSchema(200).min(1),
@@ -207,14 +207,17 @@ const trainingSiteDetailsSchema = z.object({
   mainPhone: optionalTextSchema(30),
 });
 
-const trainingClassDetailsSchema = z.object({
+export const trainingClassDetailsSchema = z.object({
   name: textSchema(160).min(1),
   classStartDate: dateOnlySchema,
   rideTimeEndDate: dateOnlySchema,
   notes: optionalTextSchema(1000),
+}).refine((value) => value.rideTimeEndDate >= value.classStartDate, {
+  message: 'Ride-time end date must be on or after class start date',
+  path: ['rideTimeEndDate'],
 });
 
-const mouSchema = z.object({
+export const mouSchema = z.object({
   effectiveDate: dateOnlySchema,
   trainingOrganizationName: textSchema(200).min(1),
   representativeName: textSchema(200).min(1),
@@ -241,9 +244,6 @@ export const instructorRegistrationBody = z.object({
       acknowledgedName: nameSchema,
     }),
   ]),
-}).refine((value) => value.class.rideTimeEndDate >= value.class.classStartDate, {
-  message: 'Ride-time end date must be on or after class start date',
-  path: ['class', 'rideTimeEndDate'],
 }).refine((value) => !(value.site.mode === 'new' && value.instructor.mode === 'existing'), {
   message: 'Register a new instructor when registering a new TEI.',
   path: ['instructor'],

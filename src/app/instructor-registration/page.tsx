@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { instructorDetailsSchema, trainingClassDetailsSchema, trainingSiteDetailsSchema } from '@/lib/validation';
 
 type RegistrySite = {
   id: string;
@@ -68,6 +69,7 @@ export default function InstructorRegistrationPage() {
   const [loadingInstructors, setLoadingInstructors] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
   const [mouRepName, setMouRepName] = useState('');
   const [mouRepTitle, setMouRepTitle] = useState('');
@@ -79,6 +81,7 @@ export default function InstructorRegistrationPage() {
   const [skipAcknowledgedName, setSkipAcknowledgedName] = useState('');
   const [skipConfirmed, setSkipConfirmed] = useState(false);
   const [submittedWithoutMou, setSubmittedWithoutMou] = useState(false);
+  const [mouLoadError, setMouLoadError] = useState('');
 
   useEffect(() => {
     async function loadSites() {
@@ -138,15 +141,41 @@ export default function InstructorRegistrationPage() {
   }, [instructorForm.firstName, instructorForm.lastName, instructorMode, instructors, siteMode]);
 
   const updateSite = (key: keyof typeof initialSiteForm, value: string) => {
+    setFieldErrors((prev) => ({ ...prev, [`site.${key}`]: '' }));
     setSiteForm((prev) => ({ ...prev, [key]: value }));
   };
 
   const updateInstructor = (key: keyof typeof initialInstructorForm, value: string) => {
+    setFieldErrors((prev) => ({ ...prev, [`instructor.${key}`]: '' }));
     setInstructorForm((prev) => ({ ...prev, [key]: value }));
   };
 
   const updateClass = (key: keyof typeof initialClassForm, value: string) => {
+    setFieldErrors((prev) => ({ ...prev, [`class.${key}`]: '' }));
     setClassForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const showValidationErrors = (issues: { path: (string | number)[]; message: string }[]) => {
+    const next: Record<string, string> = {};
+    for (const issue of issues) next[issue.path.join('.')] = issue.message;
+    setFieldErrors(next);
+    setError(issues[0]?.message || 'Please correct the highlighted fields.');
+  };
+
+  const validateStep = (stepToValidate: 1 | 2 | 3) => {
+    const result = stepToValidate === 1 && siteMode === 'new'
+      ? trainingSiteDetailsSchema.safeParse(siteForm)
+      : stepToValidate === 2 && instructorMode === 'new'
+        ? instructorDetailsSchema.safeParse(instructorForm)
+        : stepToValidate === 3
+          ? trainingClassDetailsSchema.safeParse(classForm)
+          : { success: true as const };
+    if (!result.success) {
+      const area = stepToValidate === 1 ? 'site' : stepToValidate === 2 ? 'instructor' : 'class';
+      showValidationErrors(result.error.issues.map((issue) => ({ path: [area, ...issue.path.map(String)], message: issue.message })));
+      return false;
+    }
+    return true;
   };
 
   const canContinueSite = siteMode === 'existing'
@@ -167,6 +196,7 @@ export default function InstructorRegistrationPage() {
       );
 
   const goNextFromClass = async () => {
+    if (!validateStep(3)) return;
     const classOk = Boolean(classForm.name && classForm.classStartDate && classForm.rideTimeEndDate);
     if (!classOk) {
       setError('Complete all class fields before continuing.');
@@ -203,8 +233,15 @@ export default function InstructorRegistrationPage() {
           .replace(/\{\{wfems_signer_title\}\}/g, '')
           .replace(/\{\{wfems_signed_at\}\}/g, '[Pending WFEMS signature]');
         setMouBody(rendered);
+        setMouLoadError('');
+      } else {
+        setMouBody('');
+        setMouLoadError('The MOU template is unavailable. Contact EMS administration before submitting a signed MOU.');
       }
-    } catch {}
+    } catch {
+      setMouBody('');
+      setMouLoadError('The MOU template could not be loaded. Check your connection and try again.');
+    }
     setLoadingMou(false);
     const repName = instructorMode === 'existing'
       ? `${selectedInstructor?.first_name ?? ''} ${selectedInstructor?.last_name ?? ''}`.trim()
@@ -216,6 +253,10 @@ export default function InstructorRegistrationPage() {
   };
 
   const submitRegistration = async (mode: 'signed' | 'skipped') => {
+    if (mode === 'signed' && (!mouBody.trim() || mouLoadError)) {
+      setError(mouLoadError || 'The MOU template is unavailable. Contact EMS administration before submitting.');
+      return;
+    }
     if (mode === 'signed' && (!mouSignature || mouSignature !== mouRepName)) {
       setError('Type the representative name to sign the MOU.');
       return;
@@ -260,7 +301,14 @@ export default function InstructorRegistrationPage() {
 
     const result = await response.json().catch(() => null);
     if (!response.ok || result?.success !== true) {
-      setError(result?.error || 'Unable to submit registration.');
+      const issues = result?.issues as { path: string[]; message: string }[] | undefined;
+      if (issues?.length) {
+        showValidationErrors(issues);
+        const stepByArea: Record<string, 1 | 2 | 3 | 4> = { site: 1, instructor: 2, class: 3, mou: 4 };
+        setStep(stepByArea[issues[0].path[0]] ?? 4);
+      } else {
+        setError(result?.error || 'Unable to submit registration.');
+      }
       setSubmitting(false);
       return;
     }
@@ -276,6 +324,7 @@ export default function InstructorRegistrationPage() {
   };
 
   const goNextFromSite = () => {
+    if (!validateStep(1)) return;
     if (!canContinueSite) {
       setError('Select an existing TEI or complete the new TEI fields.');
       return;
@@ -285,6 +334,7 @@ export default function InstructorRegistrationPage() {
   };
 
   const goNextFromInstructor = () => {
+    if (!validateStep(2)) return;
     if (!canContinueInstructor) {
       setError('Select an existing instructor for this TEI or complete the new instructor fields.');
       return;
@@ -292,6 +342,9 @@ export default function InstructorRegistrationPage() {
     setError('');
     setStep(3);
   };
+
+  const activeArea = step === 1 ? 'site.' : step === 2 ? 'instructor.' : step === 3 ? 'class.' : 'mou.';
+  const activeFieldErrors = Object.entries(fieldErrors).filter(([path, message]) => path.startsWith(activeArea) && message);
 
   if (submitted) {
     return (
@@ -326,6 +379,14 @@ export default function InstructorRegistrationPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {activeFieldErrors.length > 0 && (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">
+            <p className="font-semibold">Please correct the following before continuing:</p>
+            <ul className="mt-1 list-disc pl-5">
+              {activeFieldErrors.map(([path, message]) => <li key={path}>{message}</li>)}
+            </ul>
+          </div>
+        )}
         {step === 1 && (
           <section className="space-y-4">
             <h3 className="text-sm font-black uppercase tracking-wide text-wfd-crimson">Step 1: Select or register TEI</h3>
@@ -526,6 +587,11 @@ export default function InstructorRegistrationPage() {
               <p className="text-sm text-gray-500">Loading MOU template...</p>
             ) : (
               <>
+                {mouLoadError && (
+                  <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">
+                    {mouLoadError}
+                  </div>
+                )}
                 <div className="max-h-80 overflow-y-auto rounded-lg border border-gray-200 bg-gray-50 p-4">
                   <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-gray-700">
                     {mouBody}
@@ -547,7 +613,7 @@ export default function InstructorRegistrationPage() {
                 />
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                   <Button type="button" variant="secondary" onClick={() => setStep(3)}>Back to Class</Button>
-                  <Button type="submit" loading={submitting} disabled={mouSignature !== mouRepName || !mouSignature}>Submit Registration</Button>
+                  <Button type="submit" loading={submitting} disabled={Boolean(mouLoadError) || mouSignature !== mouRepName || !mouSignature}>Submit Registration</Button>
                 </div>
                 <button type="button" onClick={() => { setShowMouSkip((value) => !value); setError(''); }} className="text-xs text-gray-500 underline hover:text-wfd-charcoal">
                   {showMouSkip ? 'Return to MOU signing' : 'Already have a MOU or handling one separately? Skip signing here'}
