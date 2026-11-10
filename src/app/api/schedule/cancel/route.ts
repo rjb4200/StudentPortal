@@ -6,6 +6,7 @@ import { sendEmail } from '@/lib/email';
 import { buildShiftCancelledByStudentEmail, buildShiftCancelledByStudentAdminEmail } from '@/lib/email-templates';
 import { scheduleCancelBody } from '@/lib/validation';
 import { resolveCalendarFeedUrl } from '@/lib/calendar-feed-server';
+import { runAfterResponse } from '@/lib/first-due/after';
 
 export async function POST(request: NextRequest) {
   const cookieHeader = request.headers.get('cookie') || '';
@@ -72,6 +73,11 @@ export async function POST(request: NextRequest) {
   if (updateError) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
   }
+
+  runAfterResponse(async () => {
+    const { runImmediateCancellation } = await import('@/lib/first-due/immediate');
+    await runImmediateCancellation({ id: schedule.id, date: schedule.date });
+  });
 
   const loginUrl = `${publicEnv.SITE_URL}/dashboard`;
   const dateStr = new Date(schedule.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });

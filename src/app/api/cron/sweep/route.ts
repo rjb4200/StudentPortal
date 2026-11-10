@@ -7,6 +7,10 @@ export const dynamic = 'force-dynamic';
 
 const CRON_SWEEP_JOB = 'cron_sweep';
 
+function firstDueEnabled() {
+  return /^(1|true|yes|on)$/i.test((process.env.FIRST_DUE_SYNC_ENABLED ?? '').trim());
+}
+
 async function recordJobRun(
   supabase: ReturnType<typeof createAdminClient>,
   params: {
@@ -117,6 +121,19 @@ export async function GET(request: NextRequest) {
       console.error('Cron sweep orphan reconciliation failed:', orphanError);
     }
 
+    // First Due events sync runs inside this single daily cron. The import is
+    // dynamic so the suite can exercise the sweep without loading server-only code.
+    let firstDue: unknown = null;
+    if (firstDueEnabled()) {
+      try {
+        const { runFirstDueSyncJob } = await import('@/lib/first-due/run');
+        firstDue = await runFirstDueSyncJob(startedAt);
+      } catch (error) {
+        firstDue = { error: error instanceof Error ? error.message : 'First Due sync failed' };
+        console.error('First Due sync failed inside cron sweep:', firstDue);
+      }
+    }
+
     const finishedAt = new Date();
     const expiredCount = expired?.length ?? 0;
     await recordJobRun(supabase, {
@@ -129,6 +146,7 @@ export async function GET(request: NextRequest) {
         orphansNeverSignedIn,
         orphansCleaned,
         ...(orphanError ? { orphanError } : {}),
+        ...(firstDue ? { firstDue: firstDue as Json } : {}),
       },
     });
 
@@ -138,6 +156,7 @@ export async function GET(request: NextRequest) {
       orphansNeverSignedIn,
       orphansCleaned,
       orphanError,
+      firstDue,
       timestamp: finishedAt.toISOString(),
     });
   } catch (error) {

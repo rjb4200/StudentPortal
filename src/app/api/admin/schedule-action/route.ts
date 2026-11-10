@@ -8,6 +8,7 @@ import { buildShiftApprovedEmail, buildShiftCancelledByAdminEmail, buildShiftRej
 import { scheduleActionBody } from '@/lib/validation';
 import { resolveCalendarFeedUrl } from '@/lib/calendar-feed-server';
 import { getShiftKey } from '@/lib/shift-rotation';
+import { runAfterResponse } from '@/lib/first-due/after';
 
 export async function POST(request: NextRequest) {
   const cookieHeader = request.headers.get('cookie') || '';
@@ -121,6 +122,13 @@ export async function POST(request: NextRequest) {
 
   if (updateError) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
+  }
+
+  if (resolvedAction === 'cancelled' || resolvedAction === 'rejected') {
+    runAfterResponse(async () => {
+      const { runImmediateCancellation } = await import('@/lib/first-due/immediate');
+      await runImmediateCancellation({ id: schedule.id, date: schedule.date });
+    });
   }
 
   // Soft capacity warning: more approved students than preceptors on duty.

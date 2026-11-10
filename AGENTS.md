@@ -21,6 +21,16 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY     # public anon key
 NEXT_PUBLIC_SITE_URL              # canonical public app URL, e.g. https://student-portal-chi-woad.vercel.app
 SUPABASE_SERVICE_ROLE_KEY         # secret — server-only, used by admin client
 RESEND_API_KEY                    # email (Resend)
+FIRST_DUE_SYNC_ENABLED            # kill switch; First Due writes only when truthy
+FIRST_DUE_WRITES_ENABLED          # second gate; dry-run unless truthy
+FIRST_DUE_SESSION                 # secret — First Due web session cookie (server-only)
+FIRST_DUE_EVENT_TYPE_ID           # event type for student rides (default 11126 = Administrative Note)
+FIRST_DUE_WRITE_PATH              # shadow | documented (default shadow)
+FIRST_DUE_VERIFY_PATH             # shadow | documented (default shadow)
+FIRST_DUE_WINDOW_DAYS             # days ahead to project, including today (default 5)
+FIRST_DUE_ALERT_EMAIL             # operator address for AUTH/DRIFT/SUMMARY alerts
+PUSHOVER_TOKEN                    # optional push alerts; Resend is the primary channel
+PUSHOVER_USER                     # optional push alerts
 ```
 
 ## Auth URLs

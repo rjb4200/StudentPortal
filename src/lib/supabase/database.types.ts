@@ -385,6 +385,53 @@ export type Database = {
           },
         ]
       }
+      first_due_event_links: {
+        Row: {
+          created_at: string
+          event_id: number | null
+          id: string
+          last_error: string | null
+          posted_at: string | null
+          schedule_id: string
+          state: string
+          token: string
+          updated_at: string
+          verified_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_id?: number | null
+          id?: string
+          last_error?: string | null
+          posted_at?: string | null
+          schedule_id: string
+          state?: string
+          token: string
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_id?: number | null
+          id?: string
+          last_error?: string | null
+          posted_at?: string | null
+          schedule_id?: string
+          state?: string
+          token?: string
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "first_due_event_links_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: true
+            referencedRelation: "schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       instructors: {
         Row: {
           approved_at: string | null

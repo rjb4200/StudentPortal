@@ -4,12 +4,14 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { publicEnv } from '@/lib/env';
 import { canAccessAdmin } from '@/lib/roles';
 import { findOrphanedAuthUsers } from '@/lib/auth-provisioning';
+import { countDriftedLinks, FIRST_DUE_SYNC_JOB } from '@/lib/first-due/repository';
 import packageInfo from '../../../../../package.json';
 
 export const dynamic = 'force-dynamic';
 
 const CRON_SWEEP_JOB = 'cron_sweep';
 const CRON_STALE_MS = 26 * 60 * 60 * 1000;
+const FIRST_DUE_STALE_MS = 26 * 60 * 60 * 1000;
 
 type CheckStatus = 'healthy' | 'warning' | 'attention' | 'unknown';
 
@@ -152,12 +154,26 @@ export async function GET(request: NextRequest) {
     alerts.push({ level: 'warning', title: 'Storage usage unavailable', message });
   }
 
-  const [{ data: latestJob }, { data: lastSuccess }, { data: lastFailure }, { data: recentFailures }, { data: recentAudit }] = await Promise.all([
+  const [
+    { data: latestJob },
+    { data: lastSuccess },
+    { data: lastFailure },
+    { data: recentFailures },
+    { data: recentAudit },
+    { data: latestFirstDue },
+    { data: firstDueLastSuccess },
+    { data: firstDueLastFailure },
+    driftedFirstDueEvents,
+  ] = await Promise.all([
     supabase.from('system_job_runs').select('*').eq('job_name', CRON_SWEEP_JOB).order('started_at', { ascending: false }).limit(1).maybeSingle(),
     supabase.from('system_job_runs').select('*').eq('job_name', CRON_SWEEP_JOB).eq('status', 'success').order('started_at', { ascending: false }).limit(1).maybeSingle(),
     supabase.from('system_job_runs').select('*').eq('job_name', CRON_SWEEP_JOB).eq('status', 'failure').order('started_at', { ascending: false }).limit(1).maybeSingle(),
     supabase.from('system_job_runs').select('id, job_name, status, started_at, error_message').eq('status', 'failure').order('started_at', { ascending: false }).limit(5),
     supabase.from('audit_log').select('id, action, performed_by, timestamp').order('timestamp', { ascending: false }).limit(8),
+    supabase.from('system_job_runs').select('*').eq('job_name', FIRST_DUE_SYNC_JOB).order('started_at', { ascending: false }).limit(1).maybeSingle(),
+    supabase.from('system_job_runs').select('*').eq('job_name', FIRST_DUE_SYNC_JOB).eq('status', 'success').order('started_at', { ascending: false }).limit(1).maybeSingle(),
+    supabase.from('system_job_runs').select('*').eq('job_name', FIRST_DUE_SYNC_JOB).eq('status', 'failure').order('started_at', { ascending: false }).limit(1).maybeSingle(),
+    countDriftedLinks(supabase),
   ]);
 
   const lastSuccessTime = lastSuccess?.finished_at ? new Date(lastSuccess.finished_at).getTime() : null;
@@ -173,6 +189,26 @@ export async function GET(request: NextRequest) {
     alerts.push({ level: 'attention', title: 'Cron sweep failed', message: lastFailure?.error_message ?? 'The latest daily expiration sweep failed.' });
   } else if (stale) {
     alerts.push({ level: 'warning', title: 'Cron sweep is stale', message: 'No successful daily expiration sweep has been recorded in the last 26 hours.' });
+  }
+
+  const firstDueLastSuccessTime = firstDueLastSuccess?.finished_at ? new Date(firstDueLastSuccess.finished_at).getTime() : null;
+  const firstDueStale = firstDueLastSuccessTime === null || Date.now() - firstDueLastSuccessTime > FIRST_DUE_STALE_MS;
+  const firstDueFailed = latestFirstDue?.status === 'failure';
+  const firstDueSummary = latestFirstDue?.summary && typeof latestFirstDue.summary === 'object' && !Array.isArray(latestFirstDue.summary)
+    ? (latestFirstDue.summary as Record<string, unknown>)
+    : {};
+  const firstDueAuthFailure = firstDueSummary.authFailure === true;
+
+  if (firstDueAuthFailure) {
+    alerts.push({ level: 'attention', title: 'First Due session is not authorized', message: 'The First Due sync could not authenticate. Update FIRST_DUE_SESSION.' });
+  } else if (firstDueFailed) {
+    alerts.push({ level: 'attention', title: 'First Due sync failed', message: firstDueLastFailure?.error_message ?? 'The latest First Due sync run failed.' });
+  } else if (firstDueStale) {
+    alerts.push({ level: 'warning', title: 'First Due sync is stale', message: 'No successful First Due sync has been recorded in the last 26 hours.' });
+  }
+
+  if (driftedFirstDueEvents > 0) {
+    alerts.push({ level: 'warning', title: 'First Due sync drift', message: `${driftedFirstDueEvents} schedule record(s) are marked drifted.` });
   }
 
   const hasAttention = alerts.some((alert) => alert.level === 'attention') || databaseCheck.status === 'attention';
@@ -214,8 +250,18 @@ export async function GET(request: NextRequest) {
         staleThresholdHours: CRON_STALE_MS / (60 * 60 * 1000),
         lastExpiredCount: Number.isFinite(expiredCount) ? expiredCount : 0,
       },
+      firstDueSync: {
+        status: firstDueAuthFailure || firstDueFailed ? 'attention' : firstDueStale ? 'warning' : 'healthy',
+        latest: latestFirstDue,
+        lastSuccess: firstDueLastSuccess,
+        lastFailure: firstDueLastFailure,
+        stale: firstDueStale,
+        staleThresholdHours: FIRST_DUE_STALE_MS / (60 * 60 * 1000),
+        drifted: driftedFirstDueEvents,
+        authFailure: firstDueAuthFailure,
+      },
     },
-    metrics,
+    metrics: { ...metrics, driftedFirstDueEvents },
     alerts,
     recent: {
       failures: recentFailures ?? [],

@@ -30,6 +30,16 @@ type HealthData = {
       staleThresholdHours: number;
       lastExpiredCount: number;
     };
+    firstDueSync: {
+      status: Status;
+      latest: JobRun | null;
+      lastSuccess: JobRun | null;
+      lastFailure: JobRun | null;
+      stale: boolean;
+      staleThresholdHours: number;
+      drifted: number;
+      authFailure: boolean;
+    };
   };
   metrics: {
     activeStudents: number;
@@ -38,6 +48,7 @@ type HealthData = {
     activeTrainingSites: number;
     orphanedAuthUsers: number;
     orphanedAuthUsersNeverSignedIn: number;
+    driftedFirstDueEvents: number;
   };
   alerts: { level: 'info' | 'warning' | 'attention'; title: string; message: string }[];
   recent: {
@@ -206,6 +217,32 @@ export default function SystemHealthPage() {
             {data.jobs.cronSweep.lastFailure?.error_message && (
               <p className="mt-3 rounded-lg border border-wfd-crimson/20 bg-wfd-crimson/10 px-3 py-2 text-sm text-wfd-crimson">
                 Last failure: {data.jobs.cronSweep.lastFailure.error_message}
+              </p>
+            )}
+          </Card>
+
+          <Card className="p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h2 className="font-bold text-wfd-charcoal">First Due Events Sync</h2>
+                <p className="mt-1 text-sm text-gray-500">Student ride events projected to First Due, with drift and session status.</p>
+              </div>
+              <StatusBadge status={data.jobs.firstDueSync.status} />
+            </div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <SmallStat label="Last Success" value={formatDate(data.jobs.firstDueSync.lastSuccess?.finished_at)} />
+              <SmallStat label="Last Failure" value={formatDate(data.jobs.firstDueSync.lastFailure?.finished_at)} />
+              <SmallStat label="Last Duration" value={data.jobs.firstDueSync.lastSuccess ? `${data.jobs.firstDueSync.lastSuccess.duration_ms}ms` : 'Not recorded'} />
+              <SmallStat label="Drifted" value={String(data.jobs.firstDueSync.drifted)} />
+            </div>
+            {data.jobs.firstDueSync.authFailure && (
+              <p className="mt-3 rounded-lg border border-wfd-crimson/20 bg-wfd-crimson/10 px-3 py-2 text-sm text-wfd-crimson">
+                First Due session rejected. Update FIRST_DUE_SESSION.
+              </p>
+            )}
+            {data.jobs.firstDueSync.lastFailure?.error_message && (
+              <p className="mt-3 rounded-lg border border-wfd-crimson/20 bg-wfd-crimson/10 px-3 py-2 text-sm text-wfd-crimson">
+                Last failure: {data.jobs.firstDueSync.lastFailure.error_message}
               </p>
             )}
           </Card>
