@@ -29,8 +29,8 @@ FIRST_DUE_WRITE_PATH              # shadow | documented (default shadow)
 FIRST_DUE_VERIFY_PATH             # shadow | documented (default shadow)
 FIRST_DUE_WINDOW_DAYS             # days ahead to project, including today (default 5)
 FIRST_DUE_ALERT_EMAIL             # operator address for AUTH/DRIFT/SUMMARY alerts
-PUSHOVER_TOKEN                    # optional push alerts; Resend is the primary channel
-PUSHOVER_USER                     # optional push alerts
+PUSHOVER_TOKEN                    # optional push alerts; PUSHOVER_APP_TOKEN also accepted
+PUSHOVER_USER                     # optional push alerts; PUSHOVER_USER_KEY also accepted
 ```
 
 ## Auth URLs

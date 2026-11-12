@@ -13,6 +13,8 @@ const FIRST_DUE_KEYS = [
   'FIRST_DUE_WINDOW_DAYS',
   'PUSHOVER_TOKEN',
   'PUSHOVER_USER',
+  'PUSHOVER_APP_TOKEN',
+  'PUSHOVER_USER_KEY',
 ];
 
 afterEach(() => {
@@ -47,6 +49,15 @@ describe('firstDueEnv', () => {
     expect(firstDueEnv.enabled).toBe(true);
     expect(firstDueEnv.hasSession).toBe(true);
     expect(JSON.stringify({ hasSession: firstDueEnv.hasSession })).not.toContain('session-cookie-value');
+  });
+
+  it('falls back to the legacy Pushover variable names', async () => {
+    process.env.PUSHOVER_APP_TOKEN = 'app-token';
+    process.env.PUSHOVER_USER_KEY = 'user-key';
+    vi.resetModules();
+    const { firstDueEnv } = await import('@/lib/env.server');
+    expect(firstDueEnv.hasPushover).toBe(true);
+    expect(firstDueEnv.pushover).toEqual({ token: 'app-token', user: 'user-key' });
   });
 
   it('rejects unknown path modes', async () => {

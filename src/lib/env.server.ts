@@ -50,8 +50,10 @@ const firstDueSession = process.env.FIRST_DUE_SESSION?.trim() || undefined;
 
 if (firstDueEnabled) required(firstDueSession, 'FIRST_DUE_SESSION');
 
-const pushoverToken = process.env.PUSHOVER_TOKEN?.trim() || undefined;
-const pushoverUser = process.env.PUSHOVER_USER?.trim() || undefined;
+const pushoverToken =
+  process.env.PUSHOVER_TOKEN?.trim() || process.env.PUSHOVER_APP_TOKEN?.trim() || undefined;
+const pushoverUser =
+  process.env.PUSHOVER_USER?.trim() || process.env.PUSHOVER_USER_KEY?.trim() || undefined;
 
 export const firstDueEnv = {
   enabled: firstDueEnabled,

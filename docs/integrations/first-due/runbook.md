@@ -27,7 +27,7 @@ the portal and the daily reconciler settles it later.
 | `FIRST_DUE_EVENT_TYPE_ID` | Event type id, default `11126`. |
 | `FIRST_DUE_WINDOW_DAYS` | Days projected ahead, including today. Default `5`. |
 | `FIRST_DUE_ALERT_EMAIL` | Operator inbox for `AUTH` / `DRIFT` / `SUMMARY` alerts. |
-| `PUSHOVER_TOKEN`, `PUSHOVER_USER` | Optional push alerts. |
+| `PUSHOVER_TOKEN`, `PUSHOVER_USER` | Optional push alerts. `PUSHOVER_APP_TOKEN` / `PUSHOVER_USER_KEY` are accepted as aliases. |
 
 Recommended rollout: enable the master switch with writes **off** for a week,
 review the `SUMMARY` emails, then set `FIRST_DUE_WRITES_ENABLED=true`.
