@@ -32,12 +32,18 @@ the portal and the daily reconciler settles it later.
 Recommended rollout: enable the master switch with writes **off** for a week,
 review the `SUMMARY` emails, then set `FIRST_DUE_WRITES_ENABLED=true`.
 
-## Session
+## Authentication
 
-The First Due web session lasts about a year. Capture the `Cookie` header from
-an authenticated browser request and store it as `FIRST_DUE_SESSION` (server
-only; never in git). If it expires, the canary fails closed: no writes occur and
-an `AUTH` alert is emailed.
+The sync logs in at runtime with `FIRST_DUE_EMAIL` + `FIRST_DUE_PASSWORD`
+(`POST /auth/identifier`, then `POST /auth/password-challenge`, with browser-like
+headers). It keeps the resulting cookie in memory for the run and retries once
+if a request is rejected. `FIRST_DUE_SESSION` is optional: it can seed the cookie
+jar, but a stale value is recovered automatically by logging in again.
+
+Login invalidates other sessions for the same user, so a dedicated service
+account is preferable to a person's account. If First Due rejects the
+credentials, the canary fails closed: no writes occur and an `AUTH` alert is
+emailed/pushed.
 
 ## Alerts
 

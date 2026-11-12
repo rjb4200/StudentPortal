@@ -7,6 +7,8 @@ process.env.SUPABASE_SERVICE_ROLE_KEY ||= 'test-service-role-key';
 const FIRST_DUE_KEYS = [
   'FIRST_DUE_SYNC_ENABLED',
   'FIRST_DUE_SESSION',
+  'FIRST_DUE_EMAIL',
+  'FIRST_DUE_PASSWORD',
   'FIRST_DUE_WRITE_PATH',
   'FIRST_DUE_VERIFY_PATH',
   'FIRST_DUE_EVENT_TYPE_ID',
@@ -35,10 +37,20 @@ describe('firstDueEnv', () => {
     expect(firstDueEnv.windowDays).toBe(5);
   });
 
-  it('requires a session once the sync is enabled', async () => {
+  it('requires a session or credentials once the sync is enabled', async () => {
     process.env.FIRST_DUE_SYNC_ENABLED = 'true';
     vi.resetModules();
-    await expect(import('@/lib/env.server')).rejects.toThrow(/FIRST_DUE_SESSION/);
+    await expect(import('@/lib/env.server')).rejects.toThrow(/no credentials are configured/);
+  });
+
+  it('accepts email and password without a session', async () => {
+    process.env.FIRST_DUE_SYNC_ENABLED = 'true';
+    process.env.FIRST_DUE_EMAIL = 'user@example.com';
+    process.env.FIRST_DUE_PASSWORD = 'secret';
+    vi.resetModules();
+    const { firstDueEnv } = await import('@/lib/env.server');
+    expect(firstDueEnv.hasCredentials).toBe(true);
+    expect(firstDueEnv.hasSession).toBe(false);
   });
 
   it('accepts a configured session and reports presence without values', async () => {

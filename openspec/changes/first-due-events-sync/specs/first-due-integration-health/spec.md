@@ -6,17 +6,29 @@ Keep the long-lived First Due session and the undocumented write path honest: fa
 
 ## ADDED Requirements
 
-### Requirement: Server-only session credential
+### Requirement: Server-only credentials
 
-The stored First Due session SHALL be server-only and SHALL NOT be exposed to clients, logs, API responses, or the repository.
+First Due credentials (a session cookie and/or the login email and password) SHALL be server-only and SHALL NOT be exposed to clients, logs, API responses, or the repository.
 
 #### Scenario: Credential is not echoed
 - **WHEN** sync status, alerts, or health data are produced
-- **THEN** the session value is not included
+- **THEN** no session value, email password, or cookie is included
 
 #### Scenario: Capture artifacts are excluded
 - **WHEN** network captures or derived environment files are created
 - **THEN** they are excluded from version control
+
+### Requirement: Runtime login recovery
+
+When a request is rejected and login credentials are configured, the system SHALL authenticate through the First Due login endpoints and retry the request once with the new session.
+
+#### Scenario: Expired session is recovered
+- **WHEN** an API request returns 401, 403, or a login page and email/password are configured
+- **THEN** the system logs in, replaces the cookie, and retries the request once
+
+#### Scenario: Login is rejected
+- **WHEN** the login endpoints reject the credentials
+- **THEN** the run fails closed, writes nothing, and raises an authentication alert
 
 ### Requirement: Fail-closed session canary
 

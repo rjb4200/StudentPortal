@@ -218,3 +218,72 @@ describe('listTrackedEvents', () => {
     expect(requested[0]).toContain('date=11%2F01%2F2026');
   });
 });
+
+describe('runtime authentication', () => {
+  it('logs in and retries after a rejected session', async () => {
+    const calls: FirstDueRequest[] = [];
+    const transport = async (request: FirstDueRequest): Promise<FirstDueResponse> => {
+      calls.push(request);
+      if (request.url.endsWith('/auth/identifier')) {
+        return {
+          status: 200,
+          contentType: 'application/json',
+          text: '{"result":true}',
+          setCookie: ['PHPSESSID=pre; path=/; HttpOnly'],
+        };
+      }
+      if (request.url.endsWith('/auth/password-challenge')) {
+        return {
+          status: 200,
+          contentType: 'application/json',
+          text: '{"result":true}',
+          setCookie: ['PHPSESSID=live; path=/; HttpOnly', 'USERLASTACTIVITYDATE=live; path=/'],
+        };
+      }
+      if (request.url.includes('/event-log/getEventTypes')) {
+        return request.session.includes('PHPSESSID=live')
+          ? { status: 200, contentType: 'application/json', text: JSON.stringify({ success: true, event_types: [{ id: 1 }] }) }
+          : { status: 403, contentType: 'application/json', text: '{"signinRequired":true}' };
+      }
+      return { status: 404, contentType: 'application/json', text: '{}' };
+    };
+
+    const client = createFirstDueClient({
+      session: 'PHPSESSID=stale',
+      email: 'user@example.com',
+      password: 'secret',
+      transport,
+    });
+
+    await expect(client.canary()).resolves.toBeUndefined();
+
+    expect(calls.filter((call) => call.url.includes('/auth/')).map((call) => call.url.split('/').pop())).toEqual([
+      'identifier',
+      'password-challenge',
+    ]);
+    const canaries = calls.filter((call) => call.url.includes('/event-log/getEventTypes'));
+    expect(canaries).toHaveLength(2);
+    expect(canaries[0].session).toContain('PHPSESSID=stale');
+    expect(canaries[1].session).toContain('PHPSESSID=live');
+  });
+
+  it('raises an auth error when the credentials are rejected', async () => {
+    const transport = async (request: FirstDueRequest): Promise<FirstDueResponse> => {
+      if (request.url.endsWith('/auth/identifier')) {
+        return { status: 200, contentType: 'application/json', text: '{"result":true}', setCookie: ['PHPSESSID=pre'] };
+      }
+      return { status: 200, contentType: 'application/json', text: '{"result":false}' };
+    };
+
+    const client = createFirstDueClient({ email: 'user@example.com', password: 'wrong', transport });
+    await expect(client.canary()).rejects.toBeInstanceOf(FirstDueAuthError);
+  });
+
+  it('fails closed with neither a session nor credentials', async () => {
+    const transport = vi.fn();
+    const client = createFirstDueClient({ transport });
+    await expect(client.canary()).rejects.toBeInstanceOf(FirstDueAuthError);
+    expect(transport).not.toHaveBeenCalled();
+  });
+});
+

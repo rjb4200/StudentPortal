@@ -66,16 +66,17 @@ Writes go through the captured shadow session. Verification uses `GET /event-log
 - **Why:** a recorded environment only proves what was captured; only a live read proves current state. Config selects write and verify paths and the run asserts they differ.
 - **Alternative rejected:** trusting the write's own response — that is how shadow integrations fail silently.
 
-### 4. Session is a secret with a canary
+### 4. Credentials are server-only, with runtime login
 
-The session is stored server-only (environment secret / vault), never in client bundles, logs, API responses, or git. Captures are gitignored because they contain it. Every run begins with a cheap window read; an unauthorized or login-page response stops the run before any write.
+Credentials live in server-only environment secrets, never in client bundles, logs, API responses, or git. The client authenticates at runtime with the login email and password (browser-like headers), keeps the cookie in memory, and retries once when a request is rejected. `FIRST_DUE_SESSION` is an optional bootstrap and is recovered automatically. Every run begins with a cheap window read; an unauthorized or login-page response that cannot be recovered stops the run before any write.
 
-- **Why:** a year-long session is a high-value credential; a canary turns expiry into an alert instead of silent no-ops.
-- **Alternative rejected:** re-authenticating each run — the login flow is brittle and unnecessary given persistence.
+- **Why:** the web session expires in roughly half an hour, so a static cookie cannot survive to a daily cron. Runtime login makes the daily job self-sufficient without a vendor change.
+- **Trade-off:** the login invalidates other sessions for the same user, so a dedicated service account is preferable; and the login endpoints may change (covered by the canary and alerts).
+- **Alternative rejected:** a static session only (observed to expire), or extra cron entries (no spare Vercel cron).
 
 ### 5. Cancellation marks, deletion is a fallback
 
-Prefix the title with `[CANCELLED]`; the token field is untouched. Delete only when the title cannot be updated and the event carries a portal token. Events without a token are never modified or deleted.
+Prefix the title with `[CANCELLED]`; the ledger link is untouched. Delete only when the title cannot be updated and the ledger links the event to a schedule. Events not in the ledger are never modified or deleted.
 
 - **Why:** preserves an audit trail and guarantees the automation cannot touch First Due content it did not create.
 

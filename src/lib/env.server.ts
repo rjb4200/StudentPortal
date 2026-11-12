@@ -47,8 +47,15 @@ function syncWindowDays(value: string | undefined): number {
 
 const firstDueEnabled = isEnabled(process.env.FIRST_DUE_SYNC_ENABLED);
 const firstDueSession = process.env.FIRST_DUE_SESSION?.trim() || undefined;
+const firstDueEmail = process.env.FIRST_DUE_EMAIL?.trim() || undefined;
+const firstDuePassword = process.env.FIRST_DUE_PASSWORD || undefined;
+const hasFirstDueCredentials = Boolean(firstDueEmail && firstDuePassword);
 
-if (firstDueEnabled) required(firstDueSession, 'FIRST_DUE_SESSION');
+if (firstDueEnabled && !firstDueSession && !hasFirstDueCredentials) {
+  throw new Error(
+    'First Due sync is enabled but no credentials are configured. Set FIRST_DUE_SESSION or FIRST_DUE_EMAIL and FIRST_DUE_PASSWORD.'
+  );
+}
 
 const pushoverToken =
   process.env.PUSHOVER_TOKEN?.trim() || process.env.PUSHOVER_APP_TOKEN?.trim() || undefined;
@@ -59,6 +66,9 @@ export const firstDueEnv = {
   enabled: firstDueEnabled,
   writesEnabled: isEnabled(process.env.FIRST_DUE_WRITES_ENABLED),
   session: firstDueSession,
+  email: firstDueEmail,
+  password: firstDuePassword,
+  hasCredentials: hasFirstDueCredentials,
   writePath: pathMode(process.env.FIRST_DUE_WRITE_PATH, 'FIRST_DUE_WRITE_PATH'),
   verifyPath: pathMode(process.env.FIRST_DUE_VERIFY_PATH, 'FIRST_DUE_VERIFY_PATH'),
   eventTypeId: eventTypeId(process.env.FIRST_DUE_EVENT_TYPE_ID),

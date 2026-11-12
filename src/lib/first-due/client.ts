@@ -23,12 +23,14 @@ export type FirstDueRequest = {
   method: 'GET' | 'POST';
   session: string;
   body?: unknown;
+  headers?: Record<string, string>;
 };
 
 export type FirstDueResponse = {
   status: number;
   contentType?: string | null;
   text: string;
+  setCookie?: string[];
 };
 
 export type FirstDueTransport = (request: FirstDueRequest) => Promise<FirstDueResponse>;
@@ -125,8 +127,9 @@ function asNumberArray(value: unknown): number[] {
 
 async function defaultTransport(request: FirstDueRequest): Promise<FirstDueResponse> {
   const headers: Record<string, string> = {
-    cookie: request.session,
     'x-requested-with': 'XMLHttpRequest',
+    ...(request.session ? { cookie: request.session } : {}),
+    ...request.headers,
   };
   if (request.method === 'POST') headers['content-type'] = 'application/json;charset=UTF-8';
 
@@ -137,29 +140,130 @@ async function defaultTransport(request: FirstDueRequest): Promise<FirstDueRespo
     cache: 'no-store',
   });
 
+  const getSetCookie = (response.headers as { getSetCookie?: () => string[] }).getSetCookie;
+  const setCookie =
+    typeof getSetCookie === 'function'
+      ? getSetCookie.call(response.headers)
+      : response.headers.get('set-cookie')
+        ? [response.headers.get('set-cookie') as string]
+        : [];
+
   return {
     status: response.status,
     contentType: response.headers.get('content-type'),
     text: await response.text(),
+    setCookie,
   };
 }
 
+const BROWSER_USER_AGENT =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/158.0.0.0 Safari/537.36';
+
 export function createFirstDueClient(options: {
-  session: string;
+  session?: string;
+  email?: string;
+  password?: string;
   transport?: FirstDueTransport;
   baseUrl?: string;
 }): FirstDueClient {
   const transport = options.transport ?? defaultTransport;
   const baseUrl = (options.baseUrl ?? FIRST_DUE_BASE_URL).replace(/\/+$/, '');
+  const jar = new Map<string, string>();
+  const rawCookie = (options.session ?? '').trim();
 
-  async function call(path: string, method: 'GET' | 'POST', body?: unknown) {
+  for (const part of rawCookie.split(';')) {
+    const [name, ...rest] = part.trim().split('=');
+    if (name && rest.length > 0) jar.set(name, rest.join('='));
+  }
+
+  const cookieHeader = () => {
+    const fromJar = [...jar].map(([name, value]) => `${name}=${value}`).join('; ');
+    return fromJar || rawCookie;
+  };
+
+  const absorbCookies = (setCookie?: string[]) => {
+    for (const raw of setCookie ?? []) {
+      const pair = raw.split(';')[0];
+      const index = pair.indexOf('=');
+      if (index > 0) jar.set(pair.slice(0, index).trim(), pair.slice(index + 1).trim());
+    }
+  };
+
+  const headersFor = (path: string) => ({
+    origin: baseUrl,
+    referer: path.startsWith('/auth/') ? `${baseUrl}/auth/signin-v2` : `${baseUrl}/`,
+    'user-agent': BROWSER_USER_AGENT,
+    accept: 'application/json, text/plain, */*',
+  });
+
+  const hasCredentials = Boolean(options.email && options.password);
+
+  async function login() {
+    if (!options.email || !options.password) {
+      throw new FirstDueAuthError('First Due credentials are not configured.');
+    }
+
+    const identifier = await transport({
+      url: `${baseUrl}/auth/identifier`,
+      method: 'POST',
+      session: cookieHeader(),
+      body: { email: options.email },
+      headers: headersFor('/auth/identifier'),
+    });
+    absorbCookies(identifier.setCookie);
+    if (identifier.status !== 200) {
+      throw new FirstDueAuthError(`First Due identifier step failed (${identifier.status}).`);
+    }
+
+    const challenge = await transport({
+      url: `${baseUrl}/auth/password-challenge`,
+      method: 'POST',
+      session: cookieHeader(),
+      body: {
+        email: options.email,
+        password: options.password,
+        rememberMe: false,
+        verifyCode: '',
+        mfaOtp: '',
+        bypassExpiring: false,
+        credentialsOnly: false,
+      },
+      headers: headersFor('/auth/password-challenge'),
+    });
+    absorbCookies(challenge.setCookie);
+    if (challenge.status !== 200) {
+      throw new FirstDueAuthError(`First Due password step failed (${challenge.status}).`);
+    }
+
+    try {
+      const result = JSON.parse(challenge.text) as { result?: boolean };
+      if (result.result !== true) throw new Error('rejected');
+    } catch {
+      throw new FirstDueAuthError('First Due rejected the login credentials.');
+    }
+  }
+
+  async function call(path: string, method: 'GET' | 'POST', body?: unknown, retry = true) {
+    if (!cookieHeader()) await login();
+
     const response = await transport({
       url: `${baseUrl}${path}`,
       method,
-      session: options.session,
+      session: cookieHeader(),
       body,
+      headers: headersFor(path),
     });
+    absorbCookies(response.setCookie);
 
+    const rejected =
+      response.status === 401 ||
+      response.status === 403 ||
+      Boolean(response.contentType && response.contentType.includes('text/html'));
+
+    if (rejected && retry && hasCredentials) {
+      await login();
+      return call(path, method, body, false);
+    }
     if (response.status === 401 || response.status === 403) {
       throw new FirstDueAuthError(`First Due returned ${response.status}.`);
     }
@@ -383,8 +487,13 @@ export function createFirstDueClient(options: {
 }
 
 export function getFirstDueClient(transport?: FirstDueTransport): FirstDueClient {
-  if (!firstDueEnv.session) {
-    throw new Error('FIRST_DUE_SESSION is not configured.');
+  if (!firstDueEnv.hasSession && !firstDueEnv.hasCredentials) {
+    throw new FirstDueAuthError('First Due credentials are not configured.');
   }
-  return createFirstDueClient({ session: firstDueEnv.session, transport });
+  return createFirstDueClient({
+    session: firstDueEnv.session,
+    email: firstDueEnv.email,
+    password: firstDueEnv.password,
+    transport,
+  });
 }
