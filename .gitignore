@@ -7,3 +7,7 @@ tsconfig.tsbuildinfo
 .playwright-mcp/
 *.har
 *.saz
+
+# Local sync script secrets and logs
+scripts/first-due-sync.env
+logs/
