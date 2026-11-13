@@ -11,3 +11,7 @@ tsconfig.tsbuildinfo
 # Local sync script secrets and logs
 scripts/first-due-sync.env
 logs/
+
+# Packaged Windows sync (transfer artifact)
+first-due-sync-package/
+first-due-sync-package.zip
